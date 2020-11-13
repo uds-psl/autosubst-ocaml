@@ -1,0 +1,1 @@
+let genCode _ = "codes"
