@@ -1,6 +1,7 @@
 (library
   (name lib)
-  (preprocess (pps ppx_deriving.show ppx_deriving.ord)))
+  (preprocess (pps ppx_deriving.show ppx_deriving.ord))
+  (libraries core))
 (env
   (dev
     (flags (:standard -warn-error -A))))
