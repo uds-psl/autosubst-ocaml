@@ -1,0 +1,8 @@
+-- for the ide/emacs
+opam install merlin utop ocp-indent dune ocamlformat
+
+-- for the code itself
+core
+monads
+coq 8.12.0
+ppx_deriving
