@@ -41,9 +41,6 @@ type signature =
   }
 [@@deriving show]
 
-type point2d = float * float
-[@@deriving show]
-
 let mySigSpec : spec = [
   ("tm", [ {
        parameters = [];
