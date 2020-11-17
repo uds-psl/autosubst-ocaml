@@ -16,7 +16,7 @@ open Rws
     let open GenM.Syntax in
     let open GenM in function
       | Leaf v ->
-        let* env = peek in
+        let* env = ask in
         let* _ = "Leaf with: " ^ string_of_int (f v) ^ "\n" |> tell in
         let* s = get in
         let* _ = put (env * (f v) + s) in

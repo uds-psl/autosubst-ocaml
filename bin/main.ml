@@ -1,22 +1,26 @@
 open Core
-open Lib.Types
-open Lib.Generate
+open Lib
 
-let generate the_sig =
-  (* generate dot graph *)
-  let code = genCode the_sig in
-  (* write file *)
-  code
+module M = Monadic
+module H = Hsig
 
-let main () =
-  let open Or_error.Monad_infix in
+module SError = M.Result.Make(struct type t = string end)
+
+let mainProg () =
+  let open SError.Syntax in
   (* parse arguments *)
   (* parse input HOAS *)
-  let the_sig = Or_error.return mySig in
-  let the_code = the_sig >>= generate in
-  let result = match the_code with
-    | Ok x -> x
-    | Error x -> Error.to_string_hum x in
-  print_endline result;; (* how do I end this function, when I remove the ;; it thinks the call to main below belongs to the definition -.- *)
+  (* let* the_sig = SError.error "failed generating signature" in *)
+  let* hsig = SError.pure H.Hsig_example.mySig in
+  (* generate dot graph *)
+  let* (_, code, _) = GenCode.runGenCode hsig in
+  (* write file *)
+  SError.pure code
 
-main ()
+let main () =
+  let result = match SError.run (mainProg ()) with
+    | Ok x -> x
+    | Error x -> x in
+  print_endline result
+
+let () = main ()

@@ -3,6 +3,8 @@ opam install merlin utop ocp-indent dune ocamlformat
 
 -- for the code itself
 core
-monads
+monadic
 coq 8.12.0
 ppx_deriving
+ppx_compare
+ppc_fields_conv

@@ -1,6 +1,6 @@
 (library
   (name lib)
-  (preprocess (pps ppx_deriving.show ppx_deriving.ord))
+  (preprocess (pps ppx_deriving.show ppx_deriving.ord ppx_fields_conv ppx_compare))
   (libraries core monadic))
 (env
   (dev
