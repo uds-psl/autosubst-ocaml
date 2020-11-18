@@ -314,7 +314,7 @@ module ApplicativeFunctionsGeneric (C : COLLECTION) (A : APPLICATIVE) = struct
   let a_filter f xs =
     let k curr acc =
       let+ flg = f curr and+ ys = acc in
-      if flg then C.cons curr xs else ys
+      if flg then C.cons curr ys else ys
     in
     C.fold_right k xs (pure C.empty)
 
