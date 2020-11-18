@@ -1,7 +1,8 @@
 open Core
 open Util
 open GenMonad
-open MonadReaderError.Functions(GenM)
+open Monads.RE_Functions(GenM)
+
 module H = Hsig
 
 let coqPreamble = "preamble"
