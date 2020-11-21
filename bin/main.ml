@@ -1,5 +1,5 @@
 open Core
-open Lib
+open Autosubst_lib
 
 module M = Monadic
 module H = Hsig

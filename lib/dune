@@ -1,7 +1,8 @@
 (library
-  (name lib)
+  (name autosubst_lib)
   (preprocess (pps ppx_deriving.show ppx_deriving.ord ppx_fields_conv ppx_compare))
-  (libraries core monadic))
+  (libraries core monadic coq.vernac)
+  (flags (:standard -rectypes)))
 (env
   (dev
     (flags (:standard -warn-error -A))))

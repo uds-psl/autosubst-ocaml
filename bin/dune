@@ -1,6 +1,7 @@
 (executable
  (name main)
- (libraries core lib))
+ (libraries core autosubst_lib)
+ (flags (:standard -rectypes)))
 
 (env
   (dev

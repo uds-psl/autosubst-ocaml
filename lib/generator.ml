@@ -4,6 +4,23 @@ open GenM
 
 module H = Hsig
 
+module type LEMMA_PRE = sig
+  type args
+
+  val getName : string
+  val getType : args -> Constrexpr.constr_expr
+  val getBody : args -> Constrexpr.constr_expr
+end
+
+
+module Lemma (L: LEMMA_PRE) : sig
+  include LEMMA_PRE
+  val build : args -> Pp.t
+end = struct
+  include L
+  let build x = Pp.str "lemma!"
+end
+
 
 let genCodeT xs dps upList' =
   let open GenM.Syntax in
