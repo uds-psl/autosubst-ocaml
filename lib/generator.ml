@@ -1,6 +1,6 @@
 open Core
 open Util
-open GenMonad
+open GenM
 
 module H = Hsig
 

@@ -1,6 +1,6 @@
 open Core
 open Util
-open GenMonad
+open GenM
 open Monads.RE_Functions(GenM)
 
 module H = Hsig

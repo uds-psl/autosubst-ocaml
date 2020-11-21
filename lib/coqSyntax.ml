@@ -1,5 +1,5 @@
 open Core
-open GenMonad
+open GenM
 (* TODO module H = Hsig *)
 open Hsig
 
