@@ -1,4 +1,4 @@
-open Core
+open Base
 open Util
 open GenM
 open Monads.RE_Functions(GenM)
@@ -34,11 +34,11 @@ let genCode ups spec =
 let genAutomation varSorts sorts substSorts ups =
   let open GenM.Syntax in
   let open GenM in
-  let _ = print_endline "genAutomation" in
-  let _ = "varSorts: " ^ (List.to_string ~f:id varSorts) |> print_endline in
-  let _ = "sorts: " ^ (List.to_string ~f:id sorts) |> print_endline in
-  let _ = "substSorts: " ^ (List.to_string ~f:id substSorts) |> print_endline in
-  let _ = "ups: " ^ (List.to_string ~f:(showPair H.show_binder id) ups) |> print_endline in
+  (* let _ = print_endline "genAutomation" in
+   * let _ = "varSorts: " ^ (List.to_string ~f:id varSorts) |> print_endline in
+   * let _ = "sorts: " ^ (List.to_string ~f:id sorts) |> print_endline in
+   * let _ = "substSorts: " ^ (List.to_string ~f:id substSorts) |> print_endline in
+   * let _ = "ups: " ^ (List.to_string ~f:(showPair H.show_binder id) ups) |> print_endline in *)
   pure "tactics"
 
 

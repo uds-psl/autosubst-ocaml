@@ -1,4 +1,4 @@
-open Core
+open Base
 (* I'm using association lists until I figure out how to build a map from a list *)
 (* strangely even something like tId need a deriving show. So they are not like 'type' in Haskell but rather like newtype? *)
 

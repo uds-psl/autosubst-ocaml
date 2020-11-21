@@ -1,4 +1,3 @@
-open Core
 open GenM
 module H = Hsig
 

@@ -1,4 +1,4 @@
-open Core
+open Base
 open GenM
 (* TODO module H = Hsig *)
 open Hsig

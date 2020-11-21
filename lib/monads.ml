@@ -1,7 +1,7 @@
 (** My own definitions for reader/writer/state monad
  ***  *)
 
-open Core
+open Base
 open Util
 
 module M = Monadic

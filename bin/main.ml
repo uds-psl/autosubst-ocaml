@@ -1,4 +1,4 @@
-open Core
+open Base
 open Autosubst_lib
 
 module M = Monadic
