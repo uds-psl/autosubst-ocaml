@@ -13,7 +13,7 @@ let mainProg () =
   (* let* the_sig = SError.error "failed generating signature" in *)
   let* hsig = SError.pure H.Hsig_example.mySig in
   (* generate dot graph *)
-  let* (_, code, _) = GenCode.runGenCode hsig in
+  let* code = GenCode.runGenCode hsig in
   (* write file *)
   SError.pure code
 
@@ -21,6 +21,7 @@ let main () =
   let result = match SError.run (mainProg ()) with
     | Ok x -> x
     | Error x -> x in
-  print_endline result
+  Stdio.print_endline result
 
 let () = main ()
+(* let () = print_endline "helloe" *)

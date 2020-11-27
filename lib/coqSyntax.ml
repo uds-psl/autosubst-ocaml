@@ -1,12 +1,25 @@
 open Base
-open GenM
 (* TODO module H = Hsig *)
 open Hsig
 
-type identifier = string
-type identifiers = identifier list
+type identifier = string [@@deriving show]
+type identifiers = identifier list [@@deriving show]
 
-type command = Arguments of string * terms
+type sort = Prop
+          | Set
+          | Type [@@deriving show]
+(* Rename Some and None because they are already taken and it leads to some strange parsing errors when I leave it in
+ * I think when I tried it, the Some was trying to take everything until the `type command` as an argument which does not make any sense *)
+type const = Some_ | None_
+          | Refl | Sym | Trans
+          | Nat | Suc
+          | Fin
+          | Id | Comp
+          | Upren | Shift  | Cons | VarZero
+          | Ap
+          | Fext [@@deriving show]
+
+type command = Arguments of string * terms [@@deriving show]
 and cBinder = BinderName of string
             | BinderNameType of string list * term
             | BinderImplicitName of string
@@ -25,19 +38,8 @@ and pattern = PatCtor of term * identifiers
 and substTy = SubstScope of terms
             | SubstRen of terms
             | SubstSubst of terms
-            | SubstEq of terms * (tId -> binder -> term -> term GenM.t)
+            | SubstEq of terms * (tId -> binder -> term -> term SigM.t)
             | SubstConst of terms
-and sort = Prop
-          | Set
-          | Type
-and const = Some | None
-          | Refl | Sym | Trans
-          | Nat | Suc
-          | Fin
-          | Id | Comp
-          | Upren | Shift  | Cons | VarZero
-          | Ap
-          | Fext
 and terms = term list
 and term =  TermImp of term
          | TermApp of term * terms
@@ -50,33 +52,53 @@ and term =  TermImp of term
          | TermForall of cBinders * term
          | TermAnd of terms
          | TermEq of term * term
-         | TermLet of term * term * term (* TODO kathrin: get a pattern?? *)
          | TermUnderscore
          | TermMatch of matchItem * term option * equation list
          | TupleTy of terms
          | Tuple of terms
-         | Todo of string
          | TermSubst of substTy
          | TermVar of term
          | TermArg of term * string * term
+[@@deriving show]
 
+(* let show_list f xs =
+ *   "["^ (String.concat ~sep:"," @@ List.map xs ~f) ^"]"
+ * let parens s = "("^s^")"
+ *
+ * let show_cbinder _ = "binder"
+ * let rec show_term = function
+ *   | TermImp t -> "TermImp" ^ parens @@ show_term t
+ *   | TermApp (t, ts) -> "TermApp" ^ parens @@ (show_term t) ^ (show_list show_term ts)
+ *   | TermConst c -> "TermConst" ^ parens @@ show_const c
+ *   | TermNum i -> "TermNum" ^ parens @@ Int.to_string i
+ *   | TermId s -> "TermId" ^ parens s
+ *   | TermSort s -> "TermSort" ^ parens @@ show_sort s
+ *   | TermFunction (t1, t2) -> "TermFunction" ^ parens @@ (show_term t1) ^ (show_term t2)
+ *   | TermAbs (b, t) -> "TermAbs" ^ parens @@ (show_list show_cbinder b) ^ (show_term t)
+ *   | TermForall  (b, t) -> "TermForall" ^ parens @@ (show_list show_cbinder b) ^ (show_term t)
+ *   | TermAnd ts -> "TermAnd" ^ show_list show_term ts
+ *   | TermEq (t1, t2) -> "TermEq" ^ parens @@ (show_term t1) ^ (show_term t2)
+ *   | TermUnderscore -> "TermUnderscore"
+ *   | TermMatch _ -> "TermMatch"
+ *   | TupleTy ts -> "TupleTy" ^ show_list show_term ts
+ *   | Tuple ts -> "Tuple" ^ show_list show_term ts
+ *   | TermSubst _ -> "TermSubst"
+ *   | TermVar t -> "TermVar" ^ parens @@ show_term t
+ *   | TermArg _ -> "TermArg"
+ * type t = term *)
 
-type t = term
+type definition = Definition of string * cBinders * term option * term [@@deriving show]
 
+type fixpointBody = FixpointBody of string * cBinders * term * term [@@deriving show]
+type fixpoint = Fixpoint of bool * fixpointBody list [@@deriving show]
 
-type definition = Definition of string * cBinders * term option * term
-
-
-type fixpointBody = FixpointBody of string * cBinders * term * term
-type fixpoint = Fixpoint of bool * fixpointBody list
-
-type inductiveCtor = InductiveCtor of string * term option
-type inductiveBody = InductiveBody of string * cBinders * term * inductiveCtor list
-type inductive = Inductive of inductiveBody list
+type inductiveCtor = InductiveCtor of string * term option [@@deriving show]
+type inductiveBody = InductiveBody of string * cBinders * term * inductiveCtor list [@@deriving show]
+type inductive = Inductive of inductiveBody list [@@deriving show]
 
 type proof = ProofExact of term
-           | ProofString of string
-type lemma = Lemma of string * cBinders * term * proof
+           | ProofString of string [@@deriving show]
+type lemma = Lemma of string * cBinders * term * proof [@@deriving show]
 
 type tactic = TacticRewrite of string option * string list * string list * string list
             | TacticSeq of tactic list
@@ -84,6 +106,7 @@ type tactic = TacticRewrite of string option * string list * string list * strin
             | TacticUnfold of string list * string option
             | TacticFold of string list * string option
             | TacticRepeat of tactic
+[@@deriving show]
 
 type sentence = SentenceDefinition of definition
               | SentenceClass of string * cBinders * (string * term) list
@@ -98,6 +121,7 @@ type sentence = SentenceDefinition of definition
               | SentenceId of string
               | SentenceTacticNotation of string list * tactic
               | SentenceSection of string * sentence list
+[@@deriving show]
 
 type variable = Variable of identifier * term
 
@@ -122,15 +146,16 @@ let sty_terms = function
   | SubstEq (xs,_) -> xs
   | SubstConst xs -> xs
 
-let none_ = TermConst None
-let some_ = TermConst Some
+let none_ = TermConst None_
+let some_ = TermConst Some_
 let eqSym_ s = TermApp (TermConst Sym, [s])
 let eqTrans_ s t = TermApp (TermConst Trans, [s; t])
 let nat = TermConst Nat
 
 let up_ren_ : tId -> term -> binder -> term = fun y xi -> function
-  (* TODO something is broken because when I write y = x ocaml wants to use the equality on int, even though it knows both are tId's. Maybe I need to use an interface for the Hsig module *)
-  | Single x -> if (equal_string y x) then TermApp (TermConst Upren, [xi]) else xi
+  (* DONE something is broken because when I write y = x ocaml wants to use the equality on int, even though it knows both are tId's. Maybe I need to use an interface for the Hsig module
+   * It was because base shadows the polymorphic equal so you need to explicitly open the module *)
+  | Single x -> if String.(y = x) then TermApp (TermConst Upren, [xi]) else xi
       (* TODO what's up with the string "upRen_p" here? *)
   | BinderList (m, x) -> if (equal_string y x) then idApp "upRen_p" [TermId m; xi] else xi
 
@@ -167,3 +192,4 @@ let getTerms' = function
 let getTerms = List.concat_map ~f:getTerms'
 
 let (==>) s t = List.fold_right s ~f:(fun s t -> TermFunction (s, t)) ~init:t
+

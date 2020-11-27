@@ -1,8 +1,8 @@
 open Base
 open Util
-open GenM
-open Monads.RE_Functions(GenM)
-
+open SigM
+open Monads.RE_Functions(SigM)
+module CS = CoqSyntax
 module H = Hsig
 
 let coqPreamble = "preamble"
@@ -15,8 +15,8 @@ let getUps con_com =
   List.append singles blists
 
 let genCode ups spec =
-  let open GenM.Syntax in
-  let open GenM in
+  let open SigM.Syntax in
+  let open SigM in
   let* (_, code) =
     m_fold (fun (ups, sentences) (x, dps) ->
         let* xs = substOf (List.hd_exn x) in
@@ -32,8 +32,8 @@ let genCode ups spec =
   pure @@ List.concat code
 
 let genAutomation varSorts sorts substSorts ups =
-  let open GenM.Syntax in
-  let open GenM in
+  let open SigM.Syntax in
+  let open SigM in
   (* let _ = print_endline "genAutomation" in
    * let _ = "varSorts: " ^ (List.to_string ~f:id varSorts) |> print_endline in
    * let _ = "sorts: " ^ (List.to_string ~f:id sorts) |> print_endline in
@@ -44,8 +44,8 @@ let genAutomation varSorts sorts substSorts ups =
 
 (* TODO genFile should also take prover args, like what kind of code it should generate *)
 let genFile () =
-  let open GenM.Syntax in
-  let open GenM in
+  let open SigM.Syntax in
+  let open SigM in
   (* TODO why is this called spec in autosubst2? *)
   let* spec = asks H.sigComponents in
   let sorts = List.(spec >>| fst |> concat) in
@@ -59,11 +59,11 @@ let genFile () =
     a_map (fun srt -> let* subsorts = substOf srt in
           getUps subsorts |> pure)
       List.(spec >>| fst >>| hd_exn) in
-  (* TODO the core library only has a function that also sorts, this should not change the behaviour of the program. Using the polymorphic compare also from the core library *)
+  (* TODO for a stable dedup I would need to use the Set.stable_dedup_list and create a comparator for my type *)
   let ups = List.(dedup_and_sort ~compare:Poly.compare @@ concat ups_pre) in
   let* code = genCode ups spec in
   (* let modularCode =  *)
   let* auto = genAutomation varSorts sorts substSorts ups in
-  tell (coqPreamble ^ (String.concat code) ^ auto)
+  pure @@ (coqPreamble ^ (String.concat (List.map ~f:CS.show_sentence code)) ^ auto)
 
-let runGenCode hsig = GenM.run (genFile ()) hsig []
+let runGenCode hsig = SigM.run (genFile ()) hsig

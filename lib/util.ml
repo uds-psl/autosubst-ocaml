@@ -13,3 +13,11 @@ let list_remove xs y =
 
 let showPair f g (x, y) =
   "(" ^ f x ^ ", " ^ g y ^ ")"
+
+let nub l = List.dedup_and_sort ~compare:Poly.compare l
+
+let rec list_zip xs ys =
+  match xs, ys with
+  | [], [] -> []
+  | x::xs, y::ys -> (x,y)::(list_zip xs ys)
+  | _, _ -> []
