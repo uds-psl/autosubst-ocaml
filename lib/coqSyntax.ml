@@ -131,11 +131,10 @@ let eqSym_ s = TermApp (TermConst Sym, [s])
 let eqTrans_ s t = TermApp (TermConst Trans, [s; t])
 let nat = TermConst Nat
 
+(* TODO atm this is only used in the genUpRenS function. It's like the `u` function in a lot of the definition generator. So it might as well be inlined there *)
 let up_ren_ : tId -> term -> binder -> term = fun y xi -> function
-  (* DONE something is broken because when I write y = x ocaml wants to use the equality on int, even though it knows both are tId's. Maybe I need to use an interface for the Hsig module
-   * It was because base shadows the polymorphic equal so you need to explicitly open the module *)
   | Single x -> if String.(y = x) then TermApp (TermConst Upren, [xi]) else xi
-      (* TODO what's up with the string "upRen_p" here? *)
+      (* TODO what's up with the string "upRen_p" here?  *)
   | BinderList (m, x) -> if (equal_string y x) then idApp "upRen_p" [TermId m; xi] else xi
 
 let succ_ n z = function

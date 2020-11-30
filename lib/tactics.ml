@@ -42,7 +42,10 @@ let mkTermIds = List.map ~f:(fun x -> TermId x)
  ** we would then only call toVar if we really want to use it *)
 let toVar sort ts =
   let* substSorts = substOf sort in
-  let zs = List.filter ~f:(fun (substSort,_) -> String.(sort = substSort)) (List.zip_exn substSorts (sty_terms ts)) in
+  let () = if (List.length substSorts <> List.length @@ sty_terms ts)
+    then print_endline "toVar unequal"
+    else () in
+  let zs = List.filter ~f:(fun (substSort,_) -> String.(sort = substSort)) (list_zip substSorts (sty_terms ts)) in
   if List.is_empty zs
   then
     let () = Stdio.print_endline "toVar: list was empty. For some probably brittle reason the resulting term is never used" in
@@ -177,10 +180,8 @@ let genSubst sort name (ms, ns) =
  ** H: forall x, sigma x = tau x *)
 let genEq name sigma tau =
   let name = VarState.tfresh name in
-  pure @@ (
-    TermId name,
-    [BinderNameType ([name], (equiv_ sigma tau))]
-  )
+  ( TermId name,
+    [BinderNameType ([name], (equiv_ sigma tau))] )
 
 (** Create multiple extensional equalities between two substitutions and their binders. One for each of the substituting sorts of the given sort
  ** ( Hty : forall x, sigmaty x = tauty x ) ( Hvl : forall x, sigmavl x = tauvl x ) *)
@@ -210,3 +211,9 @@ let patternSId x b' =
       | H.Single z -> if String.(y = z) then shift y else (TermConst Id)
       | H.BinderList (p, z) -> if String.(y = z) then shiftp p y else (TermConst Id))
     (List.map ~f:(fun x -> TermId x) xs) b'
+
+
+let scons_p_congr_ s t = idApp "scons_p_congr" [t; s]
+let scons_p_comp' x = idApp "scons_p_comp'" [TermUnderscore; TermUnderscore; TermUnderscore; x]
+let scons_p_tail' x = idApp "scons_p_tail'" [TermUnderscore; TermUnderscore; x]
+let scons_p_head' x = idApp "scons_p_head'" [ TermUnderscore; TermUnderscore; x]
