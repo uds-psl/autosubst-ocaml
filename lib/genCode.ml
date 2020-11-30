@@ -1,6 +1,5 @@
 open Base
 open Util
-open SigM
 open Monads.RE_Functions(SigM)
 module CS = CoqSyntax
 module H = Hsig
@@ -18,7 +17,7 @@ let genCode ups spec =
   let open SigM.Syntax in
   let open SigM in
   let* (_, code) =
-    m_fold (fun (ups, sentences) (x, dps) ->
+    m_fold (fun (ups, sections) (x, dps) ->
         let* xs = substOf (List.hd_exn x) in
         (* let* mdps = a_map realDeps x in *)
         let up_x = getUps xs in
@@ -26,10 +25,10 @@ let genCode ups spec =
         let new_ups = if List.is_empty dps
           then list_diff ups up_x
           else ups in
-        let new_sentences = sentences @ [code_x] in
-        pure @@ (new_ups, new_sentences))
+        let new_sections = sections @ [code_x] in
+        pure @@ (new_ups, new_sections))
       (ups, []) spec in
-  pure @@ List.concat code
+  pure code
 
 let genAutomation varSorts sorts substSorts ups =
   let open SigM.Syntax in
@@ -64,6 +63,11 @@ let genFile () =
   let* code = genCode ups spec in
   (* let modularCode =  *)
   let* auto = genAutomation varSorts sorts substSorts ups in
-  pure @@ (coqPreamble ^ (String.concat (List.map ~f:CS.show_sentence code)) ^ auto)
+  let vs = (List.concat_map ~f:CoqTranslate.translate_sentence code) in
+  let () = print_endline "consersion" in
+  (* let () = print_endline @@ CoqTranslate.pcount () in *)
+  let ps = (List.map ~f:Coqgen.pr_vernac_expr vs) in
+  let () = print_endline "printing" in
+  pure @@ (coqPreamble ^ (String.concat (List.map ~f:Pp.string_of_ppcmds ps) ^ auto))
 
 let runGenCode hsig = SigM.run (genFile ()) hsig

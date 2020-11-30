@@ -10,14 +10,22 @@ type sort = Prop
           | Type [@@deriving show]
 (* Rename Some and None because they are already taken and it leads to some strange parsing errors when I leave it in
  * I think when I tried it, the Some was trying to take everything until the `type command` as an argument which does not make any sense *)
+(* TODO add scons_p? right now this is often used as a string but does not need to *)
 type const = Some_ | None_
           | Refl | Sym | Trans
-          | Nat | Suc
+          | Nat | Suc | Plus
           | Fin
           | Id | Comp
           | Upren | Shift  | Cons | VarZero
           | Ap
           | Fext [@@deriving show]
+(* TODO the original Haskell code actually only used PatCtor and PatQualId, but PatQualId is just PatCtor with an empty list. so I removed that too. Also PatCtor originally accepted a term as first argument which does not compose well when I want to print it in the end. But the terms was actually always an application (Constr var1 var2 etc) so it should be easy to put them as strings into the second argument *)
+(* type pattern = PatCtor of identifier * identifiers [@@deriving show] *)
+            (* | PatCtorEx of string * pattern list
+             * | PatAtCtor of term * identifiers
+             * | PatAtCtorEx of string * pattern list *)
+            (* | PatQualId of term *)
+            (* | PatUnderscore *)
 
 type command = Arguments of string * terms [@@deriving show]
 and cBinder = BinderName of string
@@ -27,14 +35,9 @@ and cBinder = BinderName of string
             | BinderScopeNameType of string list * term
             | BinderImplicitScopeNameType of string list * term
 and cBinders = cBinder list
+(* TODO the term option of mathItem is ignoren in Autosubst2 when the coq code is printer. Check if also ignored in rest of code *)
 and matchItem = MatchItem of term * term option
-and equation = Equation of pattern * term
-and pattern = PatCtor of term * identifiers
-            | PatCtorEx of string * pattern list
-            | PatAtCtor of term * identifiers
-            | PatAtCtorEx of string * pattern list
-            | PatQualId of term
-            | PatUnderscore
+and equation = Equation of identifier * identifiers * term
 and substTy = SubstScope of terms
             | SubstRen of terms
             | SubstSubst of terms
@@ -53,6 +56,7 @@ and term =  TermImp of term
          | TermAnd of terms
          | TermEq of term * term
          | TermUnderscore
+           (* TODO the term option is also ignored here. Check if ignored in code generation too *)
          | TermMatch of matchItem * term option * equation list
          | TupleTy of terms
          | Tuple of terms
@@ -61,35 +65,10 @@ and term =  TermImp of term
          | TermArg of term * string * term
 [@@deriving show]
 
-(* let show_list f xs =
- *   "["^ (String.concat ~sep:"," @@ List.map xs ~f) ^"]"
- * let parens s = "("^s^")"
- *
- * let show_cbinder _ = "binder"
- * let rec show_term = function
- *   | TermImp t -> "TermImp" ^ parens @@ show_term t
- *   | TermApp (t, ts) -> "TermApp" ^ parens @@ (show_term t) ^ (show_list show_term ts)
- *   | TermConst c -> "TermConst" ^ parens @@ show_const c
- *   | TermNum i -> "TermNum" ^ parens @@ Int.to_string i
- *   | TermId s -> "TermId" ^ parens s
- *   | TermSort s -> "TermSort" ^ parens @@ show_sort s
- *   | TermFunction (t1, t2) -> "TermFunction" ^ parens @@ (show_term t1) ^ (show_term t2)
- *   | TermAbs (b, t) -> "TermAbs" ^ parens @@ (show_list show_cbinder b) ^ (show_term t)
- *   | TermForall  (b, t) -> "TermForall" ^ parens @@ (show_list show_cbinder b) ^ (show_term t)
- *   | TermAnd ts -> "TermAnd" ^ show_list show_term ts
- *   | TermEq (t1, t2) -> "TermEq" ^ parens @@ (show_term t1) ^ (show_term t2)
- *   | TermUnderscore -> "TermUnderscore"
- *   | TermMatch _ -> "TermMatch"
- *   | TupleTy ts -> "TupleTy" ^ show_list show_term ts
- *   | Tuple ts -> "Tuple" ^ show_list show_term ts
- *   | TermSubst _ -> "TermSubst"
- *   | TermVar t -> "TermVar" ^ parens @@ show_term t
- *   | TermArg _ -> "TermArg"
- * type t = term *)
-
 type definition = Definition of string * cBinders * term option * term [@@deriving show]
 
 type fixpointBody = FixpointBody of string * cBinders * term * term [@@deriving show]
+(* TODO this bool seems to be whether the fixpoint should actually be a definition. It is set by checking if the sort of the principal argument is recursive. When it's false I should also just generate a Defintion in my translation function. Then I would also have to assert that the fixpointBody list is a singleton *)
 type fixpoint = Fixpoint of bool * fixpointBody list [@@deriving show]
 
 type inductiveCtor = InductiveCtor of string * term option [@@deriving show]
@@ -121,7 +100,7 @@ type sentence = SentenceDefinition of definition
               | SentenceId of string
               | SentenceTacticNotation of string list * tactic
               | SentenceSection of string * sentence list
-[@@deriving show]
+[@@deriving show, variants]
 
 type variable = Variable of identifier * term
 
@@ -160,8 +139,8 @@ let up_ren_ : tId -> term -> binder -> term = fun y xi -> function
   | BinderList (m, x) -> if (equal_string y x) then idApp "upRen_p" [TermId m; xi] else xi
 
 let succ_ n z = function
-  | Single x -> if (equal_string z x) then TermApp (TermConst Suc, [n]) else n
-  | BinderList (m, x) -> if (equal_string z x) then idApp (m ^ "+") [n] else n
+  | Single x -> if String.(z = x) then TermApp (TermConst Suc, [n]) else n
+  | BinderList (m, x) -> if String.(z = x) then TermApp (TermConst Plus, [TermId m; n]) else n
 
 let fin_ n = TermApp (TermConst Fin, [n])
 
@@ -179,8 +158,9 @@ let ap_ s = TermApp (TermConst Ap, s)
 
 let fext_ = TermConst Fext
 
+(* TODO variables for constructor name strings? *)
 let matchFin_ s f b = TermMatch (MatchItem (s, None), None,
-    [ Equation (PatCtor (some_, ["fin_n"]), (f (TermId "fin_n"))); Equation (PatQualId none_, b) ])
+    [ Equation ("Some", ["fin_n"], (f (TermId "fin_n"))); Equation ("None", [], b) ])
 
 let sortType x n = TermApp ((TermId x), [TermSubst n])
 

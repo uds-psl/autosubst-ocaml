@@ -11,7 +11,7 @@ type 'a tIdMap = (tId * 'a) list [@@deriving show]
 
 type binder = Single of tId | BinderList of string * tId
 [@@deriving show]
-type argument = Atom of tId | FunApp of fId * fId * (argument list)
+type argument_head = Atom of tId | FunApp of fId * fId * (argument_head list)
 [@@deriving show]
 
 let getBinders = function
@@ -23,14 +23,15 @@ let rec getIds = function
 
 type position =
   { binders : binder list;
-    arg : argument;
+    head : argument_head;
   }
 [@@deriving show]
 
 type constructor =
-  { parameters : (string * tId) list;
-    name : cId;
-    positions : position list;
+  { cparameters : (string * tId) list;
+    cname : cId;
+    (* TODO rename to arguments? *)
+    cpositions : position list;
   }
 [@@deriving show]
 
@@ -39,6 +40,7 @@ type spec = (constructor list) tIdMap [@@deriving show]
 type signature =
   { sigSpec : spec;
     sigSubstOf : (tId list) tIdMap;
+    (* TODO very often I need just the first sort of a component, so maybe make this into a nonempty list. E.g. I think I need it in Generator.genSubstitutions  *)
     sigComponents : (tId list * tId list) list;
     sigExt : tId tIdMap;
     (* sigIsOpen was a set originally *)
@@ -54,39 +56,39 @@ module Hsig_example = struct
 
   let mySigSpec : spec = [
     ("tm", [ {
-         parameters = [];
-         name = "app";
-         positions = [ { binders = []; arg = Atom "tm" };
-                       { binders = []; arg = Atom "tm" } ];
+         cparameters = [];
+         cname = "app";
+         cpositions = [ { binders = []; head = Atom "tm" };
+                       { binders = []; head = Atom "tm" } ];
        }; {
-           parameters = [];
-           name = "tapp";
-           positions = [ { binders = []; arg = Atom "tm" };
-                         { binders = []; arg = Atom "ty" } ];
+           cparameters = [];
+           cname = "tapp";
+           cpositions = [ { binders = []; head = Atom "tm" };
+                         { binders = []; head = Atom "ty" } ];
          }; {
-           parameters = [];
-           name = "vt";
-           positions = [ { binders = []; arg = Atom "vl" } ];
+           cparameters = [];
+           cname = "vt";
+           cpositions = [ { binders = []; head = Atom "vl" } ];
          } ]);
     ("ty", [{
-         parameters = [];
-         name = "arr";
-         positions = [ { binders = []; arg = Atom "ty" };
-                       { binders = []; arg = Atom "ty" } ];
+         cparameters = [];
+         cname = "arr";
+         cpositions = [ { binders = []; head = Atom "ty" };
+                       { binders = []; head = Atom "ty" } ];
        }; {
-          parameters = [];
-          name = "all";
-          positions = [ { binders = [ Single "ty" ]; arg = Atom "ty" } ];
+          cparameters = [];
+          cname = "all";
+          cpositions = [ { binders = [ Single "ty" ]; head = Atom "ty" } ];
         } ]);
     ("vl", [{
-         parameters = [];
-         name = "lam";
-         positions = [ { binders = []; arg = Atom "ty" };
-                       { binders = [ Single "vl" ]; arg = Atom "tm" } ];
+         cparameters = [];
+         cname = "lam";
+         cpositions = [ { binders = []; head = Atom "ty" };
+                       { binders = [ Single "vl" ]; head = Atom "tm" } ];
        }; {
-          parameters = [];
-          name = "tlam";
-          positions = [ { binders = [ Single "ty" ]; arg = Atom "tm" } ];
+          cparameters = [];
+          cname = "tlam";
+          cpositions = [ { binders = [ Single "ty" ]; head = Atom "tm" } ];
         } ])
   ]
 
@@ -99,5 +101,58 @@ module Hsig_example = struct
     sigArguments = [("tm", ["tm"; "ty"; "vl"]);
                     ("ty", ["ty"]);
                     ("vl", ["ty"; "tm"])];
+  }
+end
+
+module Hsig_fol = struct
+  let mySigSpec = [
+    ("form", [ {
+         cparameters = [];
+         cname = "Fal";
+         cpositions = []
+       }; {
+           cparameters = [("p","nat")];
+           cname = "Pred";
+           cpositions = [ { binders = []; head = FunApp ("cod", "(fin p)", [ Atom "term" ]); }]
+         }; {
+           cparameters = [];
+           cname = "Impl";
+           cpositions = [ { binders = []; head = Atom "form"; };
+                         { binders = []; head = Atom "form"; } ];
+         }; {
+           cparameters = [];
+           cname = "Conj";
+           cpositions = [ { binders = []; head = Atom "form" };
+                         { binders = []; head = Atom "form" } ];
+         }; {
+           cparameters = [];
+           cname = "Disj";
+           cpositions = [ { binders = []; head = Atom "form" };
+                         { binders = []; head = Atom "form" } ];
+         }; {
+           cparameters = [];
+           cname = "All";
+           cpositions = [ { binders = [Single "term"];
+                           head = Atom "form" } ];
+         }; {
+           cparameters = [];
+           cname = "Ex";
+           cpositions = [ { binders = [Single "term"]; head = Atom "form"; } ]
+         }
+       ]
+    ); ("term", [ {
+        cparameters = [("f","nat")];
+        cname = "Func";
+        cpositions = [ {binders = []; head = FunApp ("cod", "(fin f)", [Atom "term"]); } ]
+      } ] )
+  ]
+  let mySig = {
+    sigSpec = mySigSpec;
+    sigSubstOf = [ ("form",["term"]); ("term",["term"])];
+    sigComponents = [(["term"],[]);(["form"],[])];
+    sigExt = [];
+    sigIsOpen = ["term"];
+    sigArguments = [ ("form",["term";"form"]);
+                     ("term",["term"])];
   }
 end

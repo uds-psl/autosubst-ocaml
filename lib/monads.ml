@@ -120,7 +120,7 @@ struct
 
   let substOf tid =
     let* substs = asks H.sigSubstOf in
-    match ListLabels.assoc_opt tid substs with
+    match AL.assoc tid substs with
     | Some cs -> pure cs
     | None -> error @@ "substOf called on invalid type: " ^ tid
 
@@ -145,9 +145,9 @@ struct
   let successors id =
     let* cs = constructors id in
     pure @@ List.(concat_map cs
-                    ~f:(function { positions; _ } ->
-                        concat_map positions
-                          ~f: (function { arg; _ } -> H.getIds arg )))
+                    ~f:(function { cpositions; _ } ->
+                        concat_map cpositions
+                          ~f: (function { head; _ } -> H.getIds head )))
 
   let arguments id =
     let* args = asks H.sigArguments in
@@ -202,21 +202,22 @@ struct
     let* ys = a_filter isOpen xs in
     List.is_empty ys |> not |> pure
 
-  let recursive xs =
+  (* TODO this seems to check if a given list of components is recursive but I don't know exactly what that entails  *)
+  let isRecursive xs =
     if (List.is_empty xs) then error "Can't determine whether the component is recursive."
     else let* args = successors (List.hd_exn xs) in
       let* zs = a_map prev_ xs in
       let xargs = list_intersection xs args |> List.is_empty |> not in
       let zempty = List.(filter zs ~f:(fun z -> is_empty z |> not) |> is_empty |> not) in
-      (* TODO I should not need parentheses here *)
+      (* TODO I should not need parentheses here. Why are the precedence levels like this !? *)
       pure @@ (xargs || zempty)
 
   (* a lot of binding going on here *)
   let boundBinders xs =
     let* binders = a_map (fun x ->
         constructors x >>= fun cs -> pure @@
-        List.(cs >>= function { positions; _ } ->
-            positions >>= function { binders; _ } ->
+        List.(cs >>= function { cpositions; _ } ->
+            cpositions >>= function { binders; _ } ->
               binders >>= H.getBinders)) xs in
     pure @@ List.concat binders
 

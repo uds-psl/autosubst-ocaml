@@ -1,6 +1,4 @@
 open Base
-open Util
-open Monads
 
 module M = Monadic
 module H = Hsig

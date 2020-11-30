@@ -21,3 +21,5 @@ let rec list_zip xs ys =
   | [], [] -> []
   | x::xs, y::ys -> (x,y)::(list_zip xs ys)
   | _, _ -> []
+
+let const b x = b

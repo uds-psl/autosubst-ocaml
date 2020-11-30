@@ -1,8 +1,0 @@
-(library
-  (name coqgen_lib)
-  (libraries base coq.vernac coq.plugins.ltac  )
-  (flags (:standard -rectypes -w -27)))
-
-(env
-  (dev
-    (flags (:standard -warn-error -A))))

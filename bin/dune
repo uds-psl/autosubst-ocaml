@@ -1,7 +1,8 @@
 (executable
  (name main)
  (libraries base stdio autosubst_lib)
- (flags (:standard -rectypes -g)))
+ (flags (:standard -rectypes))
+  (modes byte exe))
 
 (env
   (dev
