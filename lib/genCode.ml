@@ -66,8 +66,8 @@ let genFile () =
   let vs = (List.concat_map ~f:CoqTranslate.translate_sentence code) in
   let () = print_endline "consersion" in
   (* let () = print_endline @@ CoqTranslate.pcount () in *)
-  (* let ps = (List.map ~f:Coqgen.pr_vernac_expr vs) in *)
-  let ps = [] in
+  let ps = (List.map ~f:Coqgen.pr_vernac_expr vs) in
+  (* let ps = [] in *)
   let () = print_endline "printing" in
   pure @@ (coqPreamble ^ (String.concat (List.map ~f:Pp.string_of_ppcmds ps) ^ auto))
 

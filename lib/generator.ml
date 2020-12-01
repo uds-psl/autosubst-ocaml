@@ -92,7 +92,7 @@ let traversal sort scope name no_args ret bargs args var_case_body (sem: string 
     (* TODO this can surely be simplified *)
     let* positions = a_map (fun (s, { binders; head; }) -> map2 (fun a b -> TermApp (a, b))
                                (* TODO I know ss and cpositions are the same length how do I call the other function with that knowledge? *)
-                               (arg_map binders head) (pure @@ [TermId s])) (List.zip_exn ss cpositions) in
+                               (arg_map binders head) (pure @@ [TermId s])) (list_zip ss cpositions) in
     pure @@ Equation (cname, underscore_pattern @ (List.map ~f:fst cparameters) @ ss,
       sem (List.map ~f:fst cparameters) cname positions
     ) in
@@ -104,23 +104,23 @@ let traversal sort scope name no_args ret bargs args var_case_body (sem: string 
 let genUpRenS (binder, sort) =
   let (m, bm) = introScopeVarS "m" in
   let (n, bn) = introScopeVarS "n" in
-  let (xis, bxis) = genRenS "xi" (m, n) in
+  let (xi, bxi) = genRenS "xi" (m, n) in
   let (_, bpms) = bparameters binder in
   let m' = succ_ m sort binder in
   let n' = succ_ n sort binder in
-  pure @@ Definition (upRen_ sort binder, bpms @ bm @ bn @ bxis, Some (renT m' n'), up_ren_ sort xis binder)
+  pure @@ Definition (upRen_ sort binder, bpms @ bm @ bn @ bxi, Some (renT m' n'), up_ren_ sort xi binder)
 
 let genRenaming sort =
-  let* (m, bm) = introScopeVar "m" sort in
-  let* (n, bn) = introScopeVar "n" sort in
-  let* (xi, bxi) = genRen sort "xi" (m, n) in
+  let* (ms, bms) = introScopeVar "m" sort in
+  let* (ns, bns) = introScopeVar "n" sort in
+  let* (xis, bxis) = genRen sort "xi" (ms, ns) in
   (* DONE what is the result of toVar here?\
    * when I call it with sort=tm, xi=[xity;xivl] I get this weird error term that toVar constructs. This is then probably ignored by some similar login in the traversal. Seems brittle.
    * When I call it instead with sort=vl I get xivl. So it seems get the renaming of the sort that I'm currently inspecting *)
-  let* toVarT = toVar sort xi in
-  traversal sort m ren_ id (const @@ idApp sort (sty_terms n)) (bm @ bn @ bxi) [xi]
-    (fun s -> TermApp (var sort n, [TermApp (toVarT, [s])]))
-    (fun pms c s -> idApp c (sty_terms n @ List.map ~f:(fun x -> TermId x) pms @ s))
+  let* toVarT = toVar sort xis in
+  traversal sort ms ren_ id (const @@ idApp sort (sty_terms ns)) (bms @ bns @ bxis) [xis]
+    (fun s -> TermApp (var sort ns, [TermApp (toVarT, [s])]))
+    (fun pms c s -> idApp c (sty_terms ns @ List.map ~f:(fun x -> TermId x) pms @ s))
     map_
 
 let genRenamings sorts =
@@ -325,7 +325,8 @@ let genUpRenSubst (binder, sort) =
   let (xi, bxi) = genRenS "xi" (k, l) in
   let (tau, btau) = genSubstS "tau" (l, ms) sort in
   let (theta, btheta) = genSubstS "theta" (k, ms) sort in
-  let* m_var = toVar sort ms in
+  (* TODO was this also unused in Haskell? *)
+  (* let* m_var = toVar sort ms in *)
   let (eq, beq) = genEq "Eq" (xi >>> tau) theta in
   let n = VarState.tfresh "n" in
   (* TODO here I might understand what upSubst does *)
@@ -396,18 +397,11 @@ let genCompSubstRen sort =
   let* substSorts = substOf sort in
   let* sigmazeta = a_map (fun (substSort, sigma) ->
       let* zetas' = castSubst sort substSort zetas in
-      pure (sigma >>> idApp (ren_ substSort) (sty_terms zetas'))) (List.zip_exn substSorts (sty_terms sigmas)) in
+      pure (sigma >>> idApp (ren_ substSort) (sty_terms zetas'))) (list_zip substSorts (sty_terms sigmas)) in
   let* (eqs, beqs) = genEqs sort "Eq" sigmazeta (sty_terms thetas) (fun z y s ->
-      let* ssss = substOf z in
-      let () = if (List.length ssss <> List.length @@ sty_terms sigmas)
-        then print_endline "genCompSubstRen sigmas"
-        else () in
-      let* sigmas' = toVar z sigmas in
+      (* let* sigmas' = toVar z sigmas in *)
       let* zetas' = castSubst sort z zetas in
-      let () = if (List.length ssss <> List.length @@ sty_terms thetas)
-        then print_endline "genCompSubstRen thetas"
-        else () in
-      let* thetas' = toVar z thetas in
+      (* let* thetas' = toVar z thetas in *)
       pure @@ idApp (up_subst_ren_ z y) ([TermUnderscore] @ List.map ~f:(const TermUnderscore) (sty_terms zetas') @ [TermUnderscore; s])) in
   let* toVarT = toVar sort eqs in
   let ret s = TermEq (idApp (ren_ sort) (sty_terms zetas @ [idApp (subst_ sort) (sty_terms sigmas @ [s])]), idApp (subst_ sort) (sty_terms thetas @ [s])) in
@@ -437,7 +431,7 @@ let genUpSubstSubst (binder, sort) =
   let* substSorts = substOf sort in
   let* pat' = a_map (fun (substSort, tau) ->
       let* p' = castSubst sort substSort (SubstSubst pat) in
-      pure (tau >>> (idApp (ren_ substSort) (sty_terms p')))) (List.zip_exn substSorts (sty_terms taus)) in
+      pure (tau >>> (idApp (ren_ substSort) (sty_terms p')))) (list_zip substSorts (sty_terms taus)) in
   let t n = eqTrans_ (idApp (compRenSubst_ sort) (pat @ sty_terms taus' @ List.map2_exn ~f:(>>>) pat (sty_terms taus') @ List.map ~f:(const (TermAbs ([BinderName "x"], eq_refl_))) pat @ [TermApp (sigma, [n])]))
       (eqTrans_ (eqSym_ (idApp (compSubstRen_ sort) (sty_terms taus @ pat @ pat' @ List.map ~f:(const (TermAbs ([BinderName "x"], eq_refl_))) pat @ [TermApp (sigma, [n])])))
                 (ap_ [(idApp (ren_ sort) pat); TermApp (eq, [n])])) in
@@ -459,11 +453,11 @@ let genCompSubstSubst sort =
   let* substSorts = substOf sort in
   let* sigmatau = a_map (fun (substSort, sigma) ->
       let* taus' = castSubst sort substSort taus in
-      pure (sigma >>> idApp (subst_ substSort) (sty_terms taus'))) (List.zip_exn substSorts (sty_terms sigmas)) in
+      pure (sigma >>> idApp (subst_ substSort) (sty_terms taus'))) (list_zip substSorts (sty_terms sigmas)) in
   let* (eqs, beqs) = genEqs sort "Eq" sigmatau (sty_terms thetas) (fun z y s ->
-      let* sigmas' = toVar z sigmas in
+      (* let* sigmas' = toVar z sigmas in *)
       let* taus' = castSubst sort z taus in
-      let* theta' = toVar z thetas in
+      (* let* theta' = toVar z thetas in *)
       pure @@ idApp (up_subst_subst_ z y) ([TermUnderscore] @ List.map ~f:(const TermUnderscore) (sty_terms taus') @ [TermUnderscore; s])) in
   let* toVarT = toVar sort eqs in
   let ret s = TermEq (idApp (subst_ sort) (sty_terms taus @ [idApp (subst_ sort) (sty_terms sigmas @ [s])]), idApp (subst_ sort) (sty_terms thetas @ [s])) in

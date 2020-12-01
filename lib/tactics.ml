@@ -170,7 +170,7 @@ let genSubst sort name (ms, ns) =
       (* TODO ask kathrin: couldn't we just do set_diff ns (substOf SubstSort)? *)
       let* ns' = castSubst sort substSort ns in
       pure @@ substT m ns' substSort)
-      (List.zip_exn substSorts (sty_terms ms)) in
+      (list_zip substSorts (sty_terms ms)) in
   pure @@ (
     SubstSubst (mkTermIds names),
     List.map2_exn ~f:(fun x t -> BinderNameType ([x], t)) names types
