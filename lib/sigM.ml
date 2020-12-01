@@ -23,3 +23,11 @@ let map2 f a b =
   let open Syntax in
   let* f' = map f a in
   map f' b
+
+let rec m_fold_left ~f ~init xs =
+  let open Syntax in
+  match xs with
+  | [] -> pure init
+  | x :: xs ->
+    let* init = f init x in
+    m_fold_left ~f ~init xs

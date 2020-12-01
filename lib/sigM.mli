@@ -10,3 +10,5 @@ include Monads.MONAD_RE
     with type r := H.t
 
 val map2 : ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t
+
+val m_fold_left : f:('a -> 'b -> 'a t) -> init:'a -> 'b list -> 'a t

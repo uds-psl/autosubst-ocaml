@@ -1,4 +1,5 @@
 
+let assoc_exn = ListLabels.assoc
 let assoc = ListLabels.assoc_opt
 
 let assoc_default x l ~default =
