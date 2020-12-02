@@ -17,7 +17,7 @@ let genCode ups spec =
   let open SigM.Syntax in
   let open SigM in
   let* (_, code) =
-    m_fold (fun (ups, sections) (x, dps) ->
+    m_fold (fun (ups, sentences) (x, dps) ->
         let* xs = substOf (List.hd_exn x) in
         (* let* mdps = a_map realDeps x in *)
         let up_x = getUps xs in
@@ -25,8 +25,8 @@ let genCode ups spec =
         let new_ups = if List.is_empty dps
           then list_diff ups up_x
           else ups in
-        let new_sections = sections @ [code_x] in
-        pure @@ (new_ups, new_sections))
+        let sentences = sentences @ code_x in
+        pure @@ (new_ups, sentences))
       (ups, []) spec in
   pure code
 

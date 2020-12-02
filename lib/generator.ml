@@ -509,29 +509,27 @@ let genCodeT xs dps upList' =
   let* compSubstSubst = a_map genCompSubstSubst substSorts in
   (* let* upSubstSubstNoRen = m_guard (not isRen) @@ a_map genUpSubstSubstNoRen upList in *)
   (* generation of the actual sentences *)
-  pure @@ SentenceSection (String.concat xs,
-                           [SentenceInductive (Inductive types)] @
-                           List.(map ~f:sentencelemma (concat congruences)) @
-                             (if not hasbinders then [] else
-                                List.map ~f:sentencedefinition upRen @
-                                (* List.map ~f:(fun x -> SentenceDefinition x) upRen @ *)
-                                guard isRen [SentenceFixpoint renamings] @
-                                List.map ~f:sentencedefinition ups @
-                                [SentenceFixpoint substitutions] @
-                                List.map ~f:sentencedefinition upsNoRen @
-                                List.map ~f:sentencedefinition upId @
-                                [SentenceFixpoint (Fixpoint (r, idLemmas))] @
-                                List.map ~f:sentencedefinition extUpRen @
-                                [SentenceFixpoint (Fixpoint (r, extRen))] @
-                                List.map ~f:sentencedefinition extUp @
-                                [SentenceFixpoint (Fixpoint (r, ext))] @
-                                List.map ~f:sentencedefinition upRenRen @
-                                [SentenceFixpoint (Fixpoint (r, compRenRen))] @
-                                List.map ~f:sentencedefinition upRenSubst @
-                                [SentenceFixpoint (Fixpoint (r, compRenSubst))] @
-                                List.map ~f:sentencedefinition upSubstRen @
-                                [SentenceFixpoint (Fixpoint (r, compSubstRen))] @
-                                List.map ~f:sentencedefinition upSubstSubst @
-                                [SentenceFixpoint (Fixpoint (r, compSubstSubst))]
-                             (* TODO tbd *))
-  )
+  pure @@ [SentenceInductive (Inductive types)] @
+          List.(map ~f:sentencelemma (concat congruences)) @
+          (if not hasbinders then [] else
+             List.map ~f:sentencedefinition upRen @
+             (* List.map ~f:(fun x -> SentenceDefinition x) upRen @ *)
+             guard isRen [SentenceFixpoint renamings] @
+             List.map ~f:sentencedefinition ups @
+             [SentenceFixpoint substitutions] @
+             List.map ~f:sentencedefinition upsNoRen @
+             List.map ~f:sentencedefinition upId @
+             [SentenceFixpoint (Fixpoint (r, idLemmas))] @
+             List.map ~f:sentencedefinition extUpRen @
+             [SentenceFixpoint (Fixpoint (r, extRen))] @
+             List.map ~f:sentencedefinition extUp @
+             [SentenceFixpoint (Fixpoint (r, ext))] @
+             List.map ~f:sentencedefinition upRenRen @
+             [SentenceFixpoint (Fixpoint (r, compRenRen))] @
+             List.map ~f:sentencedefinition upRenSubst @
+             [SentenceFixpoint (Fixpoint (r, compRenSubst))] @
+             List.map ~f:sentencedefinition upSubstRen @
+             [SentenceFixpoint (Fixpoint (r, compSubstRen))] @
+             List.map ~f:sentencedefinition upSubstSubst @
+             [SentenceFixpoint (Fixpoint (r, compSubstSubst))]
+             (* TODO tbd *))
