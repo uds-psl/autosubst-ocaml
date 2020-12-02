@@ -2,6 +2,8 @@ open Base
 open Util
 
 module H = Hsig
+module V = Variables
+
 open Monads.RE_Functions(SigM)
 open SigM.Syntax
 open SigM
@@ -46,11 +48,11 @@ let genBody sort =
   pure @@ InductiveBody (sort, explicit_ b, TermSort Type, varCons @ constrs)
 
 let genCongruence sort H.{ cparameters; cname; cpositions } =
-  let* (m, bm) = introScopeVar "m" sort in
+  let* [ TermSubst ms ], scopeBinders = V.genVariables sort [ `MS ] in
   let s = getPattern "s" cpositions in
   let t = getPattern "t" cpositions in
   let bs s = a_map (fun (s, H.{binders; head}) ->
-                         let* arg_type = genArg sort m binders head in
+                         let* arg_type = genArg sort ms binders head in
                          pure @@ BinderImplicitNameType ([s], arg_type))
       (list_zip s cpositions) in
   let* bes = bs s in
@@ -58,15 +60,16 @@ let genCongruence sort H.{ cparameters; cname; cpositions } =
   let bparameters = createImpBinders cparameters in
   let parameters' = List.(map ~f:(fun x -> TermId x) (map ~f:fst cparameters)) in
   let eqs = List.map2_exn ~f:(fun x f -> TermEq (x, f)) (List.map ~f:(fun x -> TermId x) s) (List.map ~f:(fun x -> TermId x) t) in
-  let eq = TermEq (idApp cname (sty_terms m @ parameters' @ List.map ~f:(fun x -> TermId x) s), idApp cname (sty_terms m @ parameters' @ List.map ~f:(fun x -> TermId x) t)) in
+  let eq = TermEq (idApp cname (sty_terms ms @ parameters' @ List.map ~f:(fun x -> TermId x) s), idApp cname (sty_terms ms @ parameters' @ List.map ~f:(fun x -> TermId x) t)) in
   let beqs = List.mapi ~f:(fun n s -> BinderNameType (["H" ^ Int.to_string n], s)) eqs in
-  pure @@ Lemma (congr_ cname, bparameters @ bm @ bes @ bt @ beqs, eq, ProofString "congruence")
+  pure @@ Lemma (congr_ cname, bparameters @ scopeBinders @ bes @ bt @ beqs, eq, ProofString "congruence")
 
 let genCongruences x =
   let* ctrs = constructors x in
   a_map (genCongruence x) ctrs
 
 (* TODO this function seems to be the main function that generates the proof term for all the lemmas which traverse one of our inductive types. How does it work *)
+(* TODO make the var_case_body implicit with default value *)
 let traversal sort scope name no_args ret bargs args var_case_body (sem: string list -> H.cId -> term list -> term) funsem =
   let open H in
   let s = "s" in
@@ -102,23 +105,21 @@ let traversal sort scope name no_args ret bargs args var_case_body (sem: string 
 
 (* UpRen in sort x by the binder *)
 let genUpRenS (binder, sort) =
-  let (m, bm) = introScopeVarS "m" in
-  let (n, bn) = introScopeVarS "n" in
-  let (xi, bxi) = genRenS "xi" (m, n) in
+  let* [ m; n; xi ], scopeBinders = V.genVariables sort
+      [ `M; `N; `XI (`M, `N) ] in
   let (_, bpms) = bparameters binder in
   let m' = succ_ m sort binder in
   let n' = succ_ n sort binder in
-  pure @@ Definition (upRen_ sort binder, bpms @ bm @ bn @ bxi, Some (renT m' n'), up_ren_ sort xi binder)
+  pure @@ Definition (upRen_ sort binder, bpms @ scopeBinders, Some (renT m' n'), up_ren_ sort xi binder)
 
 let genRenaming sort =
-  let* (ms, bms) = introScopeVar "m" sort in
-  let* (ns, bns) = introScopeVar "n" sort in
-  let* (xis, bxis) = genRen sort "xi" (ms, ns) in
+  let* [ TermSubst ms; TermSubst ns; TermSubst xis ], scopeBinders = V.genVariables sort
+      [ `MS; `NS; `XIS (`MS, `NS) ] in
   (* DONE what is the result of toVar here?\
    * when I call it with sort=tm, xi=[xity;xivl] I get this weird error term that toVar constructs. This is then probably ignored by some similar login in the traversal. Seems brittle.
    * When I call it instead with sort=vl I get xivl. So it seems get the renaming of the sort that I'm currently inspecting *)
   let* toVarT = toVar sort xis in
-  traversal sort ms ren_ id (const @@ idApp sort (sty_terms ns)) (bms @ bns @ bxis) [xis]
+  traversal sort ms ren_ id (const @@ idApp sort (sty_terms ns)) scopeBinders [xis]
     (fun s -> TermApp (var sort ns, [TermApp (toVarT, [s])]))
     (fun pms c s -> idApp c (sty_terms ns @ List.map ~f:(fun x -> TermId x) pms @ s))
     map_
@@ -150,23 +151,22 @@ let upSubstT b z m sigma =
   pure @@ cons__ z b sigma' m
 
 let genUpS (binder, sort) =
-  let (m, bm) = introScopeVarS "m" in
-  let* (ns, bns) = introScopeVar "n" sort in
-  let (sigma, b_sigma) = genSubstS "sigma" (m, ns) sort in
+  let* [ m; TermSubst ns; sigma ], scopeBinders = V.genVariables sort
+      [ `M; `NS; `SIGMA (`M, `NS) ] in
+(* TODO what does upSubstT do here? *)
   let* sigma = upSubstT binder sort ns sigma in
   let (_, bpms) = bparameters binder in
   let m' = succ_ m sort binder in
   let* n' = upSubst sort [binder] ns in
-  pure @@ Definition (up_ sort binder, bpms @ bm @ bns @ b_sigma, Some (substT m' n' sort), sigma)
+  pure @@ Definition (up_ sort binder, bpms @ scopeBinders, Some (substT m' n' sort), sigma)
 
 let genSubstitution sort =
-  let* (m, bm) = introScopeVar "m" sort in
-  let* (n, bn) = introScopeVar "n" sort in
-  let* (sigma, bs) = genSubst sort "sigma" (m, n) in
-  let* toVarT = toVar sort sigma in
-  traversal sort m subst_ id (const @@ idApp sort (sty_terms n)) (bm @ bn @ bs) [sigma]
+  let* [ TermSubst ms; TermSubst ns; TermSubst sigmas ], scopeBinders = V.genVariables sort
+      [ `MS; `NS; `SIGMAS (`MS, `NS) ] in
+  let* toVarT = toVar sort sigmas in
+  traversal sort ms subst_ id (const @@ idApp sort (sty_terms ns)) scopeBinders [sigmas]
     (fun s -> TermApp (toVarT, [s]))
-    (fun pms c s -> idApp c (sty_terms n @ List.map ~f:(fun x -> TermId x) pms @ s)) map_
+    (fun pms c s -> idApp c (sty_terms ns @ List.map ~f:(fun x -> TermId x) pms @ s)) map_
 
 let genSubstitutions sorts =
   let* fs = a_map genSubstitution sorts in
@@ -174,33 +174,33 @@ let genSubstitutions sorts =
   pure @@ Fixpoint (r, fs)
 
 let genUpId (binder, sort) =
-  let* (m, bm) = introScopeVar "m" sort in
+  let* (ms, bms) = introScopeVar "m" sort in
   (* TODO why is m converted to a variable here? *)
-  let* m_var = toVar sort m in
-  let (sigma, b_sigma) = genSubstS "sigma" (m_var, m) sort in
-  let (eq, b_eq) = genEq "Eq" sigma (var sort m) in
+  let* m_var = toVar sort ms in
+  let (sigma, bsigma) = genSubstS "sigma" (m_var, ms) sort in
+  let (eq, beq) = genEq "Eq" sigma (var sort ms) in
   let n = VarState.tfresh "n" in
-  let* m = upSubst sort [binder] m in
+  let* ms = upSubst sort [binder] ms in
   let (pms, bpms) = binvparameters binder in
-  let ret = equiv_ (idApp (up_ sort binder) (pms @ [sigma])) (var sort m) in
+  let ret = equiv_ (idApp (up_ sort binder) (pms @ [sigma])) (var sort ms) in
   let* shift = patternSId sort binder in
   (* TODO when does something with substitions not have renamings (ask kathrin) *)
   let* hasRen = hasRenamings sort in
   let t n = ap_ [idApp (if hasRen then ren_ sort else subst_ sort) shift; TermApp (eq, [n])] in
   let u = match binder with
     | H.Single z' -> if String.(sort = z') then matchFin_ (TermId n) t eq_refl_ else t (TermId n)
-    | Hsig.BinderList (_, z') -> if String.(sort = z') then idApp "scons_p_eta" [var sort m; TermAbs ([BinderName n], t (TermId n)); TermAbs ([BinderName n], eq_refl_)] else t (TermId n) in
-  pure @@ Definition (upId_ sort binder, bpms @ bm @ b_sigma @ b_eq, Some ret, TermAbs ([BinderName n], u))
+    | Hsig.BinderList (_, z') -> if String.(sort = z') then idApp "scons_p_eta" [var sort ms; TermAbs ([BinderName n], t (TermId n)); TermAbs ([BinderName n], eq_refl_)] else t (TermId n) in
+  pure @@ Definition (upId_ sort binder, bpms @ bms @ bsigma @ beq, Some ret, TermAbs ([BinderName n], u))
 
 let genIdLemma sort =
-  let* (m, bm) = introScopeVar "m" sort in
-  let* (sigma, bs) = genSubst sort "sigma" (m, m) in
+  let* [ TermSubst ms; TermSubst sigmas ], scopeBinders = V.genVariables sort
+      [ `MS; `SIGMAS (`MS, `MS) ] in
   let* susbstSorts = substOf sort in
-  let* eqs' = a_map (fun y -> map2 idApp (pure @@ var_ y) (map sty_terms (castSubst sort y m))) susbstSorts in
-  let* (eqs, beqs) = genEqs sort "Eq" (sty_terms sigma) eqs' (fun x y s -> pure @@ idApp (upId_ x y) [TermUnderscore; s]) (* TODO kathrin, generate ID in a sensible way *) in
+  let* eqs' = a_map (fun y -> map2 idApp (pure @@ var_ y) (map sty_terms (castSubst sort y ms))) susbstSorts in
+  let* (eqs, beqs) = genEqs sort "Eq" (sty_terms sigmas) eqs' (fun x y s -> pure @@ idApp (upId_ x y) [TermUnderscore; s]) (* TODO kathrin, generate ID in a sensible way *) in
   let* toVarT = toVar sort eqs in
-  let ret s = TermEq (idApp (subst_ sort) (sty_terms sigma @ [s]), s) in
-  traversal sort m idSubst_ (fun s -> TermApp (eq_refl_, [s])) ret (bm @ bs @ beqs) [sigma; eqs]
+  let ret s = TermEq (idApp (subst_ sort) (sty_terms sigmas @ [s]), s) in
+  traversal sort ms idSubst_ (fun s -> TermApp (eq_refl_, [s])) ret (scopeBinders @ beqs) [sigmas; eqs]
     (fun s -> TermApp (toVarT, [s]))
     (fun pms c cs -> idApp (congr_ c) cs) mapId_
 
@@ -209,10 +209,8 @@ let genIdLemma sort =
  *   let* (n, bn) = introScopeVarS "n" in *)
 
 let genUpExtRen (binder, sort) =
-  let (m, bm) = introScopeVarS "m" in
-  let (n, bn) = introScopeVarS "n" in
-  let (xi, bxi) = genRenS "xi" (m, n) in
-  let (zeta, bzeta) = genRenS "zeta" (m, n) in
+  let* [ m; n; xi; zeta ], scopeBinders = V.genVariables sort
+      [ `M; `N; `XI (`M, `N); `ZETA (`M, `N) ] in
   let (eq, b_eq) = genEq "Eq" xi zeta in
   let (pms, bpms) = binvparameters binder in
   let ret = equiv_ (idApp (upRen_ sort binder) (pms @ [xi])) (idApp (upRen_ sort binder) (pms @ [zeta])) in
@@ -226,7 +224,7 @@ let genUpExtRen (binder, sort) =
         TermAbs ([BinderName "n"], ap_ [idApp "shift_p" [TermId p]; t (TermId "n")])
       ]
       else t (TermId n) in
-  pure @@ Definition (upExtRen_ sort binder, bpms @ bm @ bn @ bxi @ bzeta @ b_eq, Some ret, TermAbs ([BinderName "n"], u))
+  pure @@ Definition (upExtRen_ sort binder, bpms @ scopeBinders @ b_eq, Some ret, TermAbs ([BinderName "n"], u))
 
 let genExtRen sort =
   let* (m, bm) = introScopeVar "m" sort in
@@ -344,18 +342,16 @@ let genUpRenSubst (binder, sort) =
   pure @@ Definition (up_ren_subst_ sort binder, bpms @ bk @ bl @ bms @ bxi @ btau @ btheta @ beq, Some ret, TermAbs ([BinderName "n"], defBody))
 
 let genCompRenSubst sort =
-  let* (ks, bks) = introScopeVar "k" sort in
-  let* (ls, bls) = introScopeVar "l" sort in
-  let* (ms, bms) = introScopeVar "m" sort in
-  let* (xis, bxis) = genRen sort "xi" (ms, ks) in
-  let* (zetas, bzetas) = genRen sort "zeta" (ks, ls) in
-  let* (rhos, brhos) = genRen sort "rho" (ms, ls) in
-  let* (eqs, beqs) = genEqs sort "Eq" (List.map2_exn ~f:(>>>) (sty_terms xis) (sty_terms zetas)) (sty_terms rhos) (fun x y s -> pure @@ idApp (up_ren_subst_ x y) [TermUnderscore; TermUnderscore; TermUnderscore; s]) in
+  (* TODO this actually fixed a "BUG" because in Haskell the tau and theta were named zeta and rho so I wrote renamings here. With the DSL it's easier to see I think *)
+  let* [ TermSubst ks; TermSubst ls; TermSubst ms;
+         TermSubst xis; TermSubst taus; TermSubst thetas ], scopeBinders = V.genVariables sort
+      [ `KS; `LS; `MS; `XIS (`MS, `KS); `TAUS (`KS, `LS); `THETAS (`MS, `LS) ] in
+  let* (eqs, beqs) = genEqs sort "Eq" (List.map2_exn ~f:(>>>) (sty_terms xis) (sty_terms taus)) (sty_terms thetas) (fun x y s -> pure @@ idApp (up_ren_subst_ x y) [TermUnderscore; TermUnderscore; TermUnderscore; s]) in
   let* toVarT = toVar sort eqs in
   let ret s = TermEq (
-      idApp (subst_ sort) (sty_terms zetas @ [idApp (ren_ sort) (sty_terms xis @ [s])]),
-      idApp (subst_ sort) (sty_terms rhos @ [s])) in
-  traversal sort ms compRenSubst_ (fun s -> TermApp (eq_refl_, [s])) ret (bks @ bls @ bms @ bxis @ bzetas @ brhos @ beqs) [xis; zetas; rhos; eqs]
+      idApp (subst_ sort) (sty_terms taus @ [idApp (ren_ sort) (sty_terms xis @ [s])]),
+      idApp (subst_ sort) (sty_terms thetas @ [s])) in
+  traversal sort ms compRenSubst_ (fun s -> TermApp (eq_refl_, [s])) ret (scopeBinders @ beqs) [xis; taus; thetas; eqs]
     (fun n -> TermApp (toVarT, [n]))
     (fun _ c xs -> idApp (congr_ c) xs)
     mapComp_
