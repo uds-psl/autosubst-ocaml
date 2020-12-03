@@ -23,3 +23,8 @@ let rec list_zip xs ys =
   | _, _ -> []
 
 let const b x = b
+let const2 b x y = b
+
+let sep_ = "_"
+let sep a b = a^sep_^b
+let sepd = String.concat ~sep:sep_

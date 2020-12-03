@@ -40,7 +40,8 @@ type spec = (constructor list) tIdMap [@@deriving show]
 type signature =
   { sigSpec : spec;
     sigSubstOf : (tId list) tIdMap;
-    (* TODO very often I need just the first sort of a component, so maybe make this into a nonempty list. E.g. I think I need it in Generator.genSubstitutions  *)
+    (* TODO very often I need just the first sort of a component, so maybe make this into a nonempty list. E.g. I think I need it in Generator.genSubstitutions.
+     * TODO is the second part of the pair only used in modular code? *)
     sigComponents : (tId list * tId list) list;
     sigExt : tId tIdMap;
     (* sigIsOpen was a set originally *)

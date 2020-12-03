@@ -21,7 +21,7 @@ let translate_const = function
   | VarZero -> "var_zero"
   | Ap -> "ap"
   | Shift -> "shift"
-  | Fext -> "FunctionalExtensionality.functional_extensionality _ _ "
+  | Fext -> "FunctionalExtensionality.functional_extensionality"
 
 let translate_sort = function
   | Prop -> "Prop"
@@ -48,6 +48,7 @@ let translate_sort = function
 let rec translate_term : term -> C.constr_expr = function
   (* TODO TermApp is the only place where we call translate_multi_term so th eonly legal (i.e. does not crash the program) place for SubstTy nodes is as an argument in an application. *)
   | TermApp (t, ts) -> app_ (translate_term t) (List.concat_map ~f:translate_multi_term ts)
+  | TermAppExpl (n, ts) -> appExpl_ n (List.concat_map ~f:translate_multi_term ts)
   | TermConst c -> ref_ (translate_const c)
   | TermNum i -> num_ i
   | TermId id -> ref_ id

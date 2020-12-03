@@ -46,6 +46,7 @@ and substTy = SubstScope of terms
 and terms = term list
 and term =  TermImp of term
          | TermApp of term * terms
+         | TermAppExpl of identifier * terms
          | TermConst of const
          | TermNum of int
          | TermId of string
@@ -144,10 +145,12 @@ let succ_ n z = function
 let fin_ n = TermApp (TermConst Fin, [n])
 
 let (>>>) s t = TermApp (TermConst Comp, [t; s])
+let (<<>>) ss ts = List.map2_exn ~f:(>>>) (sty_terms ss) (sty_terms ts)
 
 let eq_refl_ = TermConst Refl
+let f_equal_ f t = idApp "f_equal" [f; t]
 let shift_ = TermConst Shift
-let id_ = TermConst Shift
+let id_ s = TermApp (TermConst Id, [s])
 let cons_ = TermConst Cons
 let varZero_ = TermConst VarZero
 
@@ -155,6 +158,7 @@ let repRew s = List.fold_left ~f:(fun s (t, t_eq) -> TermApp (TermConst Trans, [
 
 let ap_ s = TermApp (TermConst Ap, s)
 
+(* TODO atm I must always insert two underscores at the beginning of the list of argument when I use fext_ in a TermApp *)
 let fext_ = TermConst Fext
 
 (* TODO variables for constructor name strings? *)
@@ -172,3 +176,9 @@ let getTerms = List.concat_map ~f:getTerms'
 
 let (==>) s t = List.fold_right s ~f:(fun s t -> TermFunction (s, t)) ~init:t
 
+let idAbs x tm = TermAbs ([BinderName x], tm)
+
+let scons_p_congr_ s t = idApp "scons_p_congr" [t; s]
+let scons_p_comp' x = idApp "scons_p_comp'" [TermUnderscore; TermUnderscore; TermUnderscore; x]
+let scons_p_tail' x = idApp "scons_p_tail'" [TermUnderscore; TermUnderscore; x]
+let scons_p_head' x = idApp "scons_p_head'" [ TermUnderscore; TermUnderscore; x]

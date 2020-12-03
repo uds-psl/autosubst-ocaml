@@ -14,7 +14,7 @@ open Custom
  ** substitution variable: some function that represents a substitution. E.g. sigma : fin m -> vl mty mvl
  **  *)
 
-let var sort n = idApp (var_ sort) (sty_terms n)
+let varApp sort n = idApp (var_ sort) (sty_terms n)
 
 (** For a given sort create a renaming type
  ** fin m -> fin n *)
@@ -119,16 +119,8 @@ let castUpSubst sort bs y arg =
   let* arg' = castSubst sort y arg in
   upSubst y bs arg'
 
-let introScopeVar name sort =
-  let* args = substOf sort in
-  let scope = List.map ~f:(fun x -> name ^ x) args in
-  pure @@ (
-    SubstScope (List.map ~f:(fun x -> TermId x) scope),
-    [BinderImplicitScopeNameType (scope, nat)]
-  )
 
-
-(** This creates a scope variable together with a implicit binder
+(** Create a scope variable together with a implicit binder
  ** Example: { m : nat } *)
 let introScopeVarS name =
   let name = VarState.tfresh name in
@@ -146,12 +138,22 @@ let genSubstS name (m, ns) sort =
   let name = VarState.tfresh name in
   (TermId name, [BinderNameType ([name], substT m ns sort)])
 
+(** Create multiple scope variables and their binders. One for each substituting sort of the given sort
+ ** Example: { m_ty : nat } { m_vl : nat } *)
+let introScopeVar name sort =
+  let* substSorts = substOf sort in
+  let names = List.map ~f:(sep name) substSorts in
+  pure @@ (
+    SubstScope (mkTermIds names),
+    [BinderImplicitScopeNameType (names, nat)]
+  )
+
 (** Create multiple renaming variables and their binders. One for each substituting sort of the given sort. The given scope variables vectors ms & ns should also contain one scope variable per substituting sort.
  ** Example: for a renaming variable xi and for a sort tm with substituting sorts ty & vl, create
- ** ( xity : fin mty -> fin nty) ( xivl : fin mvl -> fin nvl ) *)
+ ** ( xi_ty : fin m_ty -> fin n_ty) ( xi_vl : fin m_vl -> fin n_vl ) *)
 let genRen sort name (ms, ns) =
   let* substSorts = substOf sort in
-  let names = List.map ~f:(fun s -> name^s) substSorts in
+  let names = List.map ~f:(sep name) substSorts in
   let types = List.map2_exn ~f:renT (sty_terms ms) (sty_terms ns) in
   pure @@ (
     SubstRen (mkTermIds names),
@@ -163,17 +165,16 @@ let genRen sort name (ms, ns) =
  ** ( sigmaty : fin mty -> ty nty ) ( sigmavl : fin mvl -> vl nty nvl ) *)
 let genSubst sort name (ms, ns) =
   let* substSorts = substOf sort in
-  let names = List.map ~f:(fun x -> name^x) substSorts in
-  (* TODO create a_map2 function *)
-  let* types = a_map (fun (substSort, m) ->
+  let names = List.map ~f:(sep name) substSorts in
+  let* types = a_map2_exn (fun substSort m ->
       (* Here we filter the vector ns to include only the substitution sorts relevant for substSort *)
       (* TODO ask kathrin: couldn't we just do set_diff ns (substOf SubstSort)? *)
       let* ns' = castSubst sort substSort ns in
       pure @@ substT m ns' substSort)
-      (list_zip substSorts (sty_terms ms)) in
+      substSorts (sty_terms ms) in
   pure @@ (
     SubstSubst (mkTermIds names),
-    List.map2_exn ~f:(fun x t -> BinderNameType ([x], t)) names types
+    List.map2_exn ~f:(fun n t -> BinderNameType ([n], t)) names types
   )
 
 (** Create an extensional equality between two substitutions and its binder
@@ -187,33 +188,38 @@ let genEq name sigma tau =
  ** ( Hty : forall x, sigmaty x = tauty x ) ( Hvl : forall x, sigmavl x = tauvl x ) *)
 let genEqs sort name sigmas taus f =
   let* substSorts = substOf sort in
-  let names = List.map ~f:(fun x -> name^x) substSorts in
-  let types = List.map2_exn ~f:(fun sigma tau -> equiv_ sigma tau) sigmas taus in
+  let names = List.map ~f:(sep name) substSorts in
+  let types = List.map2_exn ~f:(equiv_) sigmas taus in
   pure @@ (
     SubstEq (mkTermIds names, f),
-    List.map2_exn ~f:(fun s t -> BinderNameType ([s], t)) names types
+    List.map2_exn ~f:(fun n t -> BinderNameType ([n], t)) names types
   )
 
 (** Create a finite type for a given sort and the corresponding element of the scope variable vector
  ** For sort vl and ns = [nty; nvl], create fin nvl *)
 let finT_ sort ns = map fin_ (toVar sort (SubstScope ns))
 
-(* TODO: What does this function do? *)
-(* Construct S/Id patterns, needed for uping.
- * TODO: kathrin, Generalize the shift. Instead of Single => Up by the number of the list. *)
-let patternSId x b' =
-  let* xs = substOf x in
-  let* hasRen = hasRenamings x in
-  let shift y = if hasRen then shift_ else (shift_ >>> idApp (var_ y) (List.map ~f:(const TermUnderscore) xs)) in
-  let shiftp p y = if hasRen then idApp "shift_p" [TermId p]
-    else (idApp "shift_p" [TermId p]) >>> (idApp (var_ y) (List.map ~f:(const TermUnderscore) xs)) in
-  up x (fun y b _ -> match b with
-      | H.Single z -> if String.(y = z) then shift y else (TermConst Id)
-      | H.BinderList (p, z) -> if String.(y = z) then shiftp p y else (TermConst Id))
-    (List.map ~f:(fun x -> TermId x) xs) b'
+(** Construction of patterns, needed for lifting -- yields a fitting pattern of S and id corresponding to the base sort and the binder
+ ** TODO I did not implement the noren version which had an application in the else branch instead of underscore directly. Is that relevant?
+ ** TODO example *)
+let patternSId sort binder =
+  let* substSorts = substOf sort in
+  let* hasRen = hasRenamings sort in
+  let shift y = if hasRen
+    then shift_
+    else (shift_ >>> idApp (var_ y)
+            [TermSubst (SubstScope (List.map ~f:(const TermUnderscore) substSorts))]) in
+  let shiftp p y = if hasRen
+    then idApp shift_p_ [TermId p]
+    else idApp shift_p_ [TermId p]
+      >>> idApp (var_ y) [TermSubst (SubstScope (List.map ~f:(const TermUnderscore) substSorts))] in
+  up sort (fun y b _ -> match b with
+      | H.Single bsort -> if String.(y = bsort) then shift y else (TermConst Id)
+      | H.BinderList (p, bsort) -> if String.(y = bsort) then shiftp p y else (TermConst Id))
+    (mkTermIds substSorts) binder
 
-
-let scons_p_congr_ s t = idApp "scons_p_congr" [t; s]
-let scons_p_comp' x = idApp "scons_p_comp'" [TermUnderscore; TermUnderscore; TermUnderscore; x]
-let scons_p_tail' x = idApp "scons_p_tail'" [TermUnderscore; TermUnderscore; x]
-let scons_p_head' x = idApp "scons_p_head'" [ TermUnderscore; TermUnderscore; x]
+(* Some patterns in the code for which I don't have a name yet. I have to check in the generated code for a fitting name *)
+let findName1 sort substSorts ms =
+  a_map (fun substSort ->
+      map2 idApp (pure @@ var_ substSort)
+        (map sty_terms (castSubst sort substSort ms))) substSorts

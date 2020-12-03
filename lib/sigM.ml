@@ -24,6 +24,18 @@ let map2 f a b =
   let* f' = map f a in
   map f' b
 
+let rec invert =
+  let open Syntax in function
+  | [] -> pure []
+  | m :: ms ->
+    let* m' = m in
+    let* ms' = invert ms in
+    pure @@ m' :: ms'
+
+let a_map2_exn f a b =
+  invert @@ List.map2_exn ~f a b
+
+(** The m_fold of the monad library I'm using is actually also a fold_left by doing a fold_right on the list and using continuations. So this is unused *)
 let rec m_fold_left ~f ~init xs =
   let open Syntax in
   match xs with
@@ -31,3 +43,9 @@ let rec m_fold_left ~f ~init xs =
   | x :: xs ->
     let* init = f init x in
     m_fold_left ~f ~init xs
+
+let a_concat_map f xs =
+  map List.concat @@ a_map f xs
+
+let m_guard cond m =
+  if cond then m else pure []

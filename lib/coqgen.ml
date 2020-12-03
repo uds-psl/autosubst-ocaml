@@ -1,10 +1,13 @@
 open Base
 
+let qualid_ s = Libnames.qualid_of_string s
 let reft_ t = Constrexpr_ops.mkRefC t
 let ref_ s =
-  reft_ (Libnames.qualid_of_string @@ String.strip s)
+  (* let () = print_endline @@ "ref of " ^ s in *)
+  (* TODO this is kind of a hack. somewhere there was a string with trailing whitespace but I have not found the source yet and coq chokes on that *)
+  reft_ (qualid_ @@ String.strip s)
 let id_ s = Names.Id.of_string s
-let lident_ s = CAst.make (Names.Id.of_string s)
+let lident_ s = CAst.make (id_ s)
 let num_ n =
   CAst.make (Constrexpr.(CPrim (Numeral (NumTok.(Signed.of_bigint CDec (Bigint.of_int n))))))
   (* Constrexpr.(CPrim (Numeral (NumTok.Signed.of_int_string (Int.to_string n)))) *)
@@ -12,6 +15,9 @@ let app_ f xs =
   Constrexpr_ops.mkAppC (f, xs)
 let app1_ f x =
   Constrexpr_ops.mkAppC (f, [x])
+let appExpl_ n xs =
+  let () = print_endline @@ "appexpl of " ^ n in
+  CAst.make @@ Constrexpr.CAppExpl ((None, qualid_ n, None), xs)
 
 let ident_decl_ s : Constrexpr.ident_decl  =
   (lident_ s, None)
@@ -20,8 +26,6 @@ let eq_ t1 t2 =
 
 let lname_ s = CAst.make (Names.Name (Names.Id.of_string s))
 let name_decl_ s = lname_ s, None
-
-let qualid_ s = Libnames.qualid_of_string s
 
 let type_ = ref_ "Type"
 let nat_ = ref_ "nat"
@@ -125,6 +129,7 @@ let pr_vernac_expr =
   | vexpr ->
     Ppvernac.pr_vernac_expr vexpr ++ vernacend
 
+
 let section_ name vexprs =
   Vernacexpr.([ VernacBeginSection (lident_ name) ] @ vexprs @ [ VernacEndSegment (lident_ name) ])
 
@@ -171,5 +176,14 @@ module GenTests = struct
     let lbody = ref_ "False" in
     let lemma = lemma_ lname lbinders ltype lbody in
     Pp.seq @@ List.map ~f:pr_vernac_expr lemma
+
+  (* This sadly just prints cc_plugin@cc:0 (or similar) which is probably a correct internal representation of the congruence tactic but now what I was looking for. *)
+  (* let print_congruence () : Pp.t =
+   *   let env = Global.env () in
+   *   let sigma = Evd.from_env env in *)
+    (* let open Ltac_plugin.Tacexpr in
+     * let texpr = TacML (CAst.make ({ mltac_name={ mltac_plugin="cc_plugin"; mltac_tactic="cc"; }; mltac_index=0; }, [])) in
+     * Ltac_plugin.Pptactic.pr_raw_tactic env sigma texpr *)
+    (* Ltac_plugin.Pptactic.pr_glob_tactic env texpr *)
 
 end
