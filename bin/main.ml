@@ -7,7 +7,7 @@ let readSignature () =
   let open Lwt.Syntax in
   let open Lwt_io in
   Lwt_main.run (
-    let* input = open_file ~mode:Input "./stlc.sig" in
+    let* input = open_file ~mode:Input "./signatures/sysf_cbv.sig" in
     read input
   )
 
