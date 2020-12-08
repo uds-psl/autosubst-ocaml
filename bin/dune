@@ -1,6 +1,6 @@
 (executable
  (name main)
- (libraries base stdio lwt.unix autosubst_lib)
+ (libraries base stdio autosubst_lib)
  (flags (:standard -rectypes))
   (modes byte exe))
 
