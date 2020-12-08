@@ -5,6 +5,9 @@ opam install merlin utop ocp-indent dune ocamlformat
 base
 monadic (just used sources)
 coq 8.12.1
+angstrom
+lwt
+ocamlgraph
 ppx_deriving
 ppx_compare
 ppc_fields_conv
