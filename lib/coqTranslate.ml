@@ -56,15 +56,12 @@ let rec translate_term : term -> C.constr_expr = function
   | TermFunction (t1, t2) -> arr_ [translate_term t1] (translate_term t2)
   | TermAbs (binders, body) -> lambda_ (List.map ~f:translate_binder binders) (translate_term body)
   | TermForall (binders, rtype) -> prod_ (List.map ~f:translate_binder binders) (translate_term rtype)
-  | TermAnd _ -> failwith "TermAnd"
   | TermEq (t1, t2) -> eq_ (translate_term t1) (translate_term t2)
   | TermUnderscore -> ref_ "_"
   | TermMatch (MatchItem (mexpr,_),_,equations) ->
     match_ (translate_term mexpr) (List.map equations ~f:(fun (Equation (constr_name, constr_args, bexpr)) -> branch_ constr_name constr_args (translate_term bexpr) ) )
-  | TupleTy _ -> failwith "TupleTy"
-  | Tuple _ -> failwith "Tuple"
   | TermVar v -> translate_term v
-  | TermArg _ -> failwith "TermArg"
+  | TermSubst _ -> failwith "This should not be called. TermSubst should only be in an TermApp/TermAppExpl and then dealt with in translate_multi_term"
 and translate_multi_term = function
   | TermSubst sty ->
     (* let () = countSubstTy sty in *)
@@ -89,7 +86,7 @@ let translate_proof = function
   | ProofExact tm -> translate_term tm
   | ProofString tactic -> ref_ tactic
 
-let rec translate_sentence : sentence -> V.vernac_expr list = function
+let translate_sentence : sentence -> V.vernac_expr list = function
   | SentenceDefinition (Definition (name, binders, rtype, body)) ->
     let binders = List.map ~f:translate_binder binders in
     let rtype = Option.map ~f:translate_term rtype in
@@ -117,6 +114,3 @@ let rec translate_sentence : sentence -> V.vernac_expr list = function
     let rtype = translate_term rtype in
     let proof = translate_proof proof in
     lemma_ name binders rtype proof
-  | SentenceSection (sname, sentences) ->
-    let vexprs = List.concat_map ~f:translate_sentence sentences in
-    section_ sname vexprs

@@ -126,7 +126,7 @@ struct
 
   let isOpen id =
     let* opens = asks H.sigIsOpen in
-    pure @@ List.mem opens id ~equal:equal_string
+    pure @@ Set.mem opens id
 
   let definable id =
     let* b = isOpen id in
@@ -147,7 +147,7 @@ struct
     pure @@ List.(concat_map cs
                     ~f:(function { cpositions; _ } ->
                         concat_map cpositions
-                          ~f: (function { head; _ } -> H.getIds head )))
+                          ~f: (function { head; _ } -> H.getArgSorts head )))
 
   let arguments id =
     let* args = asks H.sigArguments in
@@ -155,62 +155,25 @@ struct
     | Some ts -> pure ts
     | None -> error @@ "arguments called on invalid type: " ^ id
 
-  let realDeps x =
-    let* args = arguments x in
-    let* f = asks H.sigExt in
-    pure @@ match (AL.assoc x f) with
-    | Some y -> if List.mem args y ~equal:Poly.equal then [y] else []
-    | None -> []
-
-  let complete_ x =
-    let* xs = realDeps x in
-    pure @@ x ^ " " ^ String.concat ~sep:" " xs
-
-  (* TODO belongs to modular code *)
-  let extend_ x =
-    let* f = asks H.sigExt in
-    pure @@ match (AL.assoc x f) with
-    | Some y -> y
-    | None -> x
-
-  let isFeature x =
-    let* y = extend_ x in
-    (* fun fact Jane Street's core/base library only allows <> for int so you need to open scopes every time you want to compare something else https://stackoverflow.com/questions/61184401/why-my-ocaml-operator-is-only-applied-to-int *)
-    pure @@ String.(x <> y)
-
   let types =
     let* c = asks H.sigComponents in
-    pure @@ List.concat_map ~f:fst c
+    pure @@ List.concat c
 
   let getComponent x =
     let* comps = asks H.sigComponents in
     pure @@ List.(concat @@
-                  filter_map comps ~f:(fun (l, r) -> if List.mem l x ~equal:equal_string
-                                                     || List.mem r x ~equal:equal_string
-                                        then Some (List.append l r)
+                  filter_map comps ~f:(fun c -> if List.mem c x ~equal:String.equal
+                                        then Some c
                                         else None))
+  (* isOpenCompnent is always false
+   * extend_ x is always x
+   * prev_ x is always [] *)
 
-  let prev_ x =
-    let* ts = types in
-    a_filter (fun t ->
-        let* y = extend_ t in
-        pure @@ Poly.(x = y))
-      (list_remove ts x)
-
-  let isOpenComponent x =
-    let* xs = prev_ x in (* TODO kathrin: all sorts that are features *)
-    let* ys = a_filter isOpen xs in
-    List.is_empty ys |> not |> pure
-
-  (* TODO this seems to check if a given list of components is recursive but I don't know exactly what that entails  *)
+  (* TODO this seems to check if a given list of components is recursive but I don't know exactly what that entails *)
   let isRecursive xs =
     if (List.is_empty xs) then error "Can't determine whether the component is recursive."
     else let* args = successors (List.hd_exn xs) in
-      let* zs = a_map prev_ xs in
-      let xargs = list_intersection xs args |> List.is_empty |> not in
-      let zempty = List.(filter zs ~f:(fun z -> is_empty z |> not) |> is_empty |> not) in
-      (* TODO I should not need parentheses here. Why are the precedence levels like this !? *)
-      pure @@ (xargs || zempty)
+      list_intersection xs args |> List.is_empty |> not |> pure
 
   (* a lot of binding going on here *)
   let boundBinders xs =
@@ -222,7 +185,9 @@ struct
     pure @@ List.concat binders
 
   let rec hasRenamings x =
-    let* y = extend_ x in
+    (* let* y = extend_ x
+     * TODO what part of this function can be removed? *)
+    let y = x in
     let* xs = getComponent y in
     let* boundBinders = boundBinders xs in
     let* all = types in

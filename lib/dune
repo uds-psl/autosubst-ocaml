@@ -1,7 +1,7 @@
 (library
   (name autosubst_lib)
   (preprocess (pps ppx_deriving.show ppx_deriving.ord ppx_fields_conv ppx_variants_conv ppx_compare))
-  (libraries base monadic stdio coq.vernac )
+  (libraries base monadic stdio coq.vernac angstrom ocamlgraph)
   (flags (:standard -rectypes -w -27)))
 
 (env

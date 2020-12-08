@@ -4,7 +4,7 @@ open Util
 module H = Hsig
 module CS = CoqSyntax
 
-let var__ = ref "var_"
+let var__ = ref "var"
 let var_ x = sepd [!var__; x]
 
 let funname_ f = f
@@ -47,7 +47,6 @@ let upExtRen_ = upNameGen upExtRen__
 let upExt_ = upNameGen upExt__
 let upId_ = upNameGen upId__
 
-let rinstInstFun_ x = sepd ["rinstInst"; x]
 let rinstInst_ x = sepd ["rinst_inst"; x]
 
 let up_rinstInst_ = upNameGen "rinstInst_up"

@@ -44,8 +44,7 @@ and substTy = SubstScope of terms
             | SubstEq of terms * (tId -> binder -> term -> term SigM.t)
             | SubstConst of terms
 and terms = term list
-and term =  TermImp of term
-         | TermApp of term * terms
+and term = TermApp of term * terms
          | TermAppExpl of identifier * terms
          | TermConst of const
          | TermNum of int
@@ -54,16 +53,12 @@ and term =  TermImp of term
          | TermFunction of term * term
          | TermAbs of cBinders * term
          | TermForall of cBinders * term
-         | TermAnd of terms
          | TermEq of term * term
          | TermUnderscore
            (* TODO the term option is also ignored here. Check if ignored in code generation too *)
          | TermMatch of matchItem * term option * equation list
-         | TupleTy of terms
-         | Tuple of terms
          | TermSubst of substTy
          | TermVar of term
-         | TermArg of term * string * term
 [@@deriving show]
 
 type definition = Definition of string * cBinders * term option * term [@@deriving show]
@@ -89,18 +84,18 @@ type tactic = TacticRewrite of string option * string list * string list * strin
 [@@deriving show]
 
 type sentence = SentenceDefinition of definition
-              | SentenceClass of string * cBinders * (string * term) list
+              (* | SentenceClass of string * cBinders * (string * term) list *)
               | SentenceInductive of inductive
               | SentenceFixpoint of fixpoint
               | SentenceLemma of lemma
-              | SentenceTactic of identifier * tactic
-              | SentenceVariable of identifier * term
-              | SentenceCommand of command
-              | SentenceNotation of string * term * string * string
-              | SentenceInstance of cBinders * string * term * term
-              | SentenceId of string
-              | SentenceTacticNotation of string list * tactic
-              | SentenceSection of string * sentence list
+              (* | SentenceTactic of identifier * tactic *)
+              (* | SentenceVariable of identifier * term *)
+              (* | SentenceCommand of command *)
+              (* | SentenceNotation of string * term * string * string *)
+              (* | SentenceInstance of cBinders * string * term * term *)
+              (* | SentenceId of string *)
+              (* | SentenceTacticNotation of string list * tactic *)
+              (* | SentenceSection of string * sentence list *)
 [@@deriving show, variants]
 
 type variable = Variable of identifier * term
@@ -144,10 +139,12 @@ let succ_ n z = function
 
 let fin_ n = TermApp (TermConst Fin, [n])
 
+(* TODO rename to >> & >>> *)
 let (>>>) s t = TermApp (TermConst Comp, [t; s])
 let (<<>>) ss ts = List.map2_exn ~f:(>>>) (sty_terms ss) (sty_terms ts)
 
 let eq_refl_ = TermConst Refl
+    (* TODO fequal is called `ap` in autosubst *)
 let f_equal_ f t = idApp "f_equal" [f; t]
 let shift_ = TermConst Shift
 let id_ s = TermApp (TermConst Id, [s])
@@ -165,7 +162,7 @@ let fext_ = TermConst Fext
 let matchFin_ s f b = TermMatch (MatchItem (s, None), None,
     [ Equation ("Some", ["fin_n"], (f (TermId "fin_n"))); Equation ("None", [], b) ])
 
-let sortType x n = TermApp ((TermId x), [TermSubst n])
+let sortType x n = TermApp (TermId x, [TermSubst n])
 
 let getTerms' = function
   | BinderName s -> [TermId s]

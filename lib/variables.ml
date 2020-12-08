@@ -29,49 +29,49 @@ let showVar = function
 let [@warning "-8"] genVariables sort (var_declarations: vars list) =
   let open SigM.Syntax in
   let open SigM in
-  let genVariable (vars, binders) =
+  let genVariable ((vars : (identifier, term) AL.t), binders) =
     function
     (`K | `L | `M | `N as s) ->
       let sn = showVar s in
       let (m, bm) = introScopeVarS sn in
       (* let () = print_endline ("putting in (" ^ sn ^ "->" ^ (show_term m) ^ ")") in *)
-      pure ((sn, m) :: vars, binders @ bm)
+      pure (AL.insert sn m vars, binders @ bm)
     | (`KS | `LS | `MS | `NS as s) ->
       let sn = showVar s in
       let* (ms, bms) = introScopeVar sn sort in
       (* let () = print_endline ("putting in (" ^ sn ^ "->" ^ (show_term (TermSubst ms)) ^ ")") in *)
-      pure ((sn, TermSubst ms) :: vars, binders @ bms)
+      pure (AL.insert sn (TermSubst ms) vars, binders @ bms)
     | (`XI (m, n) | `ZETA (m, n) | `RHO (m, n) as s) ->
       let sn = showVar s in
       (* let () = print_endline ("retrieving " ^ (showVar m) ^ " and " ^ showVar n) in *)
       let m = AL.assoc_exn (showVar m) vars in
       let n = AL.assoc_exn (showVar n) vars in
       let (xi, bxi) = genRenS sn (m, n) in
-      pure ((sn, xi) :: vars, binders @ bxi)
+      pure (AL.insert sn xi vars, binders @ bxi)
     | (`XIS (ms, ns) | `ZETAS (ms, ns) | `RHOS (ms, ns) as s) ->
       let sn = showVar s in
       (* let () = print_endline ("retrieving " ^ (showVar ms) ^ " and " ^ showVar ns) in *)
       let TermSubst ms = AL.assoc_exn (showVar ms) vars in
       let TermSubst ns = AL.assoc_exn (showVar ns) vars in
       let* (xis, bxis) = genRen sort sn (ms, ns) in
-      pure ((sn, TermSubst xis) :: vars, binders @ bxis)
+      pure (AL.insert sn (TermSubst xis) vars, binders @ bxis)
     | (`SIGMA (m, ns) | `TAU (m, ns) | `THETA (m, ns) as s) ->
       let sn = showVar s in
       (* let () = print_endline ("retrieving " ^ (showVar m) ^ " and " ^ showVar ns) in *)
       let m = AL.assoc_exn (showVar m) vars in
       let TermSubst ns = AL.assoc_exn (showVar ns) vars in
       let (sigma, bsigma) = genSubstS sn (m, ns) sort in
-      pure ((sn, sigma) :: vars, binders @ bsigma)
+      pure (AL.insert sn sigma vars, binders @ bsigma)
     | (`SIGMAS (ms, ns) | `TAUS (ms, ns) | `THETAS (ms, ns) as s) ->
       let sn = showVar s in
       (* let () = print_endline ("retrieving " ^ (showVar ms) ^ " and " ^ showVar ns) in *)
       let TermSubst ms = AL.assoc_exn (showVar ms) vars in
       let TermSubst ns = AL.assoc_exn (showVar ns) vars in
       let* (sigmas, bsigmas) = genSubst sort sn (ms, ns) in
-      pure ((sn, TermSubst sigmas) :: vars, binders @ bsigmas)
+      pure (AL.insert sn (TermSubst sigmas) vars, binders @ bsigmas)
   in
-  let* (assoc_vars, binders) = m_fold_left ~f:genVariable ~init:([], []) var_declarations in
-  pure (List.rev_map ~f:snd assoc_vars, binders)
+  let* (assoc_vars, binders) = m_fold_left ~f:genVariable ~init:(AL.from_list [], []) var_declarations in
+  pure (List.rev_map ~f:snd (AL.to_list assoc_vars), binders)
 
 (* let test () =
  *   let open SigM.Syntax in

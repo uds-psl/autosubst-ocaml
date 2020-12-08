@@ -1,24 +1,32 @@
 open Base
 open Autosubst_lib
 
-module M = Monadic
 module H = Hsig
 
-module SError = M.Result.Make(struct type t = string end)
+let readSignature () =
+  let open Lwt.Syntax in
+  let open Lwt_io in
+  Lwt_main.run (
+    let* input = open_file ~mode:Input "./stlc.sig" in
+    read input
+  )
 
 let mainProg () =
-  let open SError.Syntax in
+  let open ErrorM.Syntax in
+  let open ErrorM in
   (* parse arguments *)
   (* parse input HOAS *)
-  (* let* the_sig = SError.error "failed generating signature" in *)
-  let* hsig = SError.pure H.Hsig_example.mySig in
+  let* spec = readSignature () |> SigParser.parse_signature in
+  let* signature = SigAnalyzer.build_signature spec in
   (* generate dot graph *)
-  let* code = GenCode.runGenCode hsig in
+  let* code = GenCode.runGenCode signature in
   (* write file *)
-  SError.pure code
+  pure code
+  (* pure "" *)
 
 let main () =
-  let result = match SError.run (mainProg ()) with
+  let open ErrorM in
+  let result = match run (mainProg ()) with
     | Ok x -> x
     | Error x -> x in
   Stdio.print_endline result

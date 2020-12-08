@@ -19,7 +19,7 @@ let createBinders = List.map ~f:(fun p -> BinderNameType ([fst p],TermId (snd p)
 let createImpBinders = List.map ~f:(fun p -> BinderImplicitNameType ([fst p], TermId (snd p)))
 
 let rec genArg sort n bs = function
-  | H.Atom y -> map2 idApp (complete_ y) (map sty_terms (castUpSubst sort bs y n))
+  | H.Atom y -> map2 idApp (pure y) (map sty_terms (castUpSubst sort bs y n))
   | H.FunApp (f, p, xs) ->
     let* xs' = a_map (genArg sort n bs) xs in
     pure @@ idApp (funname_ (f^p)) xs'
@@ -57,25 +57,24 @@ let genCongruence sort H.{ cparameters; cname; cpositions } =
   let bparameters = createImpBinders cparameters in
   let parameters' = List.(mkTermIds (map ~f:fst cparameters)) in
   let eqs = List.map2_exn ~f:(fun x y -> TermEq (TermId x, TermId y)) ss ts in
+  let ss = mkTermIds ss in
+  let ts = mkTermIds ts in
   let eq = TermEq (
-      idApp cname (sty_terms ms @ parameters' @ mkTermIds ss),
-      idApp cname (sty_terms ms @ parameters' @ mkTermIds ts)
+      idApp cname (sty_terms ms @ parameters' @ ss),
+      idApp cname (sty_terms ms @ parameters' @ ts)
     ) in
   let beqs = List.mapi ~f:(fun n s -> BinderNameType (["H" ^ Int.to_string n], s)) eqs in
-  (* TODO the proof term should just be n-1 eq_trans and n f_equals where n is the length of cpositions.
+  (* the proof term is just n-1 eq_trans and n ap's where n is the length of cpositions.
    * The pattern is that with each f_equal we swap out one s_n for one t_n
    * and the eq_trans chain all those together
    * e.g. C s0 s1 s2 = C t0 s1 s2 = C t0 t1 s2 = C t0 t1 t2
    * So this should be possible by a fold *)
-  let proof = ProofString "congruence" in
   let x = VarState.tfresh "x" in
-  let proof' = ProofExact (List.foldi ~init:(eq_refl_) ~f:(fun i t _ ->
-      (* TODO kill this with fire. the following line works because the whole fold goes over ss but something with map2i would be better *)
-      let ss' = List.take (mkTermIds ts) i @ [TermId x] @ (List.rev @@ List.take (List.rev @@ mkTermIds ss) (List.length ss - i - 1)) in
+  let proof' = ProofExact (List.foldi cpositions ~init:(eq_refl_) ~f:(fun i t _ ->
+      let ss' = List.take ts i @ [TermId x] @ (List.drop ss (i + 1)) in
       eqTrans_ t (f_equal_ (idAbs "x" (idApp cname (sty_terms ms @ parameters' @ ss')))
                     (TermId ("H"^Int.to_string i))
-                 )
-    ) ss) in
+                 ))) in
   pure @@ Lemma (congr_ cname, bparameters @ bms @ bss @ bts @ beqs, eq, proof')
 
 let genCongruences sort =
@@ -867,9 +866,8 @@ let genLemmaCompSubstSubst sort =
                 ret, ProofExact proof)
          ; Lemma (compComp'_ sort, scopeBinders, ret', ProofExact proof') ]
 
-let genCodeT sorts dps upList' =
+let genCodeT sorts upList =
   (* TODO I suspect the dependencies can only happen with modular code *)
-  let upList = if (List.is_empty dps) then upList' else [] in
   let* x_open = isOpen (List.hd_exn sorts) in
   (* TODO don't we have a field for that in the signature? *)
   let* varSorts = a_filter isOpen sorts in

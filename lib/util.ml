@@ -11,11 +11,24 @@ let list_diff xs ys =
 let list_remove xs y =
   List.(filter xs ~f:(fun x -> Poly.(x <> y)))
 
+let list_find_index_exn x xs =
+  List.find_mapi_exn ~f:(fun i y -> if Poly.(x = y) then Some i else None) xs
+
+let list_any f xs =
+  match List.find ~f xs with
+  | Some _ -> true
+  | None -> false
+
+let list_none f xs =
+  list_any f xs |> not
+
 let showPair f g (x, y) =
   "(" ^ f x ^ ", " ^ g y ^ ")"
 
+(** TODO placeholder until I know how to use the stable_dedup function. Because I don't really need to sort the list *)
 let nub l = List.dedup_and_sort ~compare:Poly.compare l
 
+(** An implementation of zip that does not throw *)
 let rec list_zip xs ys =
   match xs, ys with
   | [], [] -> []

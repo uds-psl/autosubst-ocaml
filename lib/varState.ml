@@ -2,7 +2,7 @@ open Base
 
 module AL = AssocList
 
-let scope : (string * int) list ref = ref []
+let scope : (string, int) AL.t ref = ref (AL.from_list [])
 
 let lookup = AL.assoc_default ~default:0
 

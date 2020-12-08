@@ -16,7 +16,6 @@ let app_ f xs =
 let app1_ f x =
   Constrexpr_ops.mkAppC (f, [x])
 let appExpl_ n xs =
-  let () = print_endline @@ "appexpl of " ^ n in
   CAst.make @@ Constrexpr.CAppExpl ((None, qualid_ n, None), xs)
 
 let ident_decl_ s : Constrexpr.ident_decl  =
@@ -119,7 +118,8 @@ let pr_exact_expr cexpr =
   let sigma = Evd.from_env env in
   str "exact (" ++ Ppconstr.pr_lconstr_expr env sigma cexpr ++ str ")" ++ vernacend
 
-(* TODO I could also use pr_vernac which already appends a dot (but no newline I think) *)
+(** I catch the VernacExactProof constructor because the way Coq normally prints it does not
+ ** work well with proof general. So I explicitly add an `exact (...)` *)
 let pr_vernac_expr =
   let open Vernacexpr in
   let open Pp in
@@ -128,7 +128,6 @@ let pr_vernac_expr =
     str "Proof" ++ vernacend ++ pr_exact_expr cexpr
   | vexpr ->
     Ppvernac.pr_vernac_expr vexpr ++ vernacend
-
 
 let section_ name vexprs =
   Vernacexpr.([ VernacBeginSection (lident_ name) ] @ vexprs @ [ VernacEndSegment (lident_ name) ])

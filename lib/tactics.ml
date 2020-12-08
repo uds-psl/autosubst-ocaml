@@ -43,7 +43,7 @@ let mkTermIds = List.map ~f:(fun x -> TermId x)
 let toVar sort ts =
   let* substSorts = substOf sort in
   let () = if (List.length substSorts <> List.length @@ sty_terms ts)
-    then print_endline "toVar unequal"
+    then Stdio.print_endline "toVar unequal"
     else () in
   let zs = List.filter ~f:(fun (substSort,_) -> String.(sort = substSort)) (list_zip substSorts (sty_terms ts)) in
   if List.is_empty zs
@@ -126,7 +126,7 @@ let introScopeVarS name =
   let name = VarState.tfresh name in
   (TermId name, [BinderImplicitScopeNameType ([name], nat)])
 
-(** This creates a renaming variable together with a binder
+(** Create a renaming variable together with a binder
  ** Example: ( xi : fin m -> fin n ) *)
 let genRenS name (m, n) =
   let name = VarState.tfresh name in
@@ -145,7 +145,10 @@ let introScopeVar name sort =
   let names = List.map ~f:(sep name) substSorts in
   pure @@ (
     SubstScope (mkTermIds names),
-    [BinderImplicitScopeNameType (names, nat)]
+    (* Fix for wrong translation of sorts that don't have a substitution vector.
+     * Could also filter out in translation but this seems better. *)
+    if List.is_empty names then []
+        else [BinderImplicitScopeNameType (names, nat)]
   )
 
 (** Create multiple renaming variables and their binders. One for each substituting sort of the given sort. The given scope variables vectors ms & ns should also contain one scope variable per substituting sort.

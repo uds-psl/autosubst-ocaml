@@ -1,13 +1,12 @@
 open Base
-(* I'm using association lists until I figure out how to build a map from a list *)
-(* strangely even something like tId need a deriving show. So they are not like 'type' in Haskell but rather like newtype? *)
+module AL = AssocList
 
 type tId = string [@@deriving show]
 type vId = string [@@deriving show]
 type fId = string [@@deriving show]
 type cId = string [@@deriving show]
 
-type 'a tIdMap = (tId * 'a) list [@@deriving show]
+type 'a tIdMap = (tId, 'a) AL.t [@@deriving show]
 
 type binder = Single of tId | BinderList of string * tId
 [@@deriving show]
@@ -17,9 +16,9 @@ type argument_head = Atom of tId | FunApp of fId * fId * (argument_head list)
 let getBinders = function
   | Single x -> [x]
   | BinderList (_, x) -> [x]
-let rec getIds = function
+let rec getArgSorts = function
   | Atom x -> [x]
-  | FunApp (_, _, xs) -> List.(xs >>| getIds |> concat)
+  | FunApp (_, _, xs) -> List.(xs >>| getArgSorts |> concat)
 
 type position =
   { binders : binder list;
@@ -30,22 +29,26 @@ type position =
 type constructor =
   { cparameters : (string * tId) list;
     cname : cId;
-    (* TODO rename to arguments? *)
     cpositions : position list;
   }
 [@@deriving show]
 
+let getArgs { cpositions; _ } =
+  List.concat_map cpositions ~f:(fun { head; _ } ->
+    getArgSorts head)
+
 type spec = (constructor list) tIdMap [@@deriving show]
+type tId_list = tId list [@@deriving show]
+type tId_set = Set.M (String).t
+let pp_tId_set f x = pp_tId_list f (Set.to_list x)
+let show_tId_set x = show_tId_list (Set.to_list x)
 
 type signature =
   { sigSpec : spec;
     sigSubstOf : (tId list) tIdMap;
-    (* TODO very often I need just the first sort of a component, so maybe make this into a nonempty list. E.g. I think I need it in Generator.genSubstitutions.
-     * TODO is the second part of the pair only used in modular code? *)
-    sigComponents : (tId list * tId list) list;
-    sigExt : tId tIdMap;
-    (* sigIsOpen was a set originally *)
-    sigIsOpen : tId list;
+    (* TODO very often I need just the first sort of a component, so maybe make this into a list of nonempty lists. E.g. I think I need it in Generator.genSubstitutions. *)
+    sigComponents : tId list list;
+    sigIsOpen : tId_set;
     sigArguments : (tId list) tIdMap;
   }
 [@@deriving show, fields]
@@ -53,9 +56,10 @@ type signature =
 type t = signature
 [@@deriving show]
 
+
 module Hsig_example = struct
 
-  let mySigSpec : spec = [
+  let mySigSpec : spec = AL.from_list [
     ("tm", [ {
          cparameters = [];
          cname = "app";
@@ -95,18 +99,17 @@ module Hsig_example = struct
 
   let mySig = {
     sigSpec = mySigSpec;
-    sigSubstOf = [ ("tm", ["ty"; "vl"]); ("ty", ["ty"]); ("vl", ["ty";"vl"]) ];
-    sigComponents = [ (["ty"], []); (["tm";"vl"],[])];
-    sigExt = [];
-    sigIsOpen = ["ty"; "vl"];
-    sigArguments = [("tm", ["tm"; "ty"; "vl"]);
-                    ("ty", ["ty"]);
-                    ("vl", ["ty"; "tm"])];
+    sigSubstOf = AL.from_list [ ("tm", ["ty"; "vl"]); ("ty", ["ty"]); ("vl", ["ty";"vl"]) ];
+    sigComponents = [ ["ty"]; ["tm";"vl"] ];
+    sigIsOpen = Set.of_list (module String) ["ty"; "vl"];
+    sigArguments = AL.from_list [ ("tm", ["tm"; "ty"; "vl"])
+                                ; ("ty", ["ty"])
+                                ; ("vl", ["ty"; "tm"])];
   }
 end
 
 module Hsig_fol = struct
-  let mySigSpec = [
+  let mySigSpec = AL.from_list [
     ("form", [ {
          cparameters = [];
          cname = "Fal";
@@ -149,11 +152,10 @@ module Hsig_fol = struct
   ]
   let mySig = {
     sigSpec = mySigSpec;
-    sigSubstOf = [ ("form",["term"]); ("term",["term"])];
-    sigComponents = [(["term"],[]);(["form"],[])];
-    sigExt = [];
-    sigIsOpen = ["term"];
-    sigArguments = [ ("form",["term";"form"]);
-                     ("term",["term"])];
+    sigSubstOf = AL.from_list [ ("form",["term"]); ("term",["term"])];
+    sigComponents = [["term"];["form"]];
+    sigIsOpen = Set.of_list (module String) ["term"];
+    sigArguments = AL.from_list [ ("form",["term";"form"])
+                                ; ("term",["term"])];
   }
 end
