@@ -25,8 +25,7 @@ let list_none f xs =
 let showPair f g (x, y) =
   "(" ^ f x ^ ", " ^ g y ^ ")"
 
-(** TODO placeholder until I know how to use the stable_dedup function. Because I don't really need to sort the list *)
-let nub l = List.dedup_and_sort ~compare:Poly.compare l
+let nub cmp l = Set.stable_dedup_list cmp l
 
 (** An implementation of zip that does not throw *)
 let rec list_zip xs ys =

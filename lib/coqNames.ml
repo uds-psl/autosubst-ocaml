@@ -3,7 +3,10 @@ open Util
 
 module H = Hsig
 
-let var_ x = sepd [!Settings.var__; x]
+(** This uses the mutable variable format to build the pattern for variables. *)
+let var_ x =
+  let fmt = Caml.Scanf.format_from_string !Settings.var__ "%s" in
+  Printf.sprintf fmt x
 
 let funname_ f = f
 

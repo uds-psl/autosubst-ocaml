@@ -10,10 +10,7 @@ type branch_expr = Constrexpr.branch_expr
 
 let qualid_ s = Libnames.qualid_of_string s
 let reft_ t = Constrexpr_ops.mkRefC t
-let ref_ s =
-  (* let () = print_endline @@ "ref of " ^ s in *)
-  (* TODO this is kind of a hack. somewhere there was a string with trailing whitespace but I have not found the source yet and coq chokes on that *)
-  reft_ (qualid_ @@ String.strip s)
+let ref_ s =  reft_ (qualid_ s)
 let id_ s = Names.Id.of_string s
 let lident_ s = CAst.make (id_ s)
 let num_ n =

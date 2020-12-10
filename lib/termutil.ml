@@ -14,7 +14,6 @@ let plus_ = ref_ "plus"
 let shift_ = ref_ "shift"
 let cons_ = ref_ "scons"
 let var_zero_ = ref_ "var_zero"
-(* TODO atm I must always insert two underscores at the beginning of the list of argument when I use fext_ in a TermApp *)
 let underscore_ = ref_ "_"
 let id_ = ref_ "id"
 
@@ -43,8 +42,6 @@ let (<<>>) ss ts = List.map2_exn ~f:(>>>) (CS.sty_terms ss) (CS.sty_terms ts)
  ** the input list [(s0, t0); ...; (sn; tn)] *)
 let repRew s = List.fold_left ~f:(fun s (t, t_eq) -> eqTrans_ s (ap_ t_eq t)) ~init:eq_refl_ s
 
-
-(* TODO variables for constructor name strings? *)
 let matchFin_ s f b = match_ s [
     branch_ "Some" ["fin_n"] (f (ref_ "fin_n"));
     branch_ "None" [] b
@@ -54,7 +51,10 @@ let sortType x ns = app_ (ref_ x) (CS.sty_terms ns)
 
 let (==>) s t = List.fold_right s ~f:(fun s t -> arr1_ s t) ~init:t
 
-let refAbs x t = lambda_ [binder1_ x] t
+(** TODO does the fresh variable here work as I expect? check upExtRen_list_vl_vl *)
+let refAbs x t =
+  let x' = VarState.tfresh x in
+  lambda_ [binder1_ x'] t
 
 let scons_p_congr_ s t = refApp "scons_p_congr" [t; s]
 let scons_p_comp' x = refApp "scons_p_comp'" [underscore_; underscore_; underscore_; x]

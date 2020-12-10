@@ -1,7 +1,7 @@
 open Base
 module AL = AssocList
 
-type tId = string [@@deriving show]
+type tId = string [@@deriving show, compare]
 type vId = string [@@deriving show]
 type fId = string [@@deriving show]
 type cId = string [@@deriving show]
@@ -9,7 +9,7 @@ type cId = string [@@deriving show]
 type 'a tIdMap = (tId, 'a) AL.t [@@deriving show]
 
 type binder = Single of tId | BinderList of string * tId
-[@@deriving show]
+[@@deriving show, compare]
 type argument_head = Atom of tId | FunApp of fId * fId * (argument_head list)
 [@@deriving show]
 
@@ -46,7 +46,6 @@ let show_tId_set x = show_tId_list (Set.to_list x)
 type signature =
   { sigSpec : spec;
     sigSubstOf : (tId list) tIdMap;
-    (* TODO very often I need just the first sort of a component, so maybe make this into a list of nonempty lists. E.g. I think I need it in Generator.genSubstitutions. *)
     sigComponents : tId list list;
     sigIsOpen : tId_set;
     sigArguments : (tId list) tIdMap;

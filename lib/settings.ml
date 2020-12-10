@@ -1,2 +1,2 @@
-(** TODO make into a pattern for variable constructors e.g. "var_%s" and allow as input *)
-let var__ = ref "var"
+(** format string for printing variable constructors *)
+let var__ = ref "var_%s"

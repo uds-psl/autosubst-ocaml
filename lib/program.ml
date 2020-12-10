@@ -17,7 +17,7 @@ let main () =
   let* spec = readSignature () |> SigParser.parse_signature in
   let* signature = SigAnalyzer.build_signature spec in
   (* generate dot graph *)
-  let* code = GenCode.runGenCode signature in
+  let* code = GenCode.runGenCode CoqSyntax.WellScoped signature in
   (* write file *)
   pure code
   (* pure "" *)

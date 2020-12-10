@@ -80,8 +80,6 @@ let genCongruences sort =
   let* ctrs = constructors sort in
   a_concat_map (genCongruence sort) ctrs
 
-(* TODO this function seems to be the main function that generates the proof term for all the lemmas which traverse one of our inductive types. How does it work *)
-(* TODO make the var_case_body implicit with default value and also return a monadic value so that I can call toVar inside *)
 let traversal
     sort scope name ?(no_args=fun s -> app1_ eq_refl_ s) ret
     bargs args var_case_body ?(sem=fun _ c cs -> refApp (congr_ c) cs) funsem =
@@ -89,7 +87,6 @@ let traversal
   let s = "s" in
   let* cs = constructors sort in
   let* open_x = isOpen sort in
-  (* let underscore_pattern = TermSubst (SubstScope (List.map ~f:(const TermUnderscore) (sty_terms scope))) in *)
   let underscore_pattern = List.map ~f:(const "_") (sty_terms scope) in
   (* This only create this pattern if the sort is open *)
   let* var_pattern = m_guard open_x (
@@ -110,7 +107,6 @@ let traversal
         pure @@ (funsem f res) in
     (* TODO this can surely be simplified *)
     let* positions = a_map2_exn (fun s { binders; head; } -> map2 app_
-                               (* TODO I know ss and cpositions are the same length how do I call the other function with that knowledge? *)
                                     (arg_map binders head) (pure @@ [ref_ s]))
         ss cpositions in
     pure @@ branch_ cname (underscore_pattern @ List.map ~f:fst cparameters @ ss)
@@ -243,7 +239,6 @@ let genUpExtRen (binder, sort) =
   let defBody = definitionBody sort binder
       (s, t (ref_ n))
       (fun p _ -> (refApp "scons_p_congr" [
-           (* TODO shouldn't I use the n variable here instead of a string literal? *)
            refAbs "n" eq_refl_;
            refAbs "n" @@ ap_ (refApp "shift_p" [ref_ p]) (t (ref_ "n"))
       ], t (ref_ n))) in
@@ -551,7 +546,7 @@ let genUpSubstSubst (binder, sort) =
   let* ms = upSubst sort [binder] ms in
   let* ls' = upSubst sort [binder] ls in
   let* zeta' = upSubst sort [binder] taus in
-  let* pat = patternSId sort binder in
+  let* pat = patternSIdNoRen sort binder in
   let (pms, bpms) = binvparameters binder in
   let ret = equiv_
       (refApp (up_ sort binder) (pms @ [sigma])
@@ -611,7 +606,6 @@ let genUpSubstSubst (binder, sort) =
  let genUpRinstInst (binder, sort) =
   let* v = V.genVariables sort [ `M; `NS ] in
   let [@warning "-8"] [ m ], [ ns ], scopeBinders = v in
-  (* TODO because of the toVar here I cannot create the xi & sigma with the other variables. Could I add something like `N_VAR to the poly variant? *)
   let* n_var = toVar sort ns in
   let (xi, bxi) = genRenS "xi" (m, n_var) in
   let (sigma, bsigma) = genSubstS "sigma" (m, ns) sort in
@@ -729,7 +723,7 @@ let genLemmaRinstId sort =
   let* substSorts = substOf sort in
   let sigmazeta = xis <<>> zetas in
   let s = VarState.tfresh "s" in
-  let ret = eq_ (* TODO the first sort here was an sort' (= extend_ sort) in modular code. Is that still needed without? *)
+  let ret = eq_
       (refApp (ren_ sort) (sty_terms zetas
                            @ [ refApp (ren_ sort) (sty_terms xis
                                                    @ [ ref_ s ]) ]))
@@ -846,13 +840,9 @@ let genLemmaCompSubstSubst sort =
          ; lemma_ (compComp'_ sort) scopeBinders ret' proof' ]
 
 let genCodeT sorts upList =
-  (* TODO I suspect the dependencies can only happen with modular code *)
-  let* x_open = isOpen (List.hd_exn sorts) in
-  (* TODO don't we have a field for that in the signature? *)
   let* varSorts = a_filter isOpen sorts in
   let* hasbinders = map (fun l -> l |> List.is_empty |> not) (substOf (List.hd_exn sorts)) in
   (* GENERATE INDUCTIVE TYPES *)
-  (* TODO which types are not definable? *)
   let* ys = a_filter definable sorts in
   let* types = a_map genBody ys in
   let* is_rec = isRecursive sorts in
@@ -868,7 +858,6 @@ let genCodeT sorts upList =
   let* renamings = genRenamings sorts in
   (* GENERATE UPs *)
   let* ups = guard_map genUpS upList in
-  (* TODO upsNoRen is the same as ups! I should be able to just remove it and the guard from ups *)
   let* upsNoRen = guard_map ~invert:true genUpS upList in
   (* GENERATE SUBSTITUTIONS *)
   let* substitutions = genSubstitutions sorts in

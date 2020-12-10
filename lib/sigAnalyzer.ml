@@ -31,20 +31,18 @@ let build_graph spec =
 let binder_analysis spec occurs_in =
   let open ErrorM in
   let specl = AL.to_list spec in
-  (* here we need four nested concats_maps to get all the sorts of binders that occur in a sort.
-   * So it's much easier to use monadig list syntax *)
-  let analysis = Monadic.List.Make.Syntax.(
-      let* (t, cs) = specl in
-      let* H.{ cpositions; cname; _ } = cs in
-      let* H.{ binders; head; } = cpositions in
-      let* binder = binders in
-      let* bound_sort = H.getBinders binder in
-      (* TODO here we take all arg sort into account so probably also something like nat if we use the vector functor. Does my graph structure allow testing reachability with non existant vertices? *)
-      let vacuous = list_none (fun arg -> bound_sort |> occurs_in arg) (H.getArgSorts head) in
-      if vacuous then [`Vacuous (t, bound_sort, cname)]
-      else [`Binder bound_sort]
-    ) in
-  (* TODO I had quite some trouble making an empty set. But in the end it worked like in the
+  let analysis =
+    let open Monadic.List.Make.Syntax in
+    let* (t, cs) = specl in
+    let* H.{ cpositions; cname; _ } = cs in
+    let* H.{ binders; head; } = cpositions in
+    let* binder = binders in
+    let* bound_sort = H.getBinders binder in
+    let vacuous = list_none (fun arg -> bound_sort |> occurs_in arg) (H.getArgSorts head) in
+    if vacuous then [`Vacuous (t, bound_sort, cname)]
+    else [`Binder bound_sort]
+  in
+  (* I had quite some trouble making an empty set. But in the end it worked like in the
    * documentation for Map https://ocaml.janestreet.com/ocaml-core/latest/doc/core_kernel/Core_kernel/Map/
    * How would I define a specialized StringSet module so I don't have to pass the
    * first order module every time I want to create an empty map? *)

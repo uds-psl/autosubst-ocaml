@@ -157,14 +157,13 @@ let checkSpec (ts, fs, cs) =
     let checkPosition () H.{ binders; head; } =
       m_fold_ checkBinder () binders
       *> checkHead () head in
-    let checkConstructor (spec : H.spec) (cname, cparameters, cpositions, rtype) =
+    let checkConstructor (cname, cparameters, cpositions, rtype) (spec : H.spec) =
       checkTId rtype
       *> m_fold_ checkPosition () cpositions
       *> pure (AL.update rtype (fun cs -> H.{ cparameters; cname; cpositions; } :: cs) spec)
     in
     let empty_spec = AL.from_list @@ List.map ts ~f:(fun t -> (t, [])) in
-    (* TODO I reversed the constructors because m_fold is a left fold. Rather implement m_fold_right *)
-    let* spec = m_fold checkConstructor empty_spec (List.rev cs) in
+    let* spec = m_fold_right ~f:checkConstructor ~init:empty_spec cs in
     pure (ts, fs, AL.flatten spec)
 
 (** parse and check a signature.

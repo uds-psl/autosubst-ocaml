@@ -1,5 +1,4 @@
 open Base
-open Util
 
 module CS = CoqSyntax
 module H = Hsig
@@ -7,61 +6,48 @@ module H = Hsig
 let unscopedPreamble = "Require Export unscoped.\nRequire Export header_extensible.\n"
 let scopedPreamble = "Require Export fintype.\nRequire Export header_extensible.\n"
 
-let getUps con_com =
+let getUps scope_type component =
   let open List in
-  let cart = cartesian_product con_com con_com in
+  let cart = cartesian_product component component in
   let singles = cart >>| (fun (x, y) -> (H.Single x, y)) in
   let blists =  cart >>| (fun (x, y) -> (H.BinderList ("p", x), y)) in
-  List.append singles blists
+  match scope_type with
+  | CS.WellScoped -> List.append singles blists
+  | CS.Unscoped -> singles
 
-let genCode ups spec =
+(* deriving a comparator for a type and packing it in a module
+ * from https://stackoverflow.com/a/59266326 *)
+module UpsComp = struct
+  module T = struct
+    type t = H.binder * string [@@deriving compare]
+    let sexp_of_t = Sexplib0.Sexp_conv.sexp_of_opaque
+  end
+
+  include T
+  include Comparable.Make(T)
+end
+
+let genCode scope_type components =
   let open REM.Functions in
   let open REM.Syntax in
   let open REM in
-  let* (_, code) =
-    m_fold (fun (ups, sentences) x ->
-        let* xs = substOf (List.hd_exn x) in
-        (* let* mdps = a_map realDeps x in *)
-        let up_x = getUps xs in
-        let* code_x = Generator.genCodeT x (list_intersection ups up_x) in
-        let new_ups = list_diff ups up_x in
-        let sentences = sentences @ code_x in
-        pure @@ (new_ups, sentences))
-      (ups, []) spec in
+  let* code = m_fold (fun sentences component ->
+      let* substSorts = substOf (List.hd_exn component) in
+      let ups = getUps scope_type substSorts in
+      let* code_x = Generator.genCodeT component ups in
+      let sentences = sentences @ code_x in
+      pure @@ sentences)
+      [] components in
   pure code
 
-let genAutomation varSorts sorts substSorts ups =
-  let open REM in
-  pure "tactics"
-
-
-(* TODO genFile should also take prover args, like what kind of code it should generate *)
-let genFile () =
+let genFile scope_type =
   let open REM.Functions in
   let open REM.Syntax in
   let open REM in
-  (* TODO why is this called spec in autosubst2? *)
-  let* spec = asks H.sigComponents in
-  let sorts = List.(spec |> concat) in
-  let* varSorts = asks H.sigIsOpen in
-  let* substSorts =
-    a_filter (fun srt -> let* sub = substOf srt in
-               List.is_empty sub |> not |> pure)
-      sorts in
-  (* TODO only create BinderList if well scoped coq code. also can the list ever be empty. calling hd_exn can error *)
-  let* ups_pre =
-    a_map (fun srt -> let* subsorts = substOf srt in
-          getUps subsorts |> pure)
-      List.(spec >>| hd_exn) in
-  (* TODO for a stable dedup I would need to use the Set.stable_dedup_list and create a comparator for my type *)
-  let ups = List.(dedup_and_sort ~compare:Poly.compare @@ concat ups_pre) in
-  let* code = genCode ups spec in
-  (* let modularCode =  *)
-  let* auto = genAutomation varSorts sorts substSorts ups in
-  (* let vs = (List.concat_map ~f:CoqTranslate.translate_sentence code) in *)
-  (* let () = print_endline @@ CoqTranslate.pcount () in *)
+  let* components = getComponents in
+  let* code = genCode scope_type components in
   let ps = (List.map ~f:Coqgen.pr_vernac_expr code) in
-  (* let ps = [] in *)
-  pure @@ (scopedPreamble ^ (String.concat (List.map ~f:Pp.string_of_ppcmds ps) ^ auto))
+  pure @@ (scopedPreamble
+           ^ String.concat (List.map ~f:Pp.string_of_ppcmds ps))
 
-let runGenCode hsig = REM.run (genFile ()) hsig
+let runGenCode scope_type hsig = REM.run (genFile scope_type) hsig

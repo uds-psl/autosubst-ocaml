@@ -13,12 +13,9 @@ let fresh id =
   then id ^ (Int.to_string n)
   else id
 
+(** TODO wtf why does this not update the scope. I use it everywhere! *)
 let tfresh id =
   let n = lookup id !scope in
   if n > 0
   then id ^ (Int.to_string n)
   else id
-
-(* TODO what if empty string? *)
-let intern tid =
-  fresh String.(of_char @@ get (lowercase tid) 0 )

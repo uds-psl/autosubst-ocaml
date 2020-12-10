@@ -1,9 +1,6 @@
-open Base
 
 module CG = Coqgen
 module H = Hsig
-
-(* TODO the original Haskell code actually only used PatCtor and PatQualId, but PatQualId is just PatCtor with an empty list. so I removed that too. Also PatCtor originally accepted a term as first argument which does not compose well when I want to print it in the end. But the terms was actually always an application (Constr var1 var2 etc) so it should be easy to put them as strings into the second argument *)
 
 type substTy = SubstScope of CG.constr_exprs
             | SubstRen of CG.constr_exprs
@@ -15,11 +12,10 @@ type substTy = SubstScope of CG.constr_exprs
 (* type fixpoint = Fixpoint of bool * fixpointBody list [@@deriving show] *)
 
 let sty_terms = function
-  (* | SubstScope xs -> List.map ~f:(fun x -> TermVar x) xs (\* TODO kathrin: this is a hack.
-   * The tovar was used I think to filter out the substScope in unscoped code *\) *)
   | SubstScope xs -> xs
   | SubstRen xs -> xs
   | SubstSubst xs -> xs
   | SubstEq (xs,_) -> xs
   | SubstConst xs -> xs
 
+type scopeType = WellScoped | Unscoped
