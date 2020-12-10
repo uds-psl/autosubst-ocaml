@@ -4,7 +4,8 @@ open Monads.RE_Functions(SigM)
 module CS = CoqSyntax
 module H = Hsig
 
-let coqPreamble = "preamble"
+let unscopedPreamble = "Require Export unscoped.\nRequire Export header_extensible.\n"
+let scopedPreamble = "Require Export fintype.\nRequire Export header_extensible.\n"
 
 let getUps con_com =
   let open List in
@@ -55,12 +56,10 @@ let genFile () =
   let* code = genCode ups spec in
   (* let modularCode =  *)
   let* auto = genAutomation varSorts sorts substSorts ups in
-  let vs = (List.concat_map ~f:CoqTranslate.translate_sentence code) in
-  let () = Stdio.print_endline "consersion" in
+  (* let vs = (List.concat_map ~f:CoqTranslate.translate_sentence code) in *)
   (* let () = print_endline @@ CoqTranslate.pcount () in *)
-  let ps = (List.map ~f:Coqgen.pr_vernac_expr vs) in
+  let ps = (List.map ~f:Coqgen.pr_vernac_expr code) in
   (* let ps = [] in *)
-  let () = Stdio.print_endline "printing" in
-  pure @@ (coqPreamble ^ (String.concat (List.map ~f:Pp.string_of_ppcmds ps) ^ auto))
+  pure @@ (scopedPreamble ^ (String.concat (List.map ~f:Pp.string_of_ppcmds ps) ^ auto))
 
 let runGenCode hsig = SigM.run (genFile ()) hsig

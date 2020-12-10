@@ -2,14 +2,10 @@ open Base
 open Util
 
 module H = Hsig
-module CS = CoqSyntax
 
-let var__ = ref "var"
-let var_ x = sepd [!var__; x]
+let var_ x = sepd [!Settings.var__; x]
 
 let funname_ f = f
-
-let constructor_ c = c
 
 let congr_ c = sepd ["congr"; c]
 
@@ -64,11 +60,6 @@ let compRenRen_ x = sepd ["compRenRen"; x]
 let compRenSubst_ x = sepd ["compRenSubst"; x]
 let compSubstRen_ x = sepd ["compSubstRen"; x]
 let compSubstSubst_ x = sepd ["compSubstSubst"; x]
-
-let map_ f ts = CS.idApp (sepd [f; "map"]) ts
-let mapId_ f ts = CS.idApp (sepd [f; "id"]) ts
-let mapExt_ f ts = CS.idApp (sepd [f; "ext"]) ts
-let mapComp_ f ts = CS.idApp (sepd [f; "comp"]) ts
 
 let idSubst_ x = sepd ["idSubst"; x]
 let subst_ x = sepd ["subst"; x]

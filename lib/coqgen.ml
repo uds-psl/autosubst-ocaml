@@ -1,5 +1,13 @@
 open Base
 
+type identifier = string
+type identifiers = identifier list
+
+type constr_expr = Constrexpr.constr_expr
+type constr_exprs = constr_expr list
+type binder_expr = Constrexpr.local_binder_expr
+type branch_expr = Constrexpr.branch_expr
+
 let qualid_ s = Libnames.qualid_of_string s
 let reft_ t = Constrexpr_ops.mkRefC t
 let ref_ s =
@@ -26,20 +34,21 @@ let eq_ t1 t2 =
 let lname_ s = CAst.make (Names.Name (Names.Id.of_string s))
 let name_decl_ s = lname_ s, None
 
-let type_ = ref_ "Type"
-let nat_ = ref_ "nat"
 
+type constructor_expr = bool * (Names.lident * Constrexpr.constr_expr)
 let constructor_ cname ctype = (false, (lident_ cname, ctype))
 
-let prod_ binders rtype =
+let forall_ binders rtype =
   Constrexpr_ops.mkProdCN binders rtype
 
 let arr_ tys tyend =
-  prod_ (List.map ~f:(fun ty ->
+  forall_ (List.map ~f:(fun ty ->
       Constrexpr.CLocalAssum ([ CAst.make (Names.Anonymous) ], Default Glob_term.Explicit, ty))
       tys)
     tyend
+let arr1_ ty1 ty2 = arr_ [ty1] ty2
 
+type inductive_body = Vernacexpr.inductive_expr * Vernacexpr.decl_notation list
 let inductiveBody_ iname iparams ?rtype iconstructors =
   (((false, (CAst.make (Names.Id.of_string iname), None)), (* ident decl with coercion *)
     (iparams, None), (* inductive params_expr *)
@@ -49,6 +58,7 @@ let inductiveBody_ iname iparams ?rtype iconstructors =
 let inductive_ inductiveBodies =
   Vernacexpr.(VernacInductive (Inductive_kw, inductiveBodies))
 
+type fixpoint_expr = Vernacexpr.fixpoint_expr
 let fixpointBody_ name binders rtype body =
   let open Vernacexpr in
   let feg = { fname=lident_ name;
@@ -60,7 +70,7 @@ let fixpointBody_ name binders rtype body =
               notations=[]} in
   feg
 
-let fixpoint_ fegs =
+let fixpoint_ ~is_rec fegs =
   Vernacexpr.(VernacFixpoint (NoDischarge, fegs))
 
 
@@ -71,7 +81,7 @@ let match_ cexpr ?rtype bexprs =
 let binder_ ?(implicit=false) ?btype bnames =
   let open Constrexpr in
   let bk = Default (if implicit then Glob_term.MaxImplicit else Glob_term.Explicit) in
-  let btype = Option.value btype ~default: (CAst.make @@ CHole (None, Namegen.IntroAnonymous, None)) in
+  let btype = Option.value btype ~default:(CAst.make @@ CHole (None, Namegen.IntroAnonymous, None)) in
   CLocalAssum (List.map ~f:lname_ bnames, bk, btype)
 
 (* let binder_ bnames ?(implicit=false) btype =
@@ -92,6 +102,7 @@ let branch_ cname cargs_s bcont =
 let lambda_ binders body =
   Constrexpr_ops.mkLambdaCN binders body
 
+type vernac_expr = Vernacexpr.vernac_expr
 let lemma_ lname lbinders ltype lbody =
   let open Vernacexpr in
   let pexpr = (ident_decl_ lname, (lbinders, ltype)) in
@@ -160,7 +171,7 @@ module GenTests = struct
                                   ]))
       ]
     in
-    let fix = fixpoint_ [fixpointBody_ fname binders rtype body_def] in
+    let fix = fixpoint_ ~is_rec:true [fixpointBody_ fname binders rtype body_def] in
     pr_vernac_expr fix
 
   let print_utlc_lemma () : Pp.t =
