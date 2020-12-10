@@ -1,6 +1,6 @@
 open Base
 open Util
-open Monads.RE_Functions(SigM)
+
 module CS = CoqSyntax
 module H = Hsig
 
@@ -15,8 +15,9 @@ let getUps con_com =
   List.append singles blists
 
 let genCode ups spec =
-  let open SigM.Syntax in
-  let open SigM in
+  let open REM.Functions in
+  let open REM.Syntax in
+  let open REM in
   let* (_, code) =
     m_fold (fun (ups, sentences) x ->
         let* xs = substOf (List.hd_exn x) in
@@ -30,14 +31,15 @@ let genCode ups spec =
   pure code
 
 let genAutomation varSorts sorts substSorts ups =
-  let open SigM in
+  let open REM in
   pure "tactics"
 
 
 (* TODO genFile should also take prover args, like what kind of code it should generate *)
 let genFile () =
-  let open SigM.Syntax in
-  let open SigM in
+  let open REM.Functions in
+  let open REM.Syntax in
+  let open REM in
   (* TODO why is this called spec in autosubst2? *)
   let* spec = asks H.sigComponents in
   let sorts = List.(spec |> concat) in
@@ -62,4 +64,4 @@ let genFile () =
   (* let ps = [] in *)
   pure @@ (scopedPreamble ^ (String.concat (List.map ~f:Pp.string_of_ppcmds ps) ^ auto))
 
-let runGenCode hsig = SigM.run (genFile ()) hsig
+let runGenCode hsig = REM.run (genFile ()) hsig

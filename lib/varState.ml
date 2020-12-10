@@ -22,12 +22,3 @@ let tfresh id =
 (* TODO what if empty string? *)
 let intern tid =
   fresh String.(of_char @@ get (lowercase tid) 0 )
-
-(* TODO where is this even used? not sure if the reset here still works if I mix monadic code and mutable variables *)
-let withScope m =
-  let open SigM.Syntax in
-  let open SigM in
-  let s = !scope in
-  let* v = m in
-  scope := s;
-  pure v

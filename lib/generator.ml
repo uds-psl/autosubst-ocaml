@@ -4,9 +4,9 @@ open Util
 module H = Hsig
 module V = Variables
 
-open Monads.RE_Functions(SigM)
-open SigM.Syntax
-open SigM
+open REM.Functions
+open REM.Syntax
+open REM
 open CoqSyntax
 open Tactics
 open CoqNames
@@ -92,8 +92,10 @@ let traversal
   (* let underscore_pattern = TermSubst (SubstScope (List.map ~f:(const TermUnderscore) (sty_terms scope))) in *)
   let underscore_pattern = List.map ~f:(const "_") (sty_terms scope) in
   (* This only create this pattern if the sort is open *)
-  let var_pattern = guard open_x [branch_ (var_ sort) (underscore_pattern @ [s])
-                                    (var_case_body (ref_ s))] in
+  let* var_pattern = m_guard open_x (
+      let* var_body = var_case_body (ref_ s) in
+      pure [ branch_ (var_ sort) (underscore_pattern @ [s]) var_body ]
+    ) in
   (* computes the result for a constructor *)
   let cons_pattern { cparameters; cname; cpositions; } =
     let ss = getPattern "s" cpositions in
@@ -114,7 +116,7 @@ let traversal
     pure @@ branch_ cname (underscore_pattern @ List.map ~f:fst cparameters @ ss)
       (sem (List.map ~f:fst cparameters) cname positions) in
   let* cons_pat = a_map cons_pattern cs in
-  let t = match_ (ref_ s) ~rtype:(ret (ref_ s)) (var_pattern @ cons_pat) in
+  let t = match_ (ref_ s) (var_pattern @ cons_pat) in
   pure @@ fixpointBody_ (name sort) (bargs @ [binder1_ ~btype:(refApp sort (sty_terms scope)) s]) (ret (ref_ s)) t
 
 (* UpRen in sort x by the binder *)
@@ -135,9 +137,10 @@ let genRenaming sort =
   (* DONE what is the result of toVar here?\
    * when I call it with sort=tm, xi=[xity;xivl] I get this weird error term that toVar constructs. This is then probably ignored by some similar login in the traversal. Seems brittle.
    * When I call it instead with sort=vl I get xivl. So it seems get the renaming of the sort that I'm currently inspecting *)
-  let* toVarT = toVar sort xis in
   traversal sort ms ren_ ~no_args:id (const @@ refApp sort (sty_terms ns)) scopeBinders [xis]
-    (fun s -> app1_ (varApp sort ns) (app1_ toVarT s))
+    (fun s ->
+       let* toVarT = toVar sort xis in
+       pure @@ app1_ (varApp sort ns) (app1_ toVarT s))
     ~sem:(fun pms c s -> refApp c (sty_terms ns @ List.map ~f:(fun x -> ref_ x) pms @ s))
     map_
 
@@ -180,9 +183,10 @@ let genUpS (binder, sort) =
 let genSubstitution sort =
   let* v = V.genVariables sort [ `MS; `NS; `SIGMAS (`MS, `NS) ] in
   let [@warning "-8"] [], [ ms; ns; sigmas ], scopeBinders = v in
-  let* toVarT = toVar sort sigmas in
   traversal sort ms subst_ ~no_args:id (const @@ refApp sort (sty_terms ns)) scopeBinders [sigmas]
-    (fun s -> app1_ toVarT s)
+    (fun s ->
+       let* toVarT = toVar sort sigmas in
+       pure @@ app1_ toVarT s)
     ~sem:(fun pms c s -> refApp c (sty_terms ns @ List.map ~f:(fun x -> ref_ x) pms @ s)) map_
 
 let genSubstitutions sorts =
@@ -218,10 +222,11 @@ let genIdLemma sort =
   let* eqs' = findName1 sort substSorts ms in
   let* (eqs, beqs) = genEqs sort "Eq" (sty_terms sigmas) eqs'
       (fun x y s -> pure @@ refApp (upId_ x y) [underscore_; s]) (* TODO kathrin, generate ID in a sensible way *) in
-  let* toVarT = toVar sort eqs in
   let ret s = eq_ (refApp (subst_ sort) (sty_terms sigmas @ [s])) s in
   traversal sort ms idSubst_ ret (scopeBinders @ beqs) [sigmas; eqs]
-    (fun s -> app1_ toVarT s)
+    (fun s ->
+       let* toVarT = toVar sort eqs in
+       pure @@ app1_ toVarT s)
     mapId_
 
 let genUpExtRen (binder, sort) =
@@ -253,9 +258,10 @@ let genExtRen sort =
   let ret s = eq_
       (refApp (ren_ sort) (sty_terms xis @ [s]))
       (refApp (ren_ sort) (sty_terms zetas @ [s])) in
-  let* toVarT = toVar sort eqs in
   traversal sort ms extRen_ ret (scopeBinders @ beqs) [xis; zetas; eqs]
-    (fun z -> ap_ (varApp sort ns) (app1_ toVarT z))
+    (fun z ->
+       let* toVarT = toVar sort eqs in
+       pure @@ ap_ (varApp sort ns) (app1_ toVarT z))
     mapExt_
 
 let genUpExt (binder, sort) =
@@ -288,9 +294,10 @@ let genUpExt (binder, sort) =
   let ret s = eq_
       (refApp (subst_ sort) (sty_terms sigmas @ [s]))
       (refApp (subst_ sort) (sty_terms taus @ [s])) in
-  let* toVarT = toVar sort eqs in
   traversal sort ms ext_ ret (scopeBinders @ beqs) [sigmas; taus; eqs]
-    (fun z -> app1_ toVarT z)
+    (fun z ->
+       let* toVarT = toVar sort eqs in
+       pure @@ app1_ toVarT z)
     mapExt_
 
  let genUpRenRen (binder, sort) =
@@ -320,13 +327,14 @@ let genUpExt (binder, sort) =
          | H.BinderList (_, z) -> if String.(z = x)
            then refApp "up_ren_ren_p" [s]
            else s) in
-  let* toVarT = toVar sort eqs in
   let ret s = eq_
       (refApp (ren_ sort) (sty_terms zetas
                            @ [ refApp (ren_ sort) @@ sty_terms xis @ [s] ]))
       (refApp (ren_ sort) (sty_terms rhos @ [s])) in
   traversal sort ms compRenRen_ ret (scopeBinders @ beqs) [xis; zetas; rhos; eqs]
-    (fun n -> ap_ (varApp sort ls) (app1_ toVarT n))
+    (fun n ->
+       let* toVarT = toVar sort eqs in
+       pure @@ ap_ (varApp sort ls) (app1_ toVarT n))
     mapComp_
 
  let genUpRenSubst (binder, sort) =
@@ -363,13 +371,14 @@ let genUpExt (binder, sort) =
       (List.map2_exn ~f:(>>>) (sty_terms xis) (sty_terms taus))
       (sty_terms thetas)
       (fun x y s -> pure @@ refApp (up_ren_subst_ x y) [underscore_; underscore_; underscore_; s]) in
-  let* toVarT = toVar sort eqs in
   let ret s = eq_
       (refApp (subst_ sort) (sty_terms taus @ [refApp (ren_ sort) (sty_terms xis @ [s])]))
       (refApp (subst_ sort) (sty_terms thetas @ [s])) in
   (* TODO make pattern for app1_ erq_refl s *)
   traversal sort ms compRenSubst_ ret (scopeBinders @ beqs) [xis; taus; thetas; eqs]
-    (fun n -> app1_ toVarT n)
+    (fun n ->
+       let* toVarT = toVar sort eqs in
+       pure @@ app1_ toVarT n)
     mapComp_
 
  let genUpSubstRen (binder, sort) =
@@ -438,13 +447,14 @@ let genUpExt (binder, sort) =
          pure @@ refApp (up_subst_ren_ z y) ([underscore_]
                                             @ List.map ~f:(const underscore_) (sty_terms zetas')
                                             @ [underscore_; s])) in
-  let* toVarT = toVar sort eqs in
   let ret s = eq_
       (refApp (ren_ sort) (sty_terms zetas
                            @ [refApp (subst_ sort) (sty_terms sigmas @ [s])]))
       (refApp (subst_ sort) (sty_terms thetas @ [s])) in
   traversal sort ms compSubstRen_ ret (scopeBinders @ beqs) [sigmas; zetas; thetas; eqs]
-    (fun n -> app1_ toVarT n)
+    (fun n ->
+       let* toVarT = toVar sort eqs in
+       pure @@ app1_ toVarT n)
     mapComp_
 
 let genUpSubstSubst (binder, sort) =
@@ -523,13 +533,14 @@ let genUpSubstSubst (binder, sort) =
       pure @@ refApp (up_subst_subst_ z y) ([underscore_]
                                            @ List.map ~f:(const underscore_) (sty_terms taus')
                                            @ [underscore_; s])) in
-  let* toVarT = toVar sort eqs in
   let ret s = eq_
       (refApp (subst_ sort) (sty_terms taus
                            @ [refApp (subst_ sort) (sty_terms sigmas @ [s])]))
       (refApp (subst_ sort) (sty_terms thetas @ [s])) in
   traversal sort ms compSubstSubst_ ret (scopeBinders @ beqs) [sigmas; taus; thetas; eqs]
-    (fun n -> app1_ toVarT n)
+    (fun n ->
+       let* toVarT = toVar sort eqs in
+       pure @@ app1_ toVarT n)
     mapComp_
 
  let genUpSubstSubstNoRen (binder, sort) =
@@ -635,9 +646,10 @@ let genUpSubstSubst (binder, sort) =
   let ret s = eq_
       (refApp (ren_ sort) (sty_terms xis @ [s]))
       (refApp (subst_ sort) (sty_terms sigmas @ [s])) in
-  let* toVarT = toVar sort eqs in
   traversal sort ms rinstInst_ ret (scopeBinders @ beqs) [xis; sigmas; eqs]
-    (fun n -> app1_ toVarT n)
+    (fun n ->
+       let* toVarT = toVar sort eqs in
+       pure @@ app1_ toVarT n)
     mapExt_
 
 (* TODO this is very similar to genRinstInst *)
@@ -904,5 +916,5 @@ let genCodeT sorts upList =
              upSubstRen @ [fixpoint_ ~is_rec compSubstRen] @
              upSubstSubst @ [fixpoint_ ~is_rec compSubstSubst] @ upSubstSubstNoRen @
              upRinstInst @ [fixpoint_ ~is_rec rinstInst] @
-              (* * List.map ~f:sentencelemma (lemmaRenSubst @ lemmaInstId @ lemmaRinstId @ lemmaVarL @ lemmaVarLRen @ lemmaSubstRenRen @ lemmaSubstCompRen @ lemmaSubstRenComp @ lemmaSubstComp) *\) *)
+             List.concat (lemmaRenSubst @ lemmaInstId @ lemmaRinstId @ lemmaVarL @ lemmaVarLRen @ lemmaSubstRenRen @ lemmaSubstCompRen @ lemmaSubstRenComp @ lemmaSubstComp)
           )

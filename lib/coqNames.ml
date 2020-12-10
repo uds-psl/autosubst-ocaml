@@ -42,14 +42,12 @@ let upRen_ = upNameGen upRen__
 let upExtRen_ = upNameGen upExtRen__
 let upExt_ = upNameGen upExt__
 let upId_ = upNameGen upId__
-
-let rinstInst_ x = sepd ["rinst_inst"; x]
-
 let up_rinstInst_ = upNameGen "rinstInst_up"
 
 let varLFun_ x = sepd ["varL"; x]
 let varLRenFun_ x = sepd ["varLRen"; x]
 let instIdFun_ x = sepd ["instId"; x]
+let rinstInst_ x = sepd ["rinst_inst"; x]
 let rinstInstFun_ x = sepd ["rinstInst"; x]
 let rinstIdFun_ x = sepd ["rinstId"; x]
 

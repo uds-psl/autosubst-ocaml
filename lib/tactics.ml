@@ -1,7 +1,7 @@
 open Base
-open Monads.RE_Functions(SigM)
-open SigM.Syntax
-open SigM
+open REM.Functions
+open REM.Syntax
+open REM
 open CoqSyntax
 open Util
 open CoqNames

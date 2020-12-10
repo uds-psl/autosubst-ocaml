@@ -9,4 +9,4 @@ type substVars = [ `SIGMAS of scopeVars * scopeVars  | `TAUS of scopeVars * scop
 
 type vars = [ scopeVar | scopeVars | renVar | renVars | substVar | substVars ]
 
-val genVariables : string -> vars list -> (constr_expr list * CoqSyntax.substTy list * binder_expr list) SigM.t
+val genVariables : string -> vars list -> (constr_expr list * CoqSyntax.substTy list * binder_expr list) REM.t
