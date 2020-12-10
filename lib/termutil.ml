@@ -15,7 +15,6 @@ let shift_ = ref_ "shift"
 let cons_ = ref_ "scons"
 let var_zero_ = ref_ "var_zero"
 (* TODO atm I must always insert two underscores at the beginning of the list of argument when I use fext_ in a TermApp *)
-let fext_ = ref_ "FunctionalExtensionality.functional_extensionality"
 let underscore_ = ref_ "_"
 let id_ = ref_ "id"
 
@@ -27,6 +26,8 @@ let eqTrans_ s t = refApp "eq_trans" [s; t]
 let ap_ s t = refApp "ap" [s; t]
 let idApp_ s = refApp "id" [s]
 let fin_ n = refApp "fin" [n]
+let fext_ s = refApp "FunctionalExtensionality.functional_extensionality"
+    [underscore_; underscore_; s]
 
 (** Create a list of terms from a list of strings *)
 let mkRefs = List.map ~f:ref_

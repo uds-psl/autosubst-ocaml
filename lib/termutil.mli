@@ -11,7 +11,6 @@ val plus_ : constr_expr
 val shift_ : constr_expr
 val cons_ : constr_expr
 val var_zero_ : constr_expr
-val fext_ : constr_expr
 val underscore_ : constr_expr
 val id_ : constr_expr
 
@@ -22,6 +21,7 @@ val eqTrans_ : constr_expr -> constr_expr -> constr_expr
 val ap_ : constr_expr -> constr_expr -> constr_expr
 val idApp_ : constr_expr -> constr_expr
 val fin_ : constr_expr -> constr_expr
+val fext_ : constr_expr -> constr_expr
 
 val mkRefs : identifier list -> constr_exprs
 
