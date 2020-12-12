@@ -54,7 +54,8 @@ let binder_analysis spec occurs_in =
 
 (** Return the sublist of the canonical order which correspond to the substitution vector
  ** for the sort t.
- ** These are all the open sorts that occur in t *)
+ ** These are all the open sorts that (reflexively) occur in t
+ ** TODO here we actually use the reflexive transitive closure. I overlooked it at first, read again in Kathrin's thesis where it says that. *)
 let subordination g canonical_order open_sorts t =
   List.filter canonical_order ~f:(fun s ->
       Set.mem open_sorts s
@@ -72,9 +73,8 @@ let build_signature (canonical_order, fs, spec) =
   let open ErrorM.Syntax in
   let open ErrorM in
   let g = build_graph spec in
-  let transitive_closure = Op.transitive_closure g in
-  let* open_sorts = binder_analysis spec (G.mem_edge transitive_closure) in
-  let substs = subordination transitive_closure canonical_order open_sorts in
+  let* open_sorts = binder_analysis spec (G.mem_edge @@ Op.transitive_closure g) in
+  let substs = subordination (Op.transitive_closure ~reflexive:true g) canonical_order open_sorts in
   let subst_of = AL.map (fun t _ -> substs t) spec in
   let components = topological_sort g canonical_order in
   let arguments = AL.map (fun t _ -> G.succ g t) spec in
