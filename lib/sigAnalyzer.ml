@@ -69,6 +69,7 @@ let subordination g canonical_order open_sorts t =
 let topological_sort g canonical_order =
   List.map (C.scc_list g) ~f:(fun component -> list_intersection canonical_order component)
 
+(** TODO in autosubst2 variadic + unscoped syntax is not supported yet. I should filter out this combination maybe here *)
 let build_signature (canonical_order, fs, spec) =
   let open ErrorM.Syntax in
   let open ErrorM in

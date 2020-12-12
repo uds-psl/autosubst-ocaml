@@ -20,8 +20,9 @@ fcbv/fcbv_wellscoped.v
 pi/pi_unscoped.v
 pi/pi_wellscoped.v
 
-# num/num_unscoped.v
-# num/num_wellscoped.v
+num/num_unscoped.v
+num/num_wellscoped.v
 
-variadic/variadic_unscoped.v
+# variadic unscoped is not supported
+# variadic/variadic_unscoped.v
 variadic/variadic_wellscoped.v

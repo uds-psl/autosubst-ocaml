@@ -892,11 +892,14 @@ let genCodeT sorts upList =
   let* lemmaSubstCompRen = guard_concat_map genLemmaCompRenSubst sorts in
   let* lemmaSubstRenComp = guard_concat_map genLemmaCompSubstRen sorts in
   let* lemmaSubstComp = guard_concat_map genLemmaCompSubstSubst sorts in
+  let mk_inductive = function
+    | [] -> []
+    | ind_exprs -> [inductive_ ind_exprs] in
   let mk_fixpoint = function
     | [] -> []
     | fix_exprs -> [fixpoint_ ~is_rec fix_exprs] in
   (* generation of the actual sentences *)
-  pure @@ [inductive_ types] @
+  pure @@ mk_inductive types @
            (List.concat congruences) @
           (if not hasbinders then [] else
              upRen @ guard isRen [renamings] @
