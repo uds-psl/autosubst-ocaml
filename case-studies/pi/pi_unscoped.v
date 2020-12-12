@@ -2,10 +2,10 @@ Require Export unscoped.
 Require Export header_extensible.
 Inductive chan : Type :=
     var_chan : forall _ : nat, chan.
-Fixpoint subst_chan (sigma_chan : forall _ : nat, chan) (s : chan) : chan :=
-  match s with
-  | var_chan s0 => sigma_chan s0
-  end.
+Definition subst_chan (sigma_chan : forall _ : nat, chan) (s : chan) :
+  chan := match s with
+          | var_chan s0 => sigma_chan s0
+          end.
 Definition up_chan_chan (sigma : forall _ : nat, chan) :
   forall _ : nat, chan :=
   scons (var_chan var_zero)
@@ -18,9 +18,9 @@ Definition upId_chan_chan (sigma : forall _ : nat, chan)
   | S n' => ap (subst_chan (funcomp var_chan shift)) (Eq n')
   | O => eq_refl
   end.
-Fixpoint idSubst_chan (sigma_chan : forall _ : nat, chan)
-(Eq_chan : forall x, eq (sigma_chan x) (var_chan x)) (s : chan) :
-eq (subst_chan sigma_chan s) s :=
+Definition idSubst_chan (sigma_chan : forall _ : nat, chan)
+  (Eq_chan : forall x, eq (sigma_chan x) (var_chan x)) (s : chan) :
+  eq (subst_chan sigma_chan s) s :=
   match s with
   | var_chan s0 => Eq_chan s0
   end.
@@ -32,22 +32,22 @@ Definition upExt_chan_chan (sigma : forall _ : nat, chan)
   | S n' => ap (subst_chan (funcomp var_chan shift)) (Eq n')
   | O => eq_refl
   end.
-Fixpoint ext_chan (sigma_chan : forall _ : nat, chan)
-(tau_chan : forall _ : nat, chan)
-(Eq_chan : forall x, eq (sigma_chan x) (tau_chan x)) (s : chan) :
-eq (subst_chan sigma_chan s) (subst_chan tau_chan s) :=
+Definition ext_chan (sigma_chan : forall _ : nat, chan)
+  (tau_chan : forall _ : nat, chan)
+  (Eq_chan : forall x, eq (sigma_chan x) (tau_chan x)) (s : chan) :
+  eq (subst_chan sigma_chan s) (subst_chan tau_chan s) :=
   match s with
   | var_chan s0 => Eq_chan s0
   end.
-Fixpoint compSubstSubst_chan (sigma_chan : forall _ : nat, chan)
-(tau_chan : forall _ : nat, chan) (theta_chan : forall _ : nat, chan)
-(Eq_chan : forall x,
-           eq (funcomp (subst_chan tau_chan) sigma_chan x) (theta_chan x))
-(s : chan) :
-eq (subst_chan tau_chan (subst_chan sigma_chan s)) (subst_chan theta_chan s)
-:= match s with
-   | var_chan s0 => Eq_chan s0
-   end.
+Definition compSubstSubst_chan (sigma_chan : forall _ : nat, chan)
+  (tau_chan : forall _ : nat, chan) (theta_chan : forall _ : nat, chan)
+  (Eq_chan : forall x,
+             eq (funcomp (subst_chan tau_chan) sigma_chan x) (theta_chan x))
+  (s : chan) :
+  eq (subst_chan tau_chan (subst_chan sigma_chan s))
+    (subst_chan theta_chan s) := match s with
+                                 | var_chan s0 => Eq_chan s0
+                                 end.
 Definition up_subst_subst_chan_chan (sigma : forall _ : nat, chan)
   (tau_chan : forall _ : nat, chan) (theta : forall _ : nat, chan)
   (Eq : forall x, eq (funcomp (subst_chan tau_chan) sigma x) (theta x)) :

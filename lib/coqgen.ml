@@ -55,6 +55,16 @@ let inductiveBody_ iname iparams ?rtype iconstructors =
 let inductive_ inductiveBodies =
   Vernacexpr.(VernacInductive (Inductive_kw, inductiveBodies))
 
+let definition_expr_ dbinders ?rtype dbody =
+  let open Vernacexpr in
+  DefineBody (dbinders, None, dbody, rtype)
+
+let definition_ dname dbinders ?rtype dbody =
+  let open Vernacexpr in
+  let dname = name_decl_ dname in
+  let dexpr = definition_expr_ dbinders ?rtype dbody in
+  VernacDefinition ((NoDischarge, Decls.Definition), dname, dexpr)
+
 type fixpoint_expr = Vernacexpr.fixpoint_expr
 let fixpointBody_ name binders rtype body =
   let open Vernacexpr in
@@ -67,8 +77,14 @@ let fixpointBody_ name binders rtype body =
               notations=[]} in
   feg
 
-let fixpoint_ ~is_rec fegs =
-  Vernacexpr.(VernacFixpoint (NoDischarge, fegs))
+let fixpoint_ ~is_rec fexprs =
+  if is_rec
+  then Vernacexpr.(VernacFixpoint (NoDischarge, fexprs))
+  else match fexprs with
+    | [{ fname={ v=fname; _ }; binders; rtype; body_def=Some body; _}] ->
+      definition_ (Names.Id.to_string fname) binders ~rtype body
+    | [fexpr] -> failwith "Malformed fixpoint expression"
+    | _ -> failwith "A non recursive fixpoint degenerates to a definition so it should only have one body"
 
 
 let match_ cexpr ?rtype bexprs =
@@ -107,16 +123,6 @@ let lemma_ lname lbinders ltype lbody =
   let lbody = VernacExactProof lbody in
   let lend = VernacEndProof (Proved (Opaque, None)) in
   [lbegin; lbody; lend]
-
-let definition_expr_ dbinders ?rtype dbody =
-  let open Vernacexpr in
-  DefineBody (dbinders, None, dbody, rtype)
-
-let definition_ dname dbinders ?rtype dbody =
-  let open Vernacexpr in
-  let dname = name_decl_ dname in
-  let dexpr = definition_expr_ dbinders ?rtype dbody in
-  VernacDefinition ((DoDischarge, Decls.Definition), dname, dexpr)
 
 let vernacend = Pp.str ".\n"
 

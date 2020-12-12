@@ -27,10 +27,10 @@ let rec genArg sort n bs = function
     let* xs' = a_map (genArg sort n bs) xs in
     pure @@ app_ref (funname_ (f^p)) xs'
 
-let genVar sort n =
+let genVar sort ns =
   let* open_x = isOpen sort in
-  let* s = finT_ sort (sty_terms n) in
-  let t = [s] ==> sortType sort n in
+  let* s = finT_ sort (sty_terms ns) in
+  let t = [s] ==> sortType sort ns in
   pure @@ guard open_x [constructor_ (var_ sort) t]
 
 let genConstr sort n H.{ cparameters; cname; cpositions } =
