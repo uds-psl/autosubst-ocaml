@@ -1,5 +1,4 @@
 open Base
-open REM.Functions
 open REM.Syntax
 open REM
 open CoqSyntax
@@ -16,15 +15,19 @@ open Coqgen
  ** substitution variable: some function that represents a substitution. E.g. sigma : fin m -> vl mty mvl
  **  *)
 
-let varApp sort n = refApp (var_ sort) (sty_terms n)
-
 (** For a given sort create a renaming type
  ** fin m -> fin n *)
-let renT m n = arr1_ (fin_ m) (fin_ n)
+let renT m n =
+  match !Settings.scope_type with
+  | H.Unscoped -> arr1_ nat_ nat_
+  | H.WellScoped -> arr1_ (fin_ m) (fin_ n)
 
 (** For a given sort create a substitution type.
  ** fin m -> tm nty nvl *)
-let substT m ns sort = arr1_ (fin_ m) (sortType sort ns)
+let substT m ns sort =
+  match !Settings.scope_type with
+  | H.Unscoped -> arr1_ nat_ (sortType sort ns)
+  | H.WellScoped -> arr1_ (fin_ m) (sortType sort ns)
 
 (** Create an extensional equivalence between unary functions s & t
  ** forall x, s x = t x *)
@@ -46,7 +49,7 @@ let toVar sort ts =
   if List.is_empty zs
   then
     let () = Stdio.print_endline "toVar: list was empty. For some probably brittle reason the resulting term is never used" in
-    pure @@ refApp sort @@ [ref_ "HEREintoVar"; ref_ "true"] @ sty_terms ts
+    pure @@ app_ref sort @@ [ref_ "HEREintoVar"; ref_ "true"] @ sty_terms ts
   else List.hd_exn zs |> snd |> pure
 
 (** Return a list of variable names for the input list of positions
@@ -69,11 +72,11 @@ let up x f n b =
   pure @@ List.map (list_zip xs n) ~f:(fun (p, n_i) -> f p b n_i)
 let ups x f = m_fold (up x f)
 
-let upRen x bs xs = ups x (fun z b xi -> refApp (upRen_ z b) (fst (bparameters b) @ [xi])) xs bs
+let upRen x bs xs = ups x (fun z b xi -> app_ref (upRen_ z b) (fst (bparameters b) @ [xi])) xs bs
 
 let upScope x bs terms = ups x (fun z b n -> succ_ n z b) terms bs
 
-let upSubstS x bs xs = ups x (fun z b xi -> refApp (up_ z b) (fst (bparameters b) @ [xi])) xs bs
+let upSubstS x bs xs = ups x (fun z b xi -> app_ref (up_ z b) (fst (bparameters b) @ [xi])) xs bs
 
 let up' x f n b =
   let* xs = substOf x in
@@ -111,8 +114,11 @@ let castUpSubst sort bs y arg =
  ** Example: { m : nat } *)
 let introScopeVarS name =
   let name = VarState.tfresh name in
-  (* TODO for unscoped code I need to filter it out here. was the special binder type before *)
-  (ref_ name, [binder1_ ~implicit:true ~btype:nat_ name])
+  let binders = match !Settings.scope_type with
+    | H.Unscoped -> []
+    | H.WellScoped -> [binder1_ ~implicit:true ~btype:nat_ name] in
+  (ref_ name, binders)
+
 
 (** Create a renaming variable together with a binder
  ** Example: ( xi : fin m -> fin n ) *)
@@ -131,12 +137,16 @@ let genSubstS name (m, ns) sort =
 let introScopeVar name sort =
   let* substSorts = substOf sort in
   let names = List.map ~f:(sep name) substSorts in
+  let binders = match !Settings.scope_type with
+    | H.Unscoped -> []
+    | H.WellScoped ->
+      if List.is_empty names then []
+      else [binder_ ~implicit:true ~btype:nat_ names] in
   pure @@ (
-    SubstScope (mkRefs names),
+    SubstScope (mk_refs names),
     (* Fix for wrong translation of sorts that don't have a substitution vector.
      * Could also filter out in translation but this seems better. *)
-    if List.is_empty names then []
-        else [binder_ ~implicit:true ~btype:nat_ names]
+    binders
   )
 
 (** Create multiple renaming variables and their binders. One for each substituting sort of the given sort. The given scope variables vectors ms & ns should also contain one scope variable per substituting sort.
@@ -147,7 +157,7 @@ let genRen sort name (ms, ns) =
   let names = List.map ~f:(sep name) substSorts in
   let types = List.map2_exn ~f:renT (sty_terms ms) (sty_terms ns) in
   pure @@ (
-    SubstRen (mkRefs names),
+    SubstRen (mk_refs names),
     List.map2_exn ~f:(fun x t -> binder1_ ~btype:t x) names types
   )
 
@@ -163,7 +173,7 @@ let genSubst sort name (ms, ns) =
       pure @@ substT m ns' substSort)
       substSorts (sty_terms ms) in
   pure @@ (
-    SubstSubst (mkRefs names),
+    SubstSubst (mk_refs names),
     List.map2_exn ~f:(fun n t -> binder1_ ~btype:t n) names types
   )
 
@@ -181,13 +191,17 @@ let genEqs sort name sigmas taus f =
   let names = List.map ~f:(sep name) substSorts in
   let types = List.map2_exn ~f:(equiv_) sigmas taus in
   pure @@ (
-    SubstEq (mkRefs names, f),
+    SubstEq (mk_refs names, f),
     List.map2_exn ~f:(fun n t -> binder1_ ~btype:t n) names types
   )
 
 (** Create a finite type for a given sort and the corresponding element of the scope variable vector
  ** For sort vl and ns = [nty; nvl], create fin nvl *)
-let finT_ sort ns = map fin_ (toVar sort (SubstScope ns))
+  (* TODO this should probably be called differently since I don't create fin in unscoped code *)
+let finT_ sort ns =
+  match !Settings.scope_type with
+  | H.Unscoped -> pure @@ nat_
+  | H.WellScoped -> map fin_ (toVar sort (SubstScope ns))
 
 (** Construction of patterns, needed for lifting -- yields a fitting pattern of S and id corresponding to the base sort and the binder
  ** TODO example *)
@@ -196,32 +210,33 @@ let patternSId sort binder =
   let* hasRen = hasRenamings sort in
   let shift y = if hasRen
     then shift_
-    else (shift_ >>> refApp (var_ y) (List.map ~f:(const underscore_) substSorts)) in
+    else (shift_ >>> app_ref (var_ y) (List.map ~f:(const underscore_) substSorts)) in
   let shiftp p y = if hasRen
-    then refApp shift_p_ [ref_ p]
-    else refApp shift_p_ [ref_ p]
-      >>> refApp (var_ y) (List.map ~f:(const underscore_) substSorts) in
+    then app_ref shift_p_ [ref_ p]
+    else app_ref shift_p_ [ref_ p]
+      >>> app_ref (var_ y) (List.map ~f:(const underscore_) substSorts) in
   up sort (fun y b _ -> match b with
       | H.Single bsort -> if String.(y = bsort) then shift y else id_
       | H.BinderList (p, bsort) -> if String.(y = bsort) then shiftp p y else id_)
-    (mkRefs substSorts) binder
+    (mk_refs substSorts) binder
 
 let patternSIdNoRen sort binder =
   let* substSorts = substOf sort in
   let shift = const shift_ in
-  let shiftp p = const @@ refApp shift_p_ [ ref_ p ] in
+  let shiftp p = const @@ app_ref shift_p_ [ ref_ p ] in
   up sort (fun y b _ -> match b with
-      | H.Single bsort -> if String.(y = bsort) then shift y else idApp_ underscore_
-      | H.BinderList (p, bsort) -> if String.(y = bsort) then shiftp p y else idApp_ underscore_)
-    (mkRefs substSorts) binder
+      | H.Single bsort -> if String.(y = bsort) then shift y else app_id_ underscore_
+      | H.BinderList (p, bsort) -> if String.(y = bsort) then shiftp p y else app_id_ underscore_)
+    (mk_refs substSorts) binder
 
 (* Some patterns in the code for which I don't have a name yet. I have to check in the generated code for a fitting name *)
-let findName1 sort substSorts ms =
+let findName1 sort ms =
+  let* substSorts = substOf sort in
   a_map (fun substSort ->
-      map2 refApp (pure @@ var_ substSort)
-        (map sty_terms (castSubst sort substSort ms))) substSorts
+      map2 app_var_constr (pure @@ substSort) (castSubst sort substSort ms))
+    substSorts
 
-let map_ f ts = refApp (sepd [f; "map"]) ts
-let mapId_ f ts = refApp (sepd [f; "id"]) ts
-let mapExt_ f ts = refApp (sepd [f; "ext"]) ts
-let mapComp_ f ts = refApp (sepd [f; "comp"]) ts
+let map_ f ts = app_ref (sepd [f; "map"]) ts
+let mapId_ f ts = app_ref (sepd [f; "id"]) ts
+let mapExt_ f ts = app_ref (sepd [f; "ext"]) ts
+let mapComp_ f ts = app_ref (sepd [f; "comp"]) ts

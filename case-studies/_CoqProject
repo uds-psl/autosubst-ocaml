@@ -1,0 +1,27 @@
+-Q . ""
+
+axioms.v
+unscoped.v
+fintype.v
+header_extensible.v
+
+utlc/utlc_unscoped.v
+utlc/utlc_wellscoped.v
+
+stlc/stlc_unscoped.v
+stlc/stlc_wellscoped.v
+
+fcbv/fcbv_unscoped.v
+fcbv/fcbv_wellscoped.v
+
+# fol/fol_unscoped.v
+# fol/fol_wellscoped.v
+
+pi/pi_unscoped.v
+pi/pi_wellscoped.v
+
+# num/num_unscoped.v
+# num/num_wellscoped.v
+
+variadic/variadic_unscoped.v
+variadic/variadic_wellscoped.v

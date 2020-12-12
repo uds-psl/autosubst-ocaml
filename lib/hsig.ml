@@ -1,6 +1,8 @@
 open Base
 module AL = AssocList
 
+type scopeType = WellScoped | Unscoped
+
 type tId = string [@@deriving show, compare]
 type vId = string [@@deriving show]
 type fId = string [@@deriving show]

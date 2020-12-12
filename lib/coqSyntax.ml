@@ -18,4 +18,3 @@ let sty_terms = function
   | SubstEq (xs,_) -> xs
   | SubstConst xs -> xs
 
-type scopeType = WellScoped | Unscoped
