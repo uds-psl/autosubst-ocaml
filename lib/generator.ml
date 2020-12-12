@@ -167,7 +167,7 @@ let upSubstT b z m sigma =
   let* pat = patternSId z b in
   let* m = upSubst z [b] m in
   let* hasRen = hasRenamings z in
-  let sigma' = sigma >>> app_ref (if hasRen then (ren_ z) else (subst_ z)) pat in
+  let sigma' = sigma >>> app_fix (if hasRen then (ren_ z) else (subst_ z)) pat in
   pure @@ cons__ z b sigma' m
 
 let genUpS (binder, sort) =
@@ -475,6 +475,7 @@ let genUpSubstSubst (binder, sort) =
   (* TODO why is this the same as pat? *)
   let* shift = patternSId sort binder in
   let* substSorts = substOf sort in
+  (* TODO findName1 *)
   let* pat' = a_map2_exn (fun substSort tau ->
       let* p' = castSubst sort substSort (SubstSubst pat) in
       pure (tau >>> (app_ref (ren_ substSort) (sty_terms p'))))
@@ -551,13 +552,13 @@ let genUpSubstSubst (binder, sort) =
   let* ms = upSubst sort [binder] ms in
   let* ls' = upSubst sort [binder] ls in
   let* zeta' = upSubst sort [binder] taus in
-  let* pat = patternSIdNoRen sort binder in
+  let* pat = patternSId sort binder in
   let (pms, bpms) = binvparameters binder in
   let ret = equiv_
       (app_ref (up_ sort binder) (pms @ [sigma])
        >>> app_ref (subst_ sort) (sty_terms zeta'))
       (app_ref (up_ sort binder) (pms @ [theta])) in
-  let* shift = patternSId sort binder in
+  let* shift = patternSIdNoRen sort binder in
   let* substSorts = substOf sort in
   let* pat' = a_map2_exn (fun tau substSort ->
       let* p' = castSubst sort substSort (SubstSubst pat) in
@@ -857,11 +858,8 @@ let genCodeT sorts upList =
   let* upRen = guard_map genUpRen upList in
   let* renamings = genRenamings sorts in
   (* GENERATE UPs *)
-  (* let () = print_endline ((List.hd_exn sorts)^ " uplist is empty" ^ (Bool.to_string (List.is_empty upList))) in *)
   let* ups = guard_map genUpS upList in
-  (* let () = print_endline ((List.hd_exn sorts)^ " ups is empty" ^ (Bool.to_string (List.is_empty ups))) in *)
   let* upsNoRen = guard_map ~invert:true genUpS upList in
-  (* let () = print_endline ((List.hd_exn sorts)^ " upsnoren is empty" ^ (Bool.to_string (List.is_empty upsNoRen))) in *)
   (* GENERATE SUBSTITUTIONS *)
   let* substitutions = genSubstitutions sorts in
   let* upId = a_map genUpId upList in
@@ -894,19 +892,22 @@ let genCodeT sorts upList =
   let* lemmaSubstCompRen = guard_concat_map genLemmaCompRenSubst sorts in
   let* lemmaSubstRenComp = guard_concat_map genLemmaCompSubstRen sorts in
   let* lemmaSubstComp = guard_concat_map genLemmaCompSubstSubst sorts in
+  let mk_fixpoint = function
+    | [] -> []
+    | fix_exprs -> [fixpoint_ ~is_rec fix_exprs] in
   (* generation of the actual sentences *)
   pure @@ [inductive_ types] @
            (List.concat congruences) @
           (if not hasbinders then [] else
              upRen @ guard isRen [renamings] @
              ups @ [substitutions] @ upsNoRen @
-             upId @ [fixpoint_ ~is_rec idLemmas] @
-             extUpRen @ [fixpoint_ ~is_rec extRen] @
-             extUp @ [fixpoint_ ~is_rec ext] @
-             upRenRen @ [fixpoint_ ~is_rec compRenRen] @
-             upRenSubst @ [fixpoint_ ~is_rec compRenSubst] @
-             upSubstRen @ [fixpoint_ ~is_rec compSubstRen] @
-             upSubstSubst @ [fixpoint_ ~is_rec compSubstSubst] @ upSubstSubstNoRen @
-             upRinstInst @ [fixpoint_ ~is_rec rinstInst] @
+             upId @ mk_fixpoint idLemmas @
+             extUpRen @ mk_fixpoint extRen @
+             extUp @ mk_fixpoint ext @
+             upRenRen @ mk_fixpoint compRenRen @
+             upRenSubst @ mk_fixpoint compRenSubst @
+             upSubstRen @ mk_fixpoint compSubstRen @
+             upSubstSubst @ mk_fixpoint compSubstSubst @ upSubstSubstNoRen @
+             upRinstInst @ mk_fixpoint rinstInst @
              List.concat (lemmaRenSubst @ lemmaInstId @ lemmaRinstId @ lemmaVarL @ lemmaVarLRen @ lemmaSubstRenRen @ lemmaSubstCompRen @ lemmaSubstRenComp @ lemmaSubstComp)
           )

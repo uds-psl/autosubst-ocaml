@@ -39,4 +39,5 @@ val fixpoint_ : is_rec:bool -> fixpoint_expr list -> vernac_expr
 val lemma_ : identifier -> binder_expr list -> constr_expr -> constr_expr -> vernac_expr list
 val definition_ : identifier -> binder_expr list -> ?rtype:constr_expr -> constr_expr -> vernac_expr
 
+val pr_constr_expr : constr_expr -> Pp.t
 val pr_vernac_expr : vernac_expr -> Pp.t

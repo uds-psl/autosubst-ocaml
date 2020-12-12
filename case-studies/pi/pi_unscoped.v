@@ -9,13 +9,13 @@ Fixpoint subst_chan (sigma_chan : forall _ : nat, chan) (s : chan) : chan :=
 Definition up_chan_chan (sigma : forall _ : nat, chan) :
   forall _ : nat, chan :=
   scons (var_chan var_zero)
-    (funcomp (subst_chan (funcomp (var_chan _) shift)) sigma).
+    (funcomp (subst_chan (funcomp var_chan shift)) sigma).
 Definition upId_chan_chan (sigma : forall _ : nat, chan)
   (Eq : forall x, eq (sigma x) (var_chan x)) :
   forall x, eq (up_chan_chan sigma x) (var_chan x) :=
   fun n =>
   match n with
-  | S n' => ap (subst_chan (funcomp (var_chan _) shift)) (Eq n')
+  | S n' => ap (subst_chan (funcomp var_chan shift)) (Eq n')
   | O => eq_refl
   end.
 Fixpoint idSubst_chan (sigma_chan : forall _ : nat, chan)
@@ -24,13 +24,12 @@ eq (subst_chan sigma_chan s) s :=
   match s with
   | var_chan s0 => Eq_chan s0
   end.
-Fixpoint .
 Definition upExt_chan_chan (sigma : forall _ : nat, chan)
   (tau : forall _ : nat, chan) (Eq : forall x, eq (sigma x) (tau x)) :
   forall x, eq (up_chan_chan sigma x) (up_chan_chan tau x) :=
   fun n =>
   match n with
-  | S n' => ap (subst_chan (funcomp (var_chan _) shift)) (Eq n')
+  | S n' => ap (subst_chan (funcomp var_chan shift)) (Eq n')
   | O => eq_refl
   end.
 Fixpoint ext_chan (sigma_chan : forall _ : nat, chan)
@@ -40,9 +39,6 @@ eq (subst_chan sigma_chan s) (subst_chan tau_chan s) :=
   match s with
   | var_chan s0 => Eq_chan s0
   end.
-Fixpoint .
-Fixpoint .
-Fixpoint .
 Fixpoint compSubstSubst_chan (sigma_chan : forall _ : nat, chan)
 (tau_chan : forall _ : nat, chan) (theta_chan : forall _ : nat, chan)
 (Eq_chan : forall x,
@@ -62,17 +58,17 @@ Definition up_subst_subst_chan_chan (sigma : forall _ : nat, chan)
   match n with
   | S n' =>
       eq_trans
-        (compSubstSubst_chan shift (up_chan_chan tau_chan)
-           (funcomp (up_chan_chan tau_chan) (funcomp (var_chan _) shift))
-           (fun x => eq_refl) (sigma n'))
+        (compSubstSubst_chan (funcomp var_chan shift) (up_chan_chan tau_chan)
+           (funcomp (up_chan_chan tau_chan) shift) (fun x => eq_refl)
+           (sigma n'))
         (eq_trans
            (eq_sym
-              (compSubstSubst_chan tau_chan shift
-                 (funcomp (subst_chan shift) tau_chan) (fun x => eq_refl)
-                 (sigma n'))) (ap (subst_chan shift) (Eq n')))
+              (compSubstSubst_chan tau_chan (funcomp var_chan shift)
+                 (funcomp (subst_chan (funcomp var_chan shift)) tau_chan)
+                 (fun x => eq_refl) (sigma n')))
+           (ap (subst_chan (funcomp var_chan shift)) (Eq n')))
   | O => eq_refl
   end.
-Fixpoint .
 Lemma instId_chan : eq (subst_chan var_chan) id.
 Proof.
 exact (FunctionalExtensionality.functional_extensionality _ _
@@ -158,7 +154,6 @@ eq (subst_proc sigma_chan s) s :=
         (idSubst_chan sigma_chan Eq_chan s1)
         (idSubst_proc sigma_chan Eq_chan s2)
   end.
-Fixpoint .
 Fixpoint ext_proc (sigma_chan : forall _ : nat, chan)
 (tau_chan : forall _ : nat, chan)
 (Eq_chan : forall x, eq (sigma_chan x) (tau_chan x)) (s : proc) :
@@ -182,9 +177,6 @@ eq (subst_proc sigma_chan s) (subst_proc tau_chan s) :=
         (ext_chan sigma_chan tau_chan Eq_chan s1)
         (ext_proc sigma_chan tau_chan Eq_chan s2)
   end.
-Fixpoint .
-Fixpoint .
-Fixpoint .
 Fixpoint compSubstSubst_proc (sigma_chan : forall _ : nat, chan)
 (tau_chan : forall _ : nat, chan) (theta_chan : forall _ : nat, chan)
 (Eq_chan : forall x,
@@ -218,7 +210,6 @@ eq (subst_proc tau_chan (subst_proc sigma_chan s)) (subst_proc theta_chan s)
         (compSubstSubst_chan sigma_chan tau_chan theta_chan Eq_chan s1)
         (compSubstSubst_proc sigma_chan tau_chan theta_chan Eq_chan s2)
   end.
-Fixpoint .
 Lemma instId_proc : eq (subst_proc var_chan) id.
 Proof.
 exact (FunctionalExtensionality.functional_extensionality _ _

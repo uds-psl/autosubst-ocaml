@@ -3,6 +3,10 @@
 Version: December 11, 2019.
  *)
 
+(* Adrian:
+ I changed this library a bit to work better with my generated code.
+ 1. I use nat directly instead of defining fin to be nat and using Some/None as S/O
+ 2. I removed the "s, sigma" notation for scons because it interacts with dependent function types "forall x, A"*)
 Require Export axioms.
 
 Definition ap {X Y} (f : X -> Y) {x y : X} (p : x = y) : f x = f y :=
@@ -13,10 +17,10 @@ Definition apc {X Y} {f g : X -> Y} {x y : X} (p : f = g) (q : x = y) : f x = g 
 
 (** ** Primitives of the Sigma Calculus. *)
 
-Definition None := 0.
-Definition Some := S.
+(* Definition None := 0. *)
+(* Definition Some := S. *)
 
-Notation fin := nat.
+(* Notation fin := nat. *)
 Definition shift  := S.
 
 Definition var_zero := 0.

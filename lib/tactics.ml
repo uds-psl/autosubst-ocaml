@@ -210,11 +210,11 @@ let patternSId sort binder =
   let* hasRen = hasRenamings sort in
   let shift y = if hasRen
     then shift_
-    else (shift_ >>> app_ref (var_ y) (List.map ~f:(const underscore_) substSorts)) in
+    else (shift_ >>> app_var_constr y (SubstScope (List.map ~f:(const underscore_) substSorts))) in
   let shiftp p y = if hasRen
     then app_ref shift_p_ [ref_ p]
     else app_ref shift_p_ [ref_ p]
-      >>> app_ref (var_ y) (List.map ~f:(const underscore_) substSorts) in
+      >>> app_var_constr y (SubstScope (List.map ~f:(const underscore_) substSorts)) in
   up sort (fun y b _ -> match b with
       | H.Single bsort -> if String.(y = bsort) then shift y else id_
       | H.BinderList (p, bsort) -> if String.(y = bsort) then shiftp p y else id_)

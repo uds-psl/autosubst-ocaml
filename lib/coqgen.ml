@@ -120,11 +120,14 @@ let definition_ dname dbinders ?rtype dbody =
 
 let vernacend = Pp.str ".\n"
 
-let pr_exact_expr cexpr =
-  let open Pp in
+let pr_constr_expr cexpr =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  str "exact (" ++ Ppconstr.pr_lconstr_expr env sigma cexpr ++ str ")" ++ vernacend
+  Ppconstr.pr_lconstr_expr env sigma cexpr
+
+let pr_exact_expr cexpr =
+  let open Pp in
+  str "exact (" ++ pr_constr_expr cexpr ++ str ")" ++ vernacend
 
 (** I catch the VernacExactProof constructor because the way Coq normally prints it does not
  ** work well with proof general. So I explicitly add an `exact (...)` *)
