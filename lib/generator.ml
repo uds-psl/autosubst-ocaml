@@ -25,7 +25,9 @@ let rec genArg sort n bs = function
     pure @@ app_ref y (List.concat_map ~f:sty_terms (filter_scope_vars [up_scopes]))
   | H.FunApp (f, p, xs) ->
     let* xs' = a_map (genArg sort n bs) xs in
-    pure @@ app_ref (funname_ (f^p)) xs'
+    let p' = Option.value_map p ~default:[] ~f:(fun x -> [x]) in
+    pure @@ app_ref (funname_ f) (p' @ xs')
+
 
 let genVar sort ns =
   let* open_x = isOpen sort in

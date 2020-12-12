@@ -1,5 +1,6 @@
 open Base
 module AL = AssocList
+module CG = Coqgen
 
 type scopeType = WellScoped | Unscoped
 
@@ -12,7 +13,7 @@ type 'a tIdMap = (tId, 'a) AL.t [@@deriving show]
 
 type binder = Single of tId | BinderList of string * tId
 [@@deriving show, compare]
-type argument_head = Atom of tId | FunApp of fId * fId * (argument_head list)
+type argument_head = Atom of tId | FunApp of fId * (CG.constr_expr option [@opaque]) * (argument_head list)
 [@@deriving show]
 
 let getBinders = function
@@ -110,6 +111,7 @@ module Hsig_example = struct
 end
 
 module Hsig_fol = struct
+  open CG
   let mySigSpec = AL.from_list [
     ("form", [ {
          cparameters = [];
@@ -118,7 +120,7 @@ module Hsig_fol = struct
        }; {
            cparameters = [("p","nat")];
            cname = "Pred";
-           cpositions = [ { binders = []; head = FunApp ("cod", "(fin p)", [ Atom "term" ]); }]
+           cpositions = [ { binders = []; head = FunApp ("cod", Some (app1_ (ref_ "fin") (ref_ "p")), [ Atom "term" ]); }]
          }; {
            cparameters = [];
            cname = "Impl";
@@ -148,7 +150,7 @@ module Hsig_fol = struct
     ); ("term", [ {
         cparameters = [("f","nat")];
         cname = "Func";
-        cpositions = [ {binders = []; head = FunApp ("cod", "(fin f)", [Atom "term"]); } ]
+        cpositions = [ {binders = []; head = FunApp ("cod", Some (app1_ (ref_ "fin") (ref_ "f")), [Atom "term"]); } ]
       } ] )
   ]
   let mySig = {

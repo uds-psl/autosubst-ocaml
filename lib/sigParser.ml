@@ -2,6 +2,8 @@ open Base
 open Angstrom
 module H = Hsig
 module AL = AssocList
+module CG = Coqgen
+
 
 (** what we parse here *)
 type parameter = string * string
@@ -42,7 +44,8 @@ let filterReserved i =
   then fail @@ "reserved identifier: " ^ i
   else return i
 
-(** parsers for all the tokens we encounter. Identifiers are filtered here so that they are not reserved keywords *)
+(** parsers for all the tokens we encounter. Most uses of the identifier parser are filtered so that they don't contain reserved keywords *)
+let raw_ident = lex @@ take_while1 is_ident
 let ident = lex @@ take_while1 is_ident >>= filterReserved
 let arrow = lex @@ string "->"
 let colon = lex @@ char ':'
@@ -80,12 +83,24 @@ let singleBinder = lift (fun i -> H.Single i) ident
 let variadicBinder = angles @@ lift3 (fun n _ t -> H.BinderList (n, t)) ident comma ident
 let binders = many1 ((singleBinder <|> variadicBinder) <* arrow)
 
-(** Functor parsing is a bit ugly since the parameters is just the whole string after the
- ** functor name (excluding leading whitespace) up to the closing quote
- ** Parsing functor application like this "cod (fin p)" is not really nice anyways but
- ** that's how it was in autosubst *)
-let functorArg = lift4 (fun _ n pms _ -> (n, pms))
-    quote ident (take_till (fun c -> Char.(c = '"'))) quote
+(** As an argument for functors I think we allow arbitrary s-expressions that only contain identifiers
+ ** e.g. (fin f) in the first-order logic example *)
+let sexpr = fix (fun s ->
+    (lift (fun i -> CG.ref_ i) raw_ident)
+    <|> (lift (function
+        | [] -> CG.ref_ "tt"
+        | s :: ss -> CG.app_ s ss)
+        (parens (many s))))
+
+(** A functor argument is the name of the functor followed by optional arguments *)
+let functorArg = lift4 (fun _ n pms _ ->
+    (* TODO memo: It's possible to parse strings into constr_expr but there seems to be a difference in how this is called. If I start the executable this crashes, but when I call Program.main via the repl with the same arguments as on the command line it does not crash. Somehow utop seems to run some initialization code for coq it seems. *)
+    (* let cexpr = CG.parse_constr_expr (String.strip pms) in *)
+    (n, pms)
+  )
+    quote ident (* (take_till (fun c -> Char.(c = '"'))) *)
+    (option None (sexpr >>| (fun x -> Some x)))
+    quote
 
 (** An argument is either an identifier representing a sort or a functor application
  ** to another argument. Here we have at last a reason to use fix *)

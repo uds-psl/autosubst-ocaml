@@ -1,5 +1,4 @@
 open Base
-module H = Hsig
 
 let readSignature infile =
   let open Lwt.Syntax in
@@ -17,22 +16,10 @@ let write_file outfile content =
     write output content
   )
 
-let parse_arguments () =
-  let argv = Sys.get_argv () in
-  let infile = Array.get argv 1 in
-  let outfile = Array.get argv 2 in
-  let scope_type = match Array.get argv 3 with
-    | "ucoq" -> H.Unscoped
-    | "coq" -> H.WellScoped
-    | _ -> failwith "scope type must be either \"ucoq\" or \"coq\"" in
-  let () = Settings.scope_type := scope_type in
-  (infile, outfile)
-
-let main () =
+let main (infile, outfile, scope_type) =
   let open ErrorM.Syntax in
   let open ErrorM in
-  (* parse arguments *)
-  let (infile, outfile) = parse_arguments () in
+  let () = Settings.scope_type := scope_type in
   (* parse input HOAS *)
   let* spec = readSignature infile |> SigParser.parse_signature in
   let* signature = SigAnalyzer.build_signature spec in

@@ -146,8 +146,7 @@ let pr_vernac_expr =
   | vexpr ->
     Ppvernac.pr_vernac_expr vexpr ++ vernacend
 
-let section_ name vexprs =
-  Vernacexpr.([ VernacBeginSection (lident_ name) ] @ vexprs @ [ VernacEndSegment (lident_ name) ])
+let parse_constr_expr expr_s = Pcoq.parse_string (Pcoq.Constr.lconstr) expr_s
 
 module GenTests = struct
   (* Lemma congr_lam  { s0 : tm   } { t0 : tm   } (H1 : s0 = t0) : lam  s0 = lam  t0 . *)
