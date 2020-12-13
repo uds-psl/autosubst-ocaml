@@ -1,3 +1,9 @@
+(** This module implements a parser for the HOAS files using the parser combinator library Angstrom.
+ ** It shoudl be able to parse most reasonable signature that Autosubst 2 can parse.
+ ** Differences:
+ **   - we disallow constructors to have the same name as any type/functor
+ **   - we disallow the extra parentheses around variadic binder specifications "(<p,m>)", so you must write "<p,m>" instead.
+ ** The only thing we really have to do differently from Autosubst 2 is that we must actually parse the arguments of functors, not take them as a plain string because in the end we want to construct Coq AST. *)
 open Base
 open Angstrom
 module H = Hsig
@@ -25,6 +31,7 @@ let is_space = function
 let spaces = skip_while is_space
 let lex p = p <* spaces
 
+(** taken from Autosubst 2 *)
 let reservedIds =
   (* Keywords according to the Coq manual *)
   ["as"; "at"; "cofix"; "else"; "end"; "exists"; "exists2"; "fix";
@@ -195,7 +202,7 @@ let parse_signature s =
   | Ok v -> checkSpec v
 
 (** Some signatures for testing the parser in the repl *)
-module Test = struct
+module [@warning "-32"] Test = struct
   let test_sort = "tm : Type"
   let test_constructor = "arr : tm -> tm -> tm"
 

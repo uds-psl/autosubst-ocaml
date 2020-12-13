@@ -1,3 +1,5 @@
+(** This module implements mini DSL to generate scope/renaming/substitution variables.
+ ** Most code generation functions in Generator use this to intro their variables. *)
 open Coqgen
 
 type scopeVar = [ `K | `L | `M | `N ]

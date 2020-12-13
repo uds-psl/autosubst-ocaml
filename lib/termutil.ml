@@ -109,6 +109,7 @@ let explicitS_ = function
 (** Convert a list of binders to explicit binders *)
 let explicit_ = List.map ~f:explicitS_
 
+(** Construct the body of a definition depending on if the given sort matches the one in the binder *)
 let definitionBody sort binder (singleMatch, singleNoMatch) f_listMatch =
   match binder with
   | H.Single sort' -> if String.(sort = sort') then singleMatch else singleNoMatch

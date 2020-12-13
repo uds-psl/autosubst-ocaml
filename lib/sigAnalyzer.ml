@@ -1,3 +1,5 @@
+(** This module analyzes the output of the SigParser
+ **  and build the signature that we then use during code generation. *)
 open Base
 open Util
 

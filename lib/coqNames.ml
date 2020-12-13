@@ -1,9 +1,15 @@
+(** This module provides names for definitions/lemmas etc.
+ ** The values here are mainly passed to the smart constructors in Coqgen
+ ** by the generator functions in Generator *)
+
 open Base
 open Util
 
 module H = Hsig
 
-(** This uses the mutable variable format to build the pattern for variables. *)
+(** This uses the mutable variable var__ to build the name for variable constructors.
+ ** format_from_string takes a string and format string (the "%s") and tries to cast the string
+ ** to that format. Can error at runtime if user supplied a wrong format string. *)
 let var_ x =
   let fmt = Caml.Scanf.format_from_string !Settings.var__ "%s" in
   Printf.sprintf fmt x

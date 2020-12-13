@@ -1,3 +1,5 @@
+(** This module also implements utility functions for code generation like TermUtil
+ ** but they are mostly more complex *)
 open Base
 open REM.Syntax
 open REM

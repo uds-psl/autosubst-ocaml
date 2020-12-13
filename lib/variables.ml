@@ -25,8 +25,7 @@ let showVar = function
   | `TAU _ | `TAUS _ -> "tau"
   | `THETA _ | `THETAS _ -> "theta"
 
-(** Mini DSL to generate scope/renaming/substitution variables
- ** the var_declaration list contains elements of the polymorphic variants.
+(** The var_declaration list contains elements of the polymorphic variants.
  ** We then fold over the list and aggregate the generated scope variables.
  ** In general singular variables (like `K, `SIGMA) are represented as constr_expr values.
  ** And those written in plural (like `KS, `SIGMAS) are represented as substTy values. *)

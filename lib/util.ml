@@ -1,3 +1,4 @@
+(** General utility functions *)
 open Base
 
 let id x = x

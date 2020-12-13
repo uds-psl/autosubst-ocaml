@@ -1,3 +1,6 @@
+(** This module implements smart constructors for all the different kind of AST nodes
+ ** and vernacular expressions we need.
+ ** And it has an interface for printing these expressions. *)
 
 type identifier = string
 type identifiers = identifier list

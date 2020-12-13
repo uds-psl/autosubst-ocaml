@@ -1,5 +1,4 @@
-(** My own definitions for reader/writer/state monad
- ***  *)
+(** This module contains own definitions for some monads *)
 
 open Base
 
@@ -14,7 +13,6 @@ module type MONAD_READER = sig
   include M.Monad.MONAD
     with type 'a t := 'a t
 
-  (* Reader *)
   val ask : r t
   val asks : (r -> 'a) -> 'a t
 end
@@ -29,7 +27,7 @@ module type MONAD_ERROR = sig
   val error : e -> 'a t
 end
 
-(** A combination of reader and writer *)
+(** A combination of reader and error *)
 module type MONAD_RE = sig
   type 'a t
   (* as in Rws.MONAD_RWST I use these two types to include the Monad.MAKE_T signature so that I can have the Syntax signature in MONAD_RE. Then I can use the syntax when defining functions in the RE_Functions functor *)
@@ -55,6 +53,7 @@ module type MONAD_RE = sig
     with type 'a actual_t := 'a actual_t
 end
 
+(** Some functions that were not in the monad library yet *)
 module ExtraFunctionsList (MON: M.Monad.MONAD) = struct
   module Infix = M.Monad.MonadInfix(MON)
   module Fun = M.Monad.ApplicativeFunctionsList(MON)

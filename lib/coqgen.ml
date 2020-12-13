@@ -147,7 +147,8 @@ let pr_vernac_expr =
 
 let parse_constr_expr expr_s = Pcoq.parse_string (Pcoq.Constr.lconstr) expr_s
 
-module GenTests = struct
+(* disable unused warning *)
+module [@warning "-32"] GenTests = struct
   (* Lemma congr_lam  { s0 : tm   } { t0 : tm   } (H1 : s0 = t0) : lam  s0 = lam  t0 . *)
   let print_utlc_tm () : Pp.t =
     let utlc = inductive_ [inductiveBody_ "tm" [] ~rtype:(ref_ "Type") [

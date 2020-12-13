@@ -1,3 +1,5 @@
+(** This module implements the types for the HOAS signature that is parsed by autosubst.
+ ** Also it contains the variant for which kind of syntax we generate. *)
 open Base
 module AL = AssocList
 module CG = Coqgen
@@ -58,8 +60,8 @@ type signature =
 type t = signature
 [@@deriving show]
 
-
-module Hsig_example = struct
+(* disable unused warning *)
+module [@warning "-32"] Hsig_example = struct
 
   let mySigSpec : spec = AL.from_list [
     ("tm", [ {
@@ -110,7 +112,7 @@ module Hsig_example = struct
   }
 end
 
-module Hsig_fol = struct
+module [@warning "-32"] Hsig_fol = struct
   open CG
   let mySigSpec = AL.from_list [
     ("form", [ {

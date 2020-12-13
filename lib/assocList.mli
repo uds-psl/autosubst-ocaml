@@ -1,3 +1,4 @@
+(** This module implements a Map from 'a to 'b by as association list of pairs 'a * 'b *)
 
 type ('a, 'b) t [@@deriving show]
     
@@ -15,6 +16,7 @@ val update_exn : 'a -> ('b -> 'b) -> ('a, 'b) t -> ('a, 'b) t
 
 val map : ('a -> 'b -> 'c) -> ('a, 'b) t -> ('a, 'c) t
 
+(** Remove all shadowed elements from the assoc list *)
 val flatten : ('a, 'b) t -> ('a, 'b) t
 
 val from_list : ('a * 'b) list -> ('a, 'b) t

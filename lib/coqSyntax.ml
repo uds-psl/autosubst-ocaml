@@ -1,3 +1,7 @@
+(** This module originally contained another Coq AST. Now it just has the substTy type
+ ** which is used to represent vectors of scope variables (n_ty, n_vl : nat),
+ ** renamings (zeta_ty, zeta_vl), substitutions (sigma_ty, sigma_vl),
+ ** and equalities (that two renamings/substitutions are extensionally equal etc.) *)
 
 module CG = Coqgen
 module H = Hsig

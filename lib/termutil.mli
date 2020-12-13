@@ -1,3 +1,4 @@
+(** This module implements utility functions for generating Coq AST used in Generator *)
 open Coqgen
 open CoqSyntax
 module H = Hsig

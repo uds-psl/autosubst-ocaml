@@ -1,12 +1,12 @@
+(** This module implements the ReaderT(Error) monad for signatures.
+ ** It's used pervasively through the code generation so that all the generator functions
+ ** can read the signature. *)
 open Base
 open Util
 
 module M = Monadic
 module H = Hsig
 module AL = AssocList
-
-type 'a wrapped = 'a M.Result.Make(String).t
-type 'a actual_t = H.t -> 'a M.Result.Make(String).t
 
 module RE = M.Reader.MakeT(ErrorM)(struct type t = H.t end)
 

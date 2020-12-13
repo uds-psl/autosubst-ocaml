@@ -1,6 +1,8 @@
+(** This module is basically the entrypoint of the program.
+ ** (It's in lib because the ocaml repl cannot open executables, i.e. bin/main.ml) *)
 open Base
 
-let readSignature infile =
+let read_signature infile =
   let open Lwt.Syntax in
   let open Lwt_io in
   Lwt_main.run (
@@ -21,11 +23,11 @@ let main (infile, outfile, scope_type) =
   let open ErrorM in
   let () = Settings.scope_type := scope_type in
   (* parse input HOAS *)
-  let* spec = readSignature infile |> SigParser.parse_signature in
+  let* spec = read_signature infile |> SigParser.parse_signature in
   let* signature = SigAnalyzer.build_signature spec in
   (* generate dot graph *)
   (* generate code *)
-  let* code = GenCode.runGenCode signature in
+  let* code = GenCode.run_gen_code signature in
   (* write file *)
   let () = write_file outfile code in
   pure "done"
