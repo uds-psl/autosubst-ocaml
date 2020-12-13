@@ -88,7 +88,6 @@ let upSubst x bs = function
   | SubstRen xs -> map (fun xs -> SubstRen xs) (upRen x bs xs)
   | SubstSubst xs -> map (fun xs -> SubstSubst xs) (upSubstS x bs xs)
   | SubstEq (xs, f) -> map2 (fun xs f -> SubstEq (xs, f)) (upEq x bs xs f) (pure f)
-  | SubstConst xs -> pure @@ SubstConst xs
 
 let cast x y xs =
   let* arg_x = substOf x in
@@ -102,7 +101,6 @@ let castSubst x y = function
   | SubstRen xs -> map (fun xs -> SubstRen xs) (cast x y xs)
   | SubstSubst xs -> map (fun xs -> SubstSubst xs) (cast x y xs)
   | SubstEq (xs, f) -> map2 (fun xs f -> SubstEq (xs, f)) (cast x y xs) (pure f)
-  | SubstConst xs -> pure @@ SubstConst xs
 
 let castUpSubst sort bs y arg =
   let* arg' = castSubst sort y arg in
