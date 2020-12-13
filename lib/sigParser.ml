@@ -94,7 +94,6 @@ let sexpr = fix (fun s ->
 
 (** A functor argument is the name of the functor followed by optional arguments *)
 let functorArg = lift4 (fun _ n pms _ ->
-    (* TODO memo: It's possible to parse strings into constr_expr but there seems to be a difference in how this is called. If I start the executable this crashes, but when I call Program.main via the repl with the same arguments as on the command line it does not crash. Somehow utop seems to run some initialization code for coq it seems. *)
     (* let cexpr = CG.parse_constr_expr (String.strip pms) in *)
     (n, pms)
   )
@@ -145,8 +144,9 @@ let signature : specAST t = lift2 (fun _ ds ->
 (** check if the spec is well formed.
  ** For that we check that all sort/functor/constructor names are unique
  ** and we go homomorphically through the constructors to check that all mentioned sorts
- ** and functors exist. For that the applicative Syntax *> of the error monad is very nice
- ** because it acts as a semicolon. *)
+ ** and functors exist.
+ ** Also, unscoped syntax with variadic binders is not supported and we check that here.
+ ** The applicative Syntax *> of the error monad is very nice here because it acts as a semicolon. *)
 let checkSpec (ts, fs, cs) =
   let open ErrorM.Syntax in
   let open ErrorM in
@@ -164,7 +164,10 @@ let checkSpec (ts, fs, cs) =
       else error ("unknown functor: " ^ fid) in
     let checkBinder () = function
       | H.Single x -> checkTId x
-      | H.BinderList (_, x) -> checkTId x in
+      | H.BinderList (_, x) ->
+        if H.equal_scopeType !Settings.scope_type H.Unscoped
+        then error "unscoped syntax + variadic binders are not supported"
+        else checkTId x in
     let rec checkHead () = function
       | H.Atom x -> checkTId x
       | H.FunApp (f, _, args) ->

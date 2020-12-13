@@ -30,10 +30,12 @@ let rec genArg sort n bs = function
 
 
 let genVar sort ns =
-  let* open_x = isOpen sort in
-  let* s = finT_ sort (sty_terms ns) in
-  let t = [s] ==> sortType sort ns in
-  pure @@ guard open_x [constructor_ (var_ sort) t]
+  let* is_open = isOpen sort in
+  if not is_open then pure []
+  else
+    let* s = gen_var_arg sort ns in
+    let t = [s] ==> sortType sort ns in
+    pure @@ [constructor_ (var_ sort) t]
 
 let genConstr sort n H.{ cparameters; cname; cpositions } =
     let* t =
@@ -110,7 +112,6 @@ let traversal
       | FunApp (f, p, xs) ->
         let* res = a_map (arg_map bs) xs in
         pure @@ (funsem f res) in
-    (* TODO this can surely be simplified *)
     let* positions = a_map2_exn (fun s { binders; head; } -> map2 app_
                                     (arg_map binders head) (pure @@ [ref_ s]))
         ss cpositions in
@@ -151,26 +152,24 @@ let genRenamings sorts =
   let* is_rec = isRecursive sorts in
   pure @@ fixpoint_ ~is_rec fs
 
-(* TODO find a better name and place for these 2 functions *)
-let zero_ x b m =
+let zero_ sort binder ms =
   let open H in
-  match b with
-  | Single y -> app1_ (app_var_constr x m) var_zero_
-  | BinderList (p, y) -> app_ref "zero_p" [ref_ p] >>> app_var_constr x m
+  match binder with
+  | Single y -> app1_ (app_var_constr sort ms) var_zero_
+  | BinderList (p, y) -> app_ref "zero_p" [ref_ p] >>> app_var_constr sort ms
 
-let cons__ z b sigma m =
+let mk_scons sort binder sigma ms =
   let open H in
-  match b with
-  | Single y -> if String.(z = y) then app_ cons_ [zero_ z (Single y) m; sigma] else sigma
-  | BinderList (p, y) -> if String.(z = y) then app_ref "scons_p" [ref_ p; zero_ z (BinderList (p, y)) m; sigma] else sigma
+  match binder with
+  | Single y -> if String.(sort = y) then app_ cons_ [zero_ sort (Single y) ms; sigma] else sigma
+  | BinderList (p, y) -> if String.(sort = y) then app_ref "scons_p" [ref_ p; zero_ sort (BinderList (p, y)) ms; sigma] else sigma
 
-(* TODO kathrin: change according to whether this is a renaming *)
-let upSubstT b z m sigma =
-  let* pat = patternSId z b in
-  let* m = upSubst z [b] m in
-  let* hasRen = hasRenamings z in
-  let sigma' = sigma >>> app_fix (if hasRen then (ren_ z) else (subst_ z)) pat in
-  pure @@ cons__ z b sigma' m
+let upSubstT binder sort ms sigma =
+  let* pat = patternSId sort binder in
+  let* ms' = upSubst sort [binder] ms in
+  let* hasRen = hasRenamings sort in
+  let sigma' = sigma >>> app_fix (if hasRen then (ren_ sort) else (subst_ sort)) pat in
+  pure @@ mk_scons sort binder sigma' ms'
 
 let genUpS (binder, sort) =
   let* v = V.genVariables sort [ `M; `NS; `SIGMA (`M, `NS) ] in
@@ -223,9 +222,9 @@ let genIdLemma sort =
   let* v = V.genVariables sort [ `MS; `SIGMAS (`MS, `MS) ] in
   let [@warning "-8"] [], [ ms; sigmas ], scopeBinders = v in
   let* substSorts = substOf sort in
-  let* eqs' = findName1 sort ms in
+  let* eqs' = mk_var_apps sort ms in
   let* (eqs, beqs) = genEqs sort "Eq" (sty_terms sigmas) eqs'
-      (fun x y s -> pure @@ app_ref (upId_ x y) [underscore_; s]) (* TODO kathrin, generate ID in a sensible way *) in
+      (fun x y s -> pure @@ app_ref (upId_ x y) [underscore_; s]) in
   let ret s = eq_ (app_fix (subst_ sort) ~scopes:[sigmas] [s]) s in
   traversal sort ms idSubst_ ~ret (scopeBinders @ beqs) [sigmas; eqs]
     (fun s ->
@@ -346,7 +345,6 @@ let genUpExt (binder, sort) =
   let [@warning "-8"] [ k; l; xi; tau; theta ], [ ms ], scopeBinders = v in
   let (eq, beq) = genEq "Eq" (xi >>> tau) theta in
   let n = VarState.tfresh "n" in
-  (* TODO here I might understand what upSubst does *)
   let* ms = upSubst sort [binder] ms in
   let (pms, bpms) = binvparameters binder in
   let ret = equiv_
@@ -399,7 +397,6 @@ let genUpExt (binder, sort) =
        >>> app_ref (ren_ sort) (sty_terms zetas'))
       (app_ref (up_ sort binder) (pms @ [theta])) in
   let* shift = patternSId sort binder in
-  (* TODO t and t' can probably be one function. and they also appear in other functions *)
   let t n = eqTrans_
       (app_ref (compRenRen_ sort) (pat @ sty_terms zetas'
                                  @ List.map2_exn ~f:(>>>) (sty_terms zetas) pat
@@ -439,10 +436,7 @@ let genUpExt (binder, sort) =
                                ; `ZETAS (`KS, `LS); `THETAS (`MS, `LS) ] in
   let [@warning "-8"] [], [ ks; ls; ms; sigmas; zetas; thetas ], scopeBinders = v in
   let* substSorts = substOf sort in
-  let* sigmazeta = a_map2_exn (fun substSort sigma ->
-      let* zetas' = castSubst sort substSort zetas in
-      pure (sigma >>> app_ref (ren_ substSort) (sty_terms zetas')))
-      substSorts (sty_terms sigmas) in
+  let* sigmazeta = comp_ren_or_subst sort zetas sigmas in
   let* (eqs, beqs) = genEqs sort "Eq" sigmazeta (sty_terms thetas)
       (fun z y s ->
          let* zetas' = castSubst sort z zetas in
@@ -474,14 +468,9 @@ let genUpSubstSubst (binder, sort) =
       (app_ref (up_ sort binder) (pms @ [sigma])
        >>> app_ref (subst_ sort) (sty_terms taus'))
       (app_ref (up_ sort binder) (pms @ [theta])) in
-  (* TODO why is this the same as pat? *)
   let* shift = patternSId sort binder in
   let* substSorts = substOf sort in
-  (* TODO findName1 *)
-  let* pat' = a_map2_exn (fun substSort tau ->
-      let* p' = castSubst sort substSort (SubstSubst pat) in
-      pure (tau >>> (app_ref (ren_ substSort) (sty_terms p'))))
-      substSorts (sty_terms taus) in
+  let* pat' = comp_ren_or_subst sort (SubstRen pat) taus in
   let t n = eqTrans_
       (app_ref (compRenSubst_ sort) (pat @ sty_terms taus'
                                    @ List.map2_exn ~f:(>>>) pat (sty_terms taus')
@@ -527,10 +516,7 @@ let genUpSubstSubst (binder, sort) =
                                ; `TAUS (`KS, `LS); `THETAS (`MS, `LS) ] in
   let [@warning "-8"] [], [ ks; ls; ms; sigmas; taus; thetas ], scopeBinders = v in
   let* substSorts = substOf sort in
-  let* sigmatau = a_map2_exn (fun substSort sigma ->
-      let* taus' = castSubst sort substSort taus in
-      pure (sigma >>> app_ref (subst_ substSort) (sty_terms taus')))
-      substSorts (sty_terms sigmas) in
+  let* sigmatau = comp_ren_or_subst sort taus sigmas in
   let* (eqs, beqs) = genEqs sort "Eq" sigmatau (sty_terms thetas) (fun z y s ->
       let* taus' = castSubst sort z taus in
       pure @@ app_ref (up_subst_subst_ z y) ([underscore_]
@@ -562,10 +548,7 @@ let genUpSubstSubst (binder, sort) =
       (app_ref (up_ sort binder) (pms @ [theta])) in
   let* shift = patternSIdNoRen sort binder in
   let* substSorts = substOf sort in
-  let* pat' = a_map2_exn (fun tau substSort ->
-      let* p' = castSubst sort substSort (SubstSubst pat) in
-      pure (tau >>> (app_ref (subst_ substSort) (sty_terms p'))))
-      (sty_terms taus) substSorts in
+  let* pat' = comp_ren_or_subst sort (SubstSubst pat) taus in
   let t n = eqTrans_
       (app_ref (compSubstSubst_ sort)
          (pat @ sty_terms zeta'
@@ -639,10 +622,7 @@ let genUpSubstSubst (binder, sort) =
   let* v = V.genVariables sort [ `MS; `NS; `XIS (`MS, `NS); `SIGMAS (`MS, `NS) ] in
   let [@warning "-8"] [], [ ms; ns; xis; sigmas ], scopeBinders = v in
   let* substSorts = substOf sort in
-  let* xis' = a_map2_exn (fun substSort xi ->
-      let* n' = castSubst sort substSort ns in
-      pure (xi >>> app_var_constr substSort n'))
-      substSorts (sty_terms xis) in
+  let* xis' = substify sort ns xis in
   let* (eqs, beqs) = genEqs sort "Eq" xis' (sty_terms sigmas)
       (fun x y s -> pure (app_ref (up_rinstInst_ x y) [underscore_; underscore_; s])) in
   let ret s = eq_
@@ -654,18 +634,14 @@ let genUpSubstSubst (binder, sort) =
        pure @@ app1_ toVarT n)
     mapExt_
 
-(* TODO this is very similar to genRinstInst *)
  let genLemmaRinstInst sort =
   let* v = V.genVariables sort [ `MS; `NS; `XIS (`MS, `NS) ] in
   let [@warning "-8"] [], [ ms; ns; xis ], scopeBinders = v in
   let* substSorts = substOf sort in
-  let* xis' = a_map2_exn (fun substSort xi ->
-      let* n' = castSubst sort substSort ns in
-      pure (xi >>> app_var_constr substSort n'))
-      substSorts (sty_terms xis) in
+  let* xis_subst = substify sort ns xis in
   let ret = eq_
       (app_ref (ren_ sort) (sty_terms xis))
-      (app_ref (subst_ sort) xis') in
+      (app_ref (subst_ sort) xis_subst) in
   let proof = fext_ (abs_ref "x"
                        (app_ref (rinstInst_ sort)
                           (sty_terms xis
@@ -695,7 +671,7 @@ let genUpSubstSubst (binder, sort) =
 let genLemmaInstId sort =
   let* (ms, bms) = introScopeVar "m" sort in
   let* substSorts = substOf sort in
-  let* vars = findName1 sort ms in
+  let* vars = mk_var_apps sort ms in
   let ret = eq_ (app_fix (subst_ sort) vars) id_ in
   let proof = fext_ (abs_ref "x"
                        (app_ref (idSubst_ sort)
@@ -715,7 +691,6 @@ let genLemmaRinstId sort =
       (app_fix ~expl:true (ren_ sort) ~scopes:[ms; ms] (List.map ~f:(const id_) substSorts))
       id_ in
   let proof = eqTrans_
-    (* TODO why do we have id_ Underscore here? *)
       (app_ref (rinstInstFun_ sort) (List.map ~f:(const (app_id_ underscore_)) substSorts))
       (ref_ (instIdFun_ sort)) in
   pure @@ lemma_ (rinstIdFun_ sort) bms ret proof
@@ -754,10 +729,7 @@ let genLemmaCompRenSubst sort =
   let [@warning "-8"] [], [ ks; ls; ms; sigmas; zetas ], scopeBinders = v in
   let* substSorts = substOf sort in
   let s = VarState.tfresh "s" in
-  let* sigmazeta = a_map2_exn (fun substSort sigma ->
-      let* zeta' = castSubst sort substSort zetas in
-      pure @@ (sigma >>> app_ref (ren_ substSort) (sty_terms zeta')))
-      substSorts (sty_terms sigmas) in
+  let* sigmazeta = comp_ren_or_subst sort zetas sigmas in
   let ret = eq_
       (app_ref (ren_ sort) (sty_terms zetas
                            @ [ app_ref (subst_ sort) (sty_terms sigmas
@@ -815,10 +787,7 @@ let genLemmaCompSubstSubst sort =
   let [@warning "-8"] [], [ ks; ls; ms; sigmas; taus ], scopeBinders = v in
   let* substSorts = substOf sort in
   let s = VarState.tfresh "s" in
-  let* sigmatau = a_map2_exn (fun substSort sigma ->
-                let* tau' = castSubst sort substSort taus in
-                pure (sigma >>> app_ref (subst_ substSort) (sty_terms tau')))
-      substSorts (sty_terms sigmas) in
+  let* sigmatau = comp_ren_or_subst sort taus sigmas in
   let ret = eq_
       (app_ref (subst_ sort) (sty_terms taus
                               @ [ app_ref (subst_ sort) (sty_terms sigmas

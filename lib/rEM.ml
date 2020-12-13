@@ -77,7 +77,8 @@ let getComponent s =
       else None))
 
 (** Check if the arguments of the first sort of a components and the component itself overlaps
- ** TODO why check only for the first sort? *)
+ ** We can only check the first element of the component because they all have the same
+ ** substitution vector. *)
 let isRecursive xs =
   if (List.is_empty xs) then error "Can't determine whether the component is recursive."
   else let* args = getArguments (List.hd_exn xs) in

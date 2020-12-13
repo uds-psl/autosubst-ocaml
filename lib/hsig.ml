@@ -2,7 +2,7 @@ open Base
 module AL = AssocList
 module CG = Coqgen
 
-type scopeType = WellScoped | Unscoped
+type scopeType = WellScoped | Unscoped [@@deriving equal]
 
 type tId = string [@@deriving show, compare]
 type vId = string [@@deriving show]

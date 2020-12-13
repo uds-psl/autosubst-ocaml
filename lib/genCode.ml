@@ -39,7 +39,6 @@ let genCode components =
   let open REM in
   let* (_, code) = m_fold (fun (done_ups, sentences) component ->
       let* substSorts = substOf (List.hd_exn component) in
-      (* TODO in pi calculus I generate the uplist wrong. Maybe I need to use the version from autosubst25 to calculate *)
       let new_ups = getUps substSorts in
       let ups = list_diff new_ups done_ups in
       let* code_x = Generator.genCodeT component ups in
@@ -52,11 +51,6 @@ let genFile () =
   let open REM.Syntax in
   let open REM in
   let* components = getComponents in
-  (* let* subs = asks H.sigSubstOf in *)
-  (* let* sign = ask in *)
-  (* let () = print_endline (H.show_signature sign) in *)
-  (* let () = print_endline (H.show_components components) in *)
-  (* let () = print_endline (H.show_tIdMap H.pp_tId_list subs) in *)
   let* code = genCode components in
   let ps = (List.map ~f:Coqgen.pr_vernac_expr code) in
   let preamble = get_preamble () in

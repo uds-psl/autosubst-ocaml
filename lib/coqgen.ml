@@ -107,7 +107,6 @@ let binder1_ ?implicit ?btype bname =
 
 let branch_ cname cargs_s bcont =
   let open Constrexpr in
-  (* TODO it might be that when I want an underscore pattern I need the `CPatAtom None` *)
   let cargs = List.map ~f:(fun s -> CAst.make (CPatAtom (Some (qualid_ s)))) cargs_s in
   let cases_pattern = CAst.make (CPatCstr (qualid_ cname, None, cargs)) in
   CAst.make ([[cases_pattern]], bcont)

@@ -38,7 +38,6 @@ let equiv_ s t =
 
 (** For a given sort and some SubstTy ts return the component of ts that has the same name as the sort.
  ** E.g. for sort vl and ts being a list of renamings [ xity; xivl ] return xivl
- ** TODO I changed it so traversal only calls toVar on open sorts which fixed most of the erroneous calls to this function. But one remains. Probably when I call it outside of traversal.
  ** *)
 let toVar sort ts =
   let* substSorts = substOf sort in
@@ -47,9 +46,7 @@ let toVar sort ts =
     else () in
   let zs = List.filter ~f:(fun (substSort,_) -> String.(sort = substSort)) (list_zip substSorts (sty_terms ts)) in
   if List.is_empty zs
-  then
-    let () = Stdio.print_endline "toVar: list was empty. For some probably brittle reason the resulting term is never used" in
-    pure @@ app_ref sort @@ [ref_ "HEREintoVar"; ref_ "true"] @ sty_terms ts
+  then error "toVar was called with incompatible sort and substitution vector. The substitution vector must contain the sort!"
   else List.hd_exn zs |> snd |> pure
 
 (** Return a list of variable names for the input list of positions
@@ -59,8 +56,8 @@ let getPattern name positions =
 
 (** Extract the extra shifting argument from a BinderList. *)
 let binvparameters = function
-    | H.Single x -> ([], [])
-    | H.BinderList (m, _) -> ([ref_ m], [binder1_ ~implicit:true ~btype:nat_ m])
+  | H.Single x -> ([], [])
+  | H.BinderList (m, _) -> ([ref_ m], [binder1_ ~implicit:true ~btype:nat_ m])
 
 let bparameters binder =
   let (terms, binders) = binvparameters binder in
@@ -195,13 +192,14 @@ let genEqs sort name sigmas taus f =
     List.map2_exn ~f:(fun n t -> binder1_ ~btype:t n) names types
   )
 
-(** Create a finite type for a given sort and the corresponding element of the scope variable vector
+(** Create the argument type for the variable constructor of the given sort.
+ ** If we create well scoped code fin will be indexed by the element of the scope indices
+ ** corresponding to the sort.
  ** For sort vl and ns = [nty; nvl], create fin nvl *)
-  (* TODO this should probably be called differently since I don't create fin in unscoped code *)
-let finT_ sort ns =
+let gen_var_arg sort ns =
   match !Settings.scope_type with
   | H.Unscoped -> pure @@ nat_
-  | H.WellScoped -> map fin_ (toVar sort (SubstScope ns))
+  | H.WellScoped -> map fin_ (toVar sort ns)
 
 (** Construction of patterns, needed for lifting -- yields a fitting pattern of S and id corresponding to the base sort and the binder
  ** TODO example *)
@@ -229,13 +227,35 @@ let patternSIdNoRen sort binder =
       | H.BinderList (p, bsort) -> if String.(y = bsort) then shiftp p y else app_id_ underscore_)
     (mk_refs substSorts) binder
 
-(* Some patterns in the code for which I don't have a name yet. I have to check in the generated code for a fitting name *)
-let findName1 sort ms =
+(** Create an application of the var constructor for each element of the substitition vector
+ ** of the given sort *)
+let mk_var_apps sort ms =
   let* substSorts = substOf sort in
   a_map (fun substSort ->
       map2 app_var_constr (pure @@ substSort) (castSubst sort substSort ms))
     substSorts
 
+(** Convert a renaming to a substitution *)
+let substify sort ns xis =
+  let* substSorts = substOf sort in
+  a_map2_exn (fun substSort xi ->
+      let* ns' = castSubst sort substSort ns in
+      pure (xi >>> app_var_constr substSort ns'))
+    substSorts (sty_terms xis)
+
+(** Compose a renaming with a substitution *)
+let comp_ren_or_subst sort sty1s sty2s =
+  let* substSorts = substOf sort in
+  let* ren_or_subst_ = match sty1s with
+    | SubstRen _ -> pure ren_
+    | SubstSubst _ -> pure subst_
+    | _ -> error "comp_ren_or_subst called with wrong subst_ty" in
+  a_map2_exn (fun substSort sty2 ->
+      let* sty1s' = castSubst sort substSort sty1s in
+      pure @@ (sty2 >>> app_ref (ren_or_subst_ substSort) (sty_terms sty1s')))
+    substSorts (sty_terms sty2s)
+
+(** Convenience functions that are passed to traversal which it uses when dealing with functors. *)
 let map_ f ts = app_ref (sepd [f; "map"]) ts
 let mapId_ f ts = app_ref (sepd [f; "id"]) ts
 let mapExt_ f ts = app_ref (sepd [f; "ext"]) ts
