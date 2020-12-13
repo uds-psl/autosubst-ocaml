@@ -28,12 +28,7 @@ let showPair f g (x, y) =
 
 let nub cmp l = Set.stable_dedup_list cmp l
 
-(** An implementation of zip that does not throw *)
-let rec list_zip xs ys =
-  match xs, ys with
-  | [], [] -> []
-  | x::xs, y::ys -> (x,y)::(list_zip xs ys)
-  | _, _ -> []
+let list_zip xs ys = List.zip_exn xs ys
 
 let const b x = b
 let const2 b x y = b

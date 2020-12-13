@@ -43,9 +43,6 @@ let equiv_ s t =
  ** *)
 let toVar sort ts =
   let* substSorts = substOf sort in
-  let () = if (List.length substSorts <> List.length @@ sty_terms ts)
-    then Stdio.print_endline "toVar unequal"
-    else () in
   let zs = List.filter ~f:(fun (substSort,_) -> String.(sort = substSort)) (list_zip substSorts (sty_terms ts)) in
   if List.is_empty zs
   then error "toVar was called with incompatible sort and substitution vector. The substitution vector must contain the sort!"
