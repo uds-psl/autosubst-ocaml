@@ -1,19 +1,21 @@
 #+TITLE: Autosubst OCaml
 
+This is an OCaml implementation of parts of the Autosusbt 2 compiler by Kathrin Stark. It supports well-scoped & unscoped syntax as well as variadic & polyadic syntax & functors (except the combination of variadic + unscoped syntax which the original did not support either).
+Being implemented in OCaml it uses Coq as a library to directly construct the AST of lemmas/definitions etc. and also print out the AST to a file.
+
 * Setup
 ** Switch
 #+BEGIN_SRC bash
 opam switch create autosubst-ocaml ocaml-base-compiler.4.11.1
 opam repo add coq-released https://coq.inria.fr/opam/released
-opam install dune coq.8.12.1
 #+END_SRC
 
-** build dependencies
+** Build Dependencies
 #+BEGIN_SRC bash
-opam install angstrom lwt ocamlgraph ppx_deriving ppx_compare ppx_fields_conv
+opam install dune coq.8.12.1 coq-equations angstrom lwt ocamlgraph ppx_deriving ppx_compare ppx_fields_conv
 #+END_SRC
 
-** dev dependencies
+** Dev Dependencies
 #+BEGIN_SRC bash
 opam install merlin utop ocp-indent ocamlformat
 #+END_SRC
