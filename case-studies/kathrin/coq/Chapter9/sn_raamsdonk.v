@@ -251,7 +251,7 @@ Proof.
       * reflexivity.
     + asimpl. eapply IHhas_type. intros [|]; eauto.
       * cbn. unfold funcomp.
-        (* adrian:  *) Set Printing All.
+        (* adrian: had to insert the following line *) 
         change (fun x : fin n' => @var_tm m (R x)) with (funcomp var_tm R).
        renamify. 
         apply rename_red. eauto.
