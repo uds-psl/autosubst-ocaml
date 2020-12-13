@@ -1,3 +1,11 @@
+(** Most of the genX functions in this module follow the same pattern.
+ **  - declare some scope/renaming/substitution variables and their binders
+ **  - build the type of the statement
+ **  - build the proof term of the statement
+ **
+ ** Fixpoints call traversal which generates the match on the principal argument.
+ ** Definitions and Lemmas directly call the smart constructor with the type, binders and proof.
+ ** *)
 open Base
 open Util
 
@@ -811,6 +819,8 @@ let genLemmaCompSubstSubst sort =
                 ret proof
          ; lemma_ (compComp'_ sort) scopeBinders ret' proof' ]
 
+(** This function delegates to all the different code generation functions and in the end
+ ** aggregates all the returned vernacular expressions. *)
 let genCodeT sorts upList =
   let* varSorts = a_filter isOpen sorts in
   let* hasbinders = map (fun l -> l |> List.is_empty |> not) (substOf (List.hd_exn sorts)) in
