@@ -1,0 +1,8 @@
+(library
+  (name monad_lib)
+  (libraries monads)
+  )
+
+(env
+  (dev
+    (flags (:standard -warn-error -A))))
