@@ -13,9 +13,8 @@ let parse_arguments () =
 let main () =
   let open ErrorM in
   let args = parse_arguments () in
-  let result = match run (Program.main args) with
-    | Ok x -> x
-    | Error x -> failwith x in
-  print_endline result
+  match run (Program.main args) with
+    | Ok x -> print_endline x
+    | Error x -> print_endline ("Error:\n" ^ x)
 
 let () = main ()

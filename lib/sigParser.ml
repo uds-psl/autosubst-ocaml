@@ -27,10 +27,15 @@ let is_ident = function
   | _ -> false
 let is_space = function
   | ' ' | '\t' -> true | _ -> false
+let is_end_of_line = function
+  | '\n' -> true | _ -> false
 
 (** lex can be used to separate tokens from each other as it eats all following whitespace *)
 let spaces = skip_while is_space
 let lex p = p <* spaces
+
+(** parser that aborts parsing by commiting so we can't backtrack and then immediately failing *)
+let hardFail msg = commit *> fail msg
 
 (** taken from Autosubst 2 *)
 let reservedIds =
@@ -49,7 +54,7 @@ let reservedIds =
    ]
 let filterReserved i =
   if List.mem i reservedIds
-  then fail @@ "reserved identifier: " ^ i
+  then hardFail @@ "reserved identifier: " ^ i
   else return i
 
 let checkWellFormed (c, s) =
@@ -147,13 +152,16 @@ let constructorDecl : ([> `Constructor of constructorAST ]) t =
  ** an arbitrary number of sort/functor/constructor declarations in any order.
  ** Because they can appear in any order we can just throw them in a polymorphic variant
  ** and filter them out again later *)
-let signature : specAST t = lift2 (fun _ ds ->
+let signature : specAST t = lift3 (fun _ ds _ ->
     let ss = List.filter_map (function `Sort s -> Some s | _ -> None) ds in
     let fs = List.filter_map (function `Functor f -> Some f | _ -> None) ds in
     let cs = List.filter_map (function `Constructor c -> Some c | _ -> None) ds in
     (ss, fs, cs))
     (skip_many blank_line)
     (sortDecl <|> functorDecl <|> constructorDecl |> line |> many)
+    (commit *>
+     end_of_input <|>
+     (take_till is_end_of_line >>= fun s -> hardFail ("Could not parse the following line: "^s)))
 
 (** check if the spec is well formed.
  ** For that we check that all sort/functor/constructor names are unique
@@ -205,7 +213,7 @@ let parse_signature s =
   let open ErrorM in
   let posix_s = Str.global_replace (Str.regexp "\r\n") "\n" s in
   match parse_string ~consume:All signature posix_s with
-  | Error e -> error e
+  | Error e -> error ("Error during parsing:\n" ^ e)
   | Ok v -> checkSpec v
 
 (** Some signatures for testing the parser in the repl *)
