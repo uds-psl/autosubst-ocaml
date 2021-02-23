@@ -20,10 +20,10 @@ type parserSpec = H.tId list * H.fId list * H.spec [@@deriving show]
 
 (** char tests *)
 let is_first_ident = function
-  | 'A' .. 'Z' | 'a' .. 'z' -> true
+  | 'A' .. 'Z' | 'a' .. 'z' | '_' -> true
   | _ -> false
 let is_ident = function
-  | 'A' .. 'Z' | 'a' .. 'z' | '0' .. '9' -> true
+  | 'A' .. 'Z' | 'a' .. 'z' | '0' .. '9' | '_' | '\'' -> true
   | _ -> false
 let is_space = function
   | ' ' | '\t' -> true | _ -> false
@@ -52,9 +52,15 @@ let filterReserved i =
   then fail @@ "reserved identifier: " ^ i
   else return i
 
+let checkWellFormed (c, s) =
+  if c = '_' && String.length s = 0 then hardFail "an identifier cannot be a single underscore"
+  else return (String.of_seq (Seq.return c) ^ s)
+
 (** parsers for all the tokens we encounter. Most uses of the identifier parser are filtered so that they don't contain reserved keywords *)
 let raw_ident = lex @@ take_while1 is_ident
-let ident = lex @@ take_while1 is_ident >>= filterReserved
+let ident = lift3 (fun c s _ -> (c, s))
+    (satisfy is_first_ident) (take_while is_ident) spaces
+    >>= checkWellFormed >>= filterReserved
 let arrow = lex @@ string "->"
 let colon = lex @@ char ':'
 let ttype = lex @@ string "Type"
