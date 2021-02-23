@@ -1,4 +1,3 @@
-open Base
 open Tactics
 open Coqgen
 
@@ -76,6 +75,6 @@ let [@warning "-8"] genVariables sort (var_declarations: vars list) =
       pure (simple_vars, AL.insert sn sigmas stys, binders @ bsigmas)
   in
   let* (simple_vars, stys, binders) = m_fold_left ~f:genVariable ~init:(AL.from_list [], AL.from_list [], []) var_declarations in
-  pure (List.rev_map ~f:snd (AL.to_list simple_vars),
-        List.rev_map ~f:snd (AL.to_list stys),
+  pure (List.rev_map snd (AL.to_list simple_vars),
+        List.rev_map snd (AL.to_list stys),
         binders)

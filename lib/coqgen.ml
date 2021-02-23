@@ -1,4 +1,3 @@
-open Base
 
 type identifier = string
 type identifiers = identifier list
@@ -39,7 +38,7 @@ let forall_ binders rtype =
   Constrexpr_ops.mkProdCN binders rtype
 
 let arr_ tys tyend =
-  forall_ (List.map ~f:(fun ty ->
+  forall_ (List.map (fun ty ->
       Constrexpr.CLocalAssum ([ CAst.make (Names.Anonymous) ], Default Glob_term.Explicit, ty))
       tys)
     tyend
@@ -94,8 +93,8 @@ let match_ cexpr ?rtype bexprs =
 let binder_ ?(implicit=false) ?btype bnames =
   let open Constrexpr in
   let bk = Default (if implicit then Glob_term.MaxImplicit else Glob_term.Explicit) in
-  let btype = Option.value btype ~default:(CAst.make @@ CHole (None, Namegen.IntroAnonymous, None)) in
-  CLocalAssum (List.map ~f:lname_ bnames, bk, btype)
+  let btype = Option.default (CAst.make @@ CHole (None, Namegen.IntroAnonymous, None)) btype in
+  CLocalAssum (List.map lname_ bnames, bk, btype)
 
 (* let binder_ bnames ?(implicit=false) btype =
  *   let open Constrexpr in
@@ -107,7 +106,7 @@ let binder1_ ?implicit ?btype bname =
 
 let branch_ cname cargs_s bcont =
   let open Constrexpr in
-  let cargs = List.map ~f:(fun s -> CAst.make (CPatAtom (Some (qualid_ s)))) cargs_s in
+  let cargs = List.map (fun s -> CAst.make (CPatAtom (Some (qualid_ s)))) cargs_s in
   let cases_pattern = CAst.make (CPatCstr (qualid_ cname, None, cargs)) in
   CAst.make ([[cases_pattern]], bcont)
 
@@ -190,7 +189,7 @@ module [@warning "-32"] GenTests = struct
       ] in
     let lbody = ref_ "False" in
     let lemma = lemma_ lname lbinders ltype lbody in
-    Pp.seq @@ List.map ~f:pr_vernac_expr lemma
+    Pp.seq @@ List.map pr_vernac_expr lemma
 
   (* This sadly just prints cc_plugin@cc:0 (or similar) which is probably a correct internal representation of the congruence tactic but now what I was looking for. *)
   (* let print_congruence () : Pp.t =

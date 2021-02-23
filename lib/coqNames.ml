@@ -2,7 +2,6 @@
  ** The values here are mainly passed to the smart constructors in Coqgen
  ** by the generator functions in Generator *)
 
-open Base
 open Util
 
 module H = Hsig
@@ -11,7 +10,7 @@ module H = Hsig
  ** format_from_string takes a string and format string (the "%s") and tries to cast the string
  ** to that format. Can error at runtime if user supplied a wrong format string. *)
 let var_ x =
-  let fmt = Caml.Scanf.format_from_string !Settings.var__ "%s" in
+  let fmt = Scanf.format_from_string !Settings.var__ "%s" in
   Printf.sprintf fmt x
 
 let funname_ f = f

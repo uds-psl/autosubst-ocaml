@@ -1,9 +1,7 @@
-open Base
-
 type ('a, 'b) t = ('a * 'b) list [@@deriving show]
 
-let assoc_exn = Caml.ListLabels.assoc
-let assoc = Caml.ListLabels.assoc_opt
+let assoc_exn = List.assoc
+let assoc = List.assoc_opt
 
 let assoc_default x l ~default =
   match assoc x l with
@@ -27,12 +25,13 @@ let update x f l =
   | Some v -> insert x (f v) l
 
 let flatten l =
-  List.fold_left l ~init:[] ~f:(fun l (x, y) ->
+  List.fold_left (fun l (x, y) ->
       if mem_assoc x l then l else insert x y l)
+    [] l
   |> List.rev
 
 let from_list l = l
 let to_list l = flatten l
 
 let map f l =
-  List.map ~f:(fun (x, y) -> (x, f x y)) l
+  List.map (fun (x, y) -> (x, f x y)) l

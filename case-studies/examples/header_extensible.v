@@ -2,7 +2,6 @@
 
 Require Import String List Omega.
 
-Require Import Equations.Equations.
 Set Implicit Arguments.
 Unset Strict Implicit.
 

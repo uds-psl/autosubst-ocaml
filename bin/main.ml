@@ -1,12 +1,10 @@
-open Base
 open Autosubst_lib
 module H = Hsig
 
 let parse_arguments () =
-  let argv = Sys.get_argv () in
-  let infile = Array.get argv 1 in
-  let outfile = Array.get argv 2 in
-  let scope_type = match Array.get argv 3 with
+  let infile = Sys.argv.(1) in
+  let outfile = Sys.argv.(2) in
+  let scope_type = match Sys.argv.(3) with
     | "ucoq" -> H.Unscoped
     | "coq" -> H.WellScoped
     | _ -> failwith "scope type must be either \"ucoq\" or \"coq\"" in
@@ -18,6 +16,6 @@ let main () =
   let result = match run (Program.main args) with
     | Ok x -> x
     | Error x -> failwith x in
-  Stdio.print_endline result
+  print_endline result
 
 let () = main ()

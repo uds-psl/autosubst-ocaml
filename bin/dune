@@ -1,6 +1,6 @@
 (executable
  (name main)
- (libraries base stdio autosubst_lib)
+ (libraries autosubst_lib)
  (flags (:standard -rectypes))
   (modes exe))
 

@@ -1,6 +1,5 @@
 (** This module is basically the entrypoint of the program.
  ** (It's in lib because the ocaml repl cannot open executables, i.e. bin/main.ml) *)
-open Base
 
 let read_signature infile =
   let open Lwt.Syntax in

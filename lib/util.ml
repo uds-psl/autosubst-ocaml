@@ -1,38 +1,61 @@
 (** General utility functions *)
-open Base
 
 let id x = x
 
 let list_intersection xs ys =
-  List.(filter xs ~f:(fun x -> mem ys x ~equal:Poly.equal))
+  List.(filter (fun x -> mem x ys) xs)
 
 let list_diff xs ys =
-  List.(filter xs ~f:(fun x -> not @@ mem ys x ~equal:Poly.equal))
+  List.(filter (fun x -> not @@ mem x ys) xs)
 
 let list_remove xs y =
-  List.(filter xs ~f:(fun x -> Poly.(x <> y)))
+  List.(filter (fun x -> x <> y) xs)
 
-let list_find_index_exn x xs =
-  List.find_mapi_exn ~f:(fun i y -> if Poly.(x = y) then Some i else None) xs
+let list_contains_dup compare xs =
+  List.(length xs <> length (sort_uniq compare xs))
 
-let list_any f xs =
-  match List.find ~f xs with
-  | Some _ -> true
-  | None -> false
+let list_empty = function
+  | [] -> true
+  | _ -> false
+
+(* let list_find_index_exn x xs =
+ *   Option.get @@
+ *   List.mapi (fun i y -> if x = y then Some i else None) xs *)
+
+let list_any = List.exists
 
 let list_none f xs =
   list_any f xs |> not
 
+let cartesian_product xs ys =
+  List.fold_left (fun c y ->
+      let pairs = List.map (fun x -> (x, y)) xs in
+      c @ pairs)
+    [] ys
+
+let rec list_take xs n = match xs with
+  | [] -> []
+  | x :: xs ->
+    if n > 0
+    then x :: list_take xs (n - 1)
+    else []
+
+let rec list_drop xs n =
+  if n <= 0 then xs
+  else match xs with
+    | [] -> []
+    | x :: xs -> list_drop xs (n - 1)
+
 let showPair f g (x, y) =
   "(" ^ f x ^ ", " ^ g y ^ ")"
 
-let nub cmp l = Set.stable_dedup_list cmp l
+(* let nub cmp l = Set.stable_dedup_list cmp l *)
 
-let list_zip xs ys = List.zip_exn xs ys
+let list_zip xs ys = List.combine xs ys
 
 let const b x = b
 let const2 b x y = b
 
 let sep_ = "_"
 let sep a b = a^sep_^b
-let sepd = String.concat ~sep:sep_
+let sepd = String.concat sep_

@@ -1,7 +1,5 @@
 (** This module contains own definitions for some monads *)
 
-open Base
-
 module M = Monadic
 module H = Hsig
 module AL = AssocList
@@ -73,7 +71,7 @@ module ExtraFunctionsList (MON: M.Monad.MONAD) = struct
       pure @@ m' :: ms'
 
   let a_map2_exn f a b =
-    invert @@ List.map2_exn ~f a b
+    invert @@ List.map2 f a b
 
   let rec m_fold_left ~f ~init xs =
     match xs with

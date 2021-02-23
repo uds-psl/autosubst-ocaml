@@ -4,8 +4,9 @@
  **   - we disallow constructors to have the same name as any type/functor
  **   - we disallow the extra parentheses around variadic binder specifications "(<p,m>)", so you must write "<p,m>" instead.
  ** The only thing we really have to do differently from Autosubst 2 is that we must actually parse the arguments of functors, not take them as a plain string because in the end we want to construct Coq AST. *)
-open Base
 open Angstrom
+open Util
+
 module H = Hsig
 module AL = AssocList
 module CG = Coqgen
@@ -47,7 +48,7 @@ let reservedIds =
   "get_In"; "some_none_explosion"; "Some_inj"
    ]
 let filterReserved i =
-  if List.mem reservedIds i ~equal:String.equal
+  if List.mem i reservedIds
   then fail @@ "reserved identifier: " ^ i
   else return i
 
@@ -75,7 +76,7 @@ let angles p = langle *> p <* rangle
  ** A blank line only contains optional whitespace and an optional comment.
  ** For a line to be finished we need either at least one newline (followed by more blank
  ** lines and maybe the end of input) or the end of input *)
-let comment = comment_begin *> skip_while (fun c -> Char.(c <> '\n')) *> (end_of_line <|> end_of_input)
+let comment = comment_begin *> skip_while (fun c -> c <> '\n') *> (end_of_line <|> end_of_input)
 let blank_line = spaces *> (comment <|> end_of_line)
 let end_line = skip_many1 blank_line *> option () (spaces *> end_of_input)
                <|> spaces *> end_of_input
@@ -141,9 +142,9 @@ let constructorDecl : ([> `Constructor of constructorAST ]) t =
  ** Because they can appear in any order we can just throw them in a polymorphic variant
  ** and filter them out again later *)
 let signature : specAST t = lift2 (fun _ ds ->
-    let ss = List.filter_map ds ~f:(function `Sort s -> Some s | _ -> None) in
-    let fs = List.filter_map ds ~f:(function `Functor f -> Some f | _ -> None) in
-    let cs = List.filter_map ds ~f:(function `Constructor c -> Some c | _ -> None) in
+    let ss = List.filter_map (function `Sort s -> Some s | _ -> None) ds in
+    let fs = List.filter_map (function `Functor f -> Some f | _ -> None) ds in
+    let cs = List.filter_map (function `Constructor c -> Some c | _ -> None) ds in
     (ss, fs, cs))
     (skip_many blank_line)
     (sortDecl <|> functorDecl <|> constructorDecl |> line |> many)
@@ -157,16 +158,16 @@ let signature : specAST t = lift2 (fun _ ds ->
 let checkSpec (ts, fs, cs) =
   let open ErrorM.Syntax in
   let open ErrorM in
-  let names = ts @ fs @ List.map cs ~f:(fun (cn, _, _, _) -> cn) in
-  if List.contains_dup names ~compare:String.compare
+  let names = ts @ fs @ List.map (fun (cn, _, _, _) -> cn) cs in
+  if list_contains_dup String.compare names
   then error "sort/functor/constructor names must all be different"
   else
     let checkTId tid =
-      if List.mem ts tid ~equal:String.equal
+      if List.mem tid ts
       then pure ()
       else error ("unknown sort: " ^ tid) in
     let checkFId fid =
-      if List.mem fs fid ~equal:String.equal
+      if List.mem fid fs
       then pure ()
       else error ("unknown functor: " ^ fid) in
     let checkBinder () = function
@@ -187,7 +188,7 @@ let checkSpec (ts, fs, cs) =
       *> m_fold_ checkPosition () cpositions
       *> pure (AL.update rtype (fun cs -> H.{ cparameters; cname; cpositions; } :: cs) spec)
     in
-    let empty_spec = AL.from_list @@ List.map ts ~f:(fun t -> (t, [])) in
+    let empty_spec = AL.from_list @@ List.map (fun t -> (t, [])) ts in
     let* spec = m_fold_right ~f:checkConstructor ~init:empty_spec cs in
     pure (ts, fs, AL.flatten spec)
 

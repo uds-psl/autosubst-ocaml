@@ -1,12 +1,16 @@
 (** This module implements the types for the HOAS signature that is parsed by autosubst.
  ** Also it contains the variant for which kind of syntax we generate. *)
-open Base
 module AL = AssocList
 module CG = Coqgen
 
-type scopeType = WellScoped | Unscoped [@@deriving equal]
+type scopeType = WellScoped | Unscoped
 
-type tId = string [@@deriving show, compare]
+let equal_scopeType x y = match (x, y) with
+| WellScoped, WellScoped -> true
+| Unscoped, Unscoped -> true
+| _, _ -> false
+
+type tId = string [@@deriving show]
 type vId = string [@@deriving show]
 type fId = string [@@deriving show]
 type cId = string [@@deriving show]
@@ -14,7 +18,7 @@ type cId = string [@@deriving show]
 type 'a tIdMap = (tId, 'a) AL.t [@@deriving show]
 
 type binder = Single of tId | BinderList of string * tId
-[@@deriving show, compare]
+[@@deriving show]
 type argument_head = Atom of tId | FunApp of fId * (CG.constr_expr option [@opaque]) * (argument_head list)
 [@@deriving show]
 
@@ -23,7 +27,7 @@ let getBinders = function
   | BinderList (_, x) -> [x]
 let rec getArgSorts = function
   | Atom x -> [x]
-  | FunApp (_, _, xs) -> List.(xs >>| getArgSorts |> concat)
+  | FunApp (_, _, xs) -> List.(concat (map getArgSorts xs))
 
 type position =
   { binders : binder list;
@@ -39,14 +43,16 @@ type constructor =
 [@@deriving show]
 
 let getArgs { cpositions; _ } =
-  List.concat_map cpositions ~f:(fun { head; _ } ->
-    getArgSorts head)
+  List.concat_map (fun { head; _ } ->
+      getArgSorts head)
+    cpositions
 
 type spec = (constructor list) tIdMap [@@deriving show]
 type tId_list = tId list [@@deriving show]
-type tId_set = Set.M (String).t
-let pp_tId_set f x = pp_tId_list f (Set.to_list x)
-let show_tId_set x = show_tId_list (Set.to_list x)
+module SSet = Set.Make (String)
+type tId_set = SSet.t
+let pp_tId_set f x = pp_tId_list f (SSet.elements x)
+let show_tId_set x = show_tId_list (SSet.elements x)
 
 type signature =
   { sigSpec : spec;
@@ -55,7 +61,13 @@ type signature =
     sigIsOpen : tId_set;
     sigArguments : (tId list) tIdMap;
   }
-[@@deriving show, fields]
+[@@deriving show]
+
+let sigSpec { sigSpec; _ } = sigSpec
+let sigSubstOf { sigSubstOf; _ } = sigSubstOf
+let sigComponents { sigComponents; _ } = sigComponents
+let sigIsOpen { sigIsOpen; _ } = sigIsOpen
+let sigArguments { sigArguments; _ } = sigArguments
 
 type t = signature
 [@@deriving show]
@@ -105,7 +117,7 @@ module [@warning "-32"] Hsig_example = struct
     sigSpec = mySigSpec;
     sigSubstOf = AL.from_list [ ("tm", ["ty"; "vl"]); ("ty", ["ty"]); ("vl", ["ty";"vl"]) ];
     sigComponents = [ ["ty"]; ["tm";"vl"] ];
-    sigIsOpen = Set.of_list (module String) ["ty"; "vl"];
+    sigIsOpen = SSet.of_list ["ty"; "vl"];
     sigArguments = AL.from_list [ ("tm", ["tm"; "ty"; "vl"])
                                 ; ("ty", ["ty"])
                                 ; ("vl", ["ty"; "tm"])];
@@ -159,7 +171,7 @@ module [@warning "-32"] Hsig_fol = struct
     sigSpec = mySigSpec;
     sigSubstOf = AL.from_list [ ("form",["term"]); ("term",["term"])];
     sigComponents = [["term"];["form"]];
-    sigIsOpen = Set.of_list (module String) ["term"];
+    sigIsOpen = SSet.of_list ["term"];
     sigArguments = AL.from_list [ ("form",["term";"form"])
                                 ; ("term",["term"])];
   }

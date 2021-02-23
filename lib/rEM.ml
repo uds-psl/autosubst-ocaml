@@ -1,7 +1,6 @@
 (** This module implements the ReaderT(Error) monad for signatures.
  ** It's used pervasively through the code generation so that all the generator functions
  ** can read the signature. *)
-open Base
 open Util
 
 module M = Monadic
@@ -44,16 +43,16 @@ let substOf sort =
 (** check whether a sort has a variable constructor *)
 let isOpen sort =
   let* opens = asks H.sigIsOpen in
-  pure @@ Set.mem opens sort
+  pure @@ H.SSet.mem sort opens
 
 (** A sort is definable if it has any constructor *)
 let definable sort =
   let* b = isOpen sort in
   let* cs = constructors sort in
-  pure (b || not (List.is_empty cs))
+  pure (b || not (list_empty cs))
 
 (** check if a sort has a substitution vector *)
-let hasArgs sort = (fun l -> List.is_empty l |> not) <$> substOf sort
+let hasArgs sort = (fun l -> list_empty l |> not) <$> substOf sort
 
 (** return the arguments (all sorts in head positions) of a sort *)
 let getArguments sort =
@@ -71,18 +70,19 @@ let getAllSorts = List.concat <$> getComponents
 (** get the component that a sort belongs to *)
 let getComponent s =
   let* components = asks H.sigComponents in
-  pure @@ List.(concat @@ filter_map components ~f:(fun component ->
-      if List.mem component s ~equal:String.equal
+  pure @@ List.(concat @@ filter_map (fun component ->
+      if mem s component
       then Some component
-      else None))
+      else None)
+    components)
 
 (** Check if the arguments of the first sort of a components and the component itself overlaps
  ** We can only check the first element of the component because they all have the same
  ** substitution vector. *)
 let isRecursive xs =
-  if (List.is_empty xs) then error "Can't determine whether the component is recursive."
-  else let* args = getArguments (List.hd_exn xs) in
-    list_intersection xs args |> List.is_empty |> not |> pure
+  if (list_empty xs) then error "Can't determine whether the component is recursive."
+  else let* args = getArguments (List.hd xs) in
+    list_intersection xs args |> list_empty |> not |> pure
 
 (** get all the bound sorts that appear in a component *)
 let boundBinders component =
@@ -105,10 +105,10 @@ let rec hasRenamings sort =
   let all_other_types = list_diff all_types component in
   let* occ = a_filter (fun sort' ->
       let* arguments' = getArguments sort' in
-      pure @@ List.mem arguments' sort ~equal:String.equal)
+      pure @@ List.mem sort arguments')
       all_other_types in
   (* TODO that is not structural recursion. But it probably terminates. We might have to additionally keep track of all previously visited components. *)
   let* bs = a_map hasRenamings occ in
-  let xs_bb = list_intersection component boundBinders |> List.is_empty |> not in
+  let xs_bb = list_intersection component boundBinders |> list_empty |> not in
   let bs' = list_any id bs in
   pure (xs_bb || bs')
