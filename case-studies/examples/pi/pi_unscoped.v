@@ -1,5 +1,4 @@
-Require Export unscoped.
-Require Export header_extensible.
+Require Import axioms unscoped header_extensible.
 Inductive chan : Type :=
     var_chan : forall _ : nat, chan.
 Definition subst_chan (sigma_chan : forall _ : nat, chan) (s : chan) :

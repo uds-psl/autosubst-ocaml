@@ -1,5 +1,4 @@
-Require Export unscoped.
-Require Export header_extensible.
+Require Import axioms unscoped header_extensible.
 Inductive ty : Type :=
   | var_ty : forall _ : nat, ty
   | arr : forall _ : ty, forall _ : ty, ty

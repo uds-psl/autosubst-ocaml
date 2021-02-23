@@ -3,7 +3,7 @@
 
 Version: December 11, 2019.
 *)
-Require Export axioms.
+Require Import axioms.
 Set Implicit Arguments.
 Unset Strict Implicit.
 

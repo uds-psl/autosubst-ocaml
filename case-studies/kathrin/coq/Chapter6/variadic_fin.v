@@ -1,5 +1,4 @@
-Require Export fintype.
-Require Export header_extensible.
+Require Import axioms fintype header_extensible.
 Inductive tm (n_tm : nat) : Type :=
   | var_tm : forall _ : fin n_tm, tm n_tm
   | app :

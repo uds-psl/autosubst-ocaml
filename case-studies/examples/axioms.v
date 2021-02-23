@@ -34,7 +34,7 @@ Two things are important:
  *)
 
 (** *** List Instance *)
-Require Export List.
+Require Import List.
 
 Definition funcomp {X Y Z} (g : Y -> Z) (f : X -> Y)  :=
   fun x => g (f x).

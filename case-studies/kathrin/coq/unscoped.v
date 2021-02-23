@@ -3,7 +3,7 @@
 Version: December 11, 2019.
  *)
 
-Require Export axioms.
+Require Import axioms.
 
 Definition ap {X Y} (f : X -> Y) {x y : X} (p : x = y) : f x = f y :=
   match p with eq_refl => eq_refl end.

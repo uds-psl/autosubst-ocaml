@@ -1,5 +1,4 @@
-Require Export fintype.
-Require Export header_extensible.
+Require Import axioms fintype header_extensible.
 Inductive chan (n_chan : nat) : Type :=
     var_chan : forall _ : fin n_chan, chan n_chan.
 Definition subst_chan {m_chan : nat} {n_chan : nat}

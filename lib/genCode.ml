@@ -7,8 +7,8 @@ open Util
 module CS = CoqSyntax
 module H = Hsig
 
-let unscopedPreamble = "Require Export unscoped.\nRequire Export header_extensible.\n"
-let scopedPreamble = "Require Export fintype.\nRequire Export header_extensible.\n"
+let unscopedPreamble = "Require Import axioms unscoped header_extensible.\n"
+let scopedPreamble = "Require Import axioms fintype header_extensible.\n"
 
 let get_preamble () =
   match !Settings.scope_type with

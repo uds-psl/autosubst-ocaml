@@ -1,5 +1,4 @@
-Require Export fintype.
-Require Export header_extensible.
+Require Import axioms fintype header_extensible.
 Inductive term (n_term : nat) : Type :=
   | var_term : forall _ : fin n_term, term n_term
   | Func : forall f : nat, forall _ : cod (fin f) (term n_term), term n_term.
