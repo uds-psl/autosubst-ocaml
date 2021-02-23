@@ -28,10 +28,10 @@ let list_none f xs =
   list_any f xs |> not
 
 let cartesian_product xs ys =
-  List.fold_left (fun c y ->
-      let pairs = List.map (fun x -> (x, y)) xs in
+  List.fold_left (fun c x ->
+      let pairs = List.map (fun y -> (x, y)) ys in
       c @ pairs)
-    [] ys
+    [] xs
 
 let rec list_take xs n = match xs with
   | [] -> []
