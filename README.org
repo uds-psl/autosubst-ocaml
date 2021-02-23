@@ -12,7 +12,7 @@ opam repo add coq-released https://coq.inria.fr/opam/released
 
 ** Build Dependencies
 #+BEGIN_SRC bash
-opam install dune coq.8.12.1 angstrom lwt ocamlgraph ppx_deriving
+opam install dune coq.8.12.1 angstrom ocamlgraph ppx_deriving
 #+END_SRC
 As a dependency I also use the monad library from here https://github.com/Denommus/monadic which is not on opam yet so I included the sources.
 

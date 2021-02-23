@@ -2,20 +2,16 @@
  ** (It's in lib because the ocaml repl cannot open executables, i.e. bin/main.ml) *)
 
 let read_signature infile =
-  let open Lwt.Syntax in
-  let open Lwt_io in
-  Lwt_main.run (
-    let* input = open_file ~mode:Input infile in
-    read input
-  )
+  let input = open_in_bin infile in
+  let content = really_input_string input (in_channel_length input) in
+  let _ = close_in input in
+  content
 
 let write_file outfile content =
-  let open Lwt.Syntax in
-  let open Lwt_io in
-  Lwt_main.run (
-    let* output = open_file ~mode:Output outfile in
-    write output content
-  )
+  let output = open_out outfile in
+  let _ = output_string output content in
+  let _ = close_out output in
+  ()
 
 let main (infile, outfile, scope_type) =
   let open ErrorM.Syntax in
