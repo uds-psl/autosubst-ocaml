@@ -16,6 +16,7 @@ let write_file outfile content =
 let main (infile, outfile, scope_type) =
   let open ErrorM.Syntax in
   let open ErrorM in
+  let () = Coqgen.setup_notations () in
   let () = Settings.scope_type := scope_type in
   (* parse input HOAS *)
   let* spec = read_signature infile |> SigParser.parse_signature in

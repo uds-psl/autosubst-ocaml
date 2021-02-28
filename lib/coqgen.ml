@@ -12,8 +12,8 @@ let reft_ t = Constrexpr_ops.mkRefC t
 let ref_ s =  reft_ (qualid_ s)
 let id_ s = Names.Id.of_string s
 let lident_ s = CAst.make (id_ s)
-let num_ n =
-  CAst.make (Constrexpr.(CPrim (Numeral (NumTok.(Signed.of_bigint CDec (Bigint.of_int n))))))
+(* let num_ n = *)
+  (* CAst.make (Constrexpr.(CPrim (Numeral (NumTok.(Signed.of_bigint CDec (Bigint.of_int n)))))) *)
   (* Constrexpr.(CPrim (Numeral (NumTok.Signed.of_int_string (Int.to_string n)))) *)
 let app_ f xs =
   Constrexpr_ops.mkAppC (f, xs)
@@ -38,11 +38,19 @@ let forall_ binders rtype =
   Constrexpr_ops.mkProdCN binders rtype
 
 let arr_ tys tyend =
-  forall_ (List.map (fun ty ->
-      Constrexpr.CLocalAssum ([ CAst.make (Names.Anonymous) ], Default Glob_term.Explicit, ty))
-      tys)
-    tyend
-let arr1_ ty1 ty2 = arr_ [ty1] ty2
+  ref_ "a"
+  (* List.fold_right (fun t1 t2 ->
+   *     CAst.make (Constrexpr.CNotation
+   *                  (Some (Constrexpr.LastLonelyNotation),
+   *                   (Constrexpr.InConstrEntry, "_ -> _"),
+   *                   ([ t1; t2 ], [], [], []))))
+   *   tys tyend *)
+(* let arr1_ ty1 ty2 = arr_ [ty1] ty2 *)
+let arr1_ ty1 ty2 =
+  CAst.make (Constrexpr.CNotation
+               (Some (Constrexpr.LastLonelyNotation),
+                (Constrexpr.InConstrEntry, "_ -> _"),
+                ([ ty1; ty2 ], [], [], [])))
 
 type inductive_body = Vernacexpr.inductive_expr * Vernacexpr.decl_notation list
 let inductiveBody_ iname iparams ?rtype iconstructors =
@@ -146,20 +154,31 @@ let pr_vernac_expr =
 
 let parse_constr_expr expr_s = Pcoq.parse_string (Pcoq.Constr.lconstr) expr_s
 
+let setup_notations () =
+  let () = print_endline "Defining Notations" in
+  let scope = "autosubst_scope" in
+  let () = Notation.declare_scope scope in
+  (* let dummy_eq = app1_ (ref_ "x") (ref_ "y") in *)
+  (* let () = Metasyntax.add_notation ~local:false None (Global.env()) dummy_eq (CAst.make "x = y", [Vernacexpr.SetLevel 70]) (Some scope) in *)
+  let dummy_arrow = app1_ (ref_ "A") (ref_ "B") in
+  let () = Metasyntax.add_notation ~local:false None (Global.env()) dummy_arrow (CAst.make "A -> B", [Vernacexpr.SetLevel 1000]) (Some scope) in
+  print_endline "Notations defined"
+
+
 (* disable unused warning *)
 module [@warning "-32"] GenTests = struct
   (* Lemma congr_lam  { s0 : tm   } { t0 : tm   } (H1 : s0 = t0) : lam  s0 = lam  t0 . *)
   let print_utlc_tm () : Pp.t =
     let utlc = inductive_ [inductiveBody_ "tm" [] ~rtype:(ref_ "Type") [
-        constructor_ "var_tm" (arr_ [ref_ "fin"] (ref_ "tm"));
+        constructor_ "var_tm" (arr1_ (ref_ "fin") (ref_ "tm"));
         constructor_ "app" (arr_ [ref_ "tm"; ref_ "tm"] (ref_ "tm"));
-        constructor_ "lam" (arr_ [ref_ "tm"] (ref_ "tm"))
+        constructor_ "lam" (arr1_ (ref_ "tm") (ref_ "tm"))
       ]] in
     pr_vernac_expr utlc
 
   let print_utlc_fix () : Pp.t =
     let fname = "ren_tm" in
-    let binders = [ binder1_ ~btype:(arr_ [ ref_ "fin" ] (ref_ "fin")) "xitm";
+    let binders = [ binder1_ ~btype:(arr1_ (ref_ "fin") (ref_ "fin")) "xitm";
                     binder1_ ~btype:(ref_ "tm") "s" ] in
     let rtype = ref_ "tm" in
     let body_def = match_ (ref_ "s") ~rtype:(ref_ "tm") [

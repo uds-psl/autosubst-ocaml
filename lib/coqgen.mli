@@ -11,7 +11,7 @@ type binder_expr = Constrexpr.local_binder_expr
 type branch_expr = Constrexpr.branch_expr
 
 val ref_ : identifier -> constr_expr
-val num_ : int -> constr_expr
+(* val num_ : int -> constr_expr *)
 
 val app_ : constr_expr -> constr_exprs -> constr_expr
 val app1_ : constr_expr -> constr_expr -> constr_expr
@@ -45,3 +45,5 @@ val definition_ : identifier -> binder_expr list -> ?rtype:constr_expr -> constr
 val pr_constr_expr : constr_expr -> Pp.t
 val parse_constr_expr : string -> constr_expr
 val pr_vernac_expr : vernac_expr -> Pp.t
+
+val setup_notations : unit -> unit
