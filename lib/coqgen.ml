@@ -158,10 +158,10 @@ let setup_notations () =
   let () = print_endline "Defining Notations" in
   let scope = "autosubst_scope" in
   let () = Notation.declare_scope scope in
-  (* let dummy_eq = app1_ (ref_ "x") (ref_ "y") in *)
-  (* let () = Metasyntax.add_notation ~local:false None (Global.env()) dummy_eq (CAst.make "x = y", [Vernacexpr.SetLevel 70]) (Some scope) in *)
+  (* let dummy_eq = app1_ (ref_ "x") (ref_ "y") in
+   * let () = Metasyntax.add_notation ~local:false None (Global.env()) dummy_eq (CAst.make "x = y", [Vernacexpr.SetLevel 70; Vernacexpr.SetOnlyPrinting]) (Some scope) in *)
   let dummy_arrow = app1_ (ref_ "A") (ref_ "B") in
-  let () = Metasyntax.add_notation ~local:false None (Global.env()) dummy_arrow (CAst.make "A -> B", [Vernacexpr.SetLevel 1000]) (Some scope) in
+  let () = Metasyntax.add_notation ~local:false None (Global.env()) dummy_arrow (CAst.make "A -> B", [Vernacexpr.SetLevel 70; Vernacexpr.SetOnlyPrinting; Vernacexpr.SetAssoc Gramlib.Gramext.RightA]) (Some scope) in
   print_endline "Notations defined"
 
 
