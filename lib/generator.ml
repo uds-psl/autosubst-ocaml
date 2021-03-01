@@ -29,7 +29,7 @@ let createImpBinders = List.map (fun p -> binder1_ ~implicit:true ~btype:(ref_ (
 let rec genArg sort n bs = function
   | H.Atom y ->
     let* up_scopes = castUpSubst sort bs y n in
-    pure @@ app_ref y (List.concat_map sty_terms (filter_scope_vars [up_scopes]))
+    pure @@ app_ref y (List.(concat (map sty_terms (filter_scope_vars [up_scopes]))))
   | H.FunApp (f, p, xs) ->
     let* xs' = a_map (genArg sort n bs) xs in
     let p' = Option.default [] (Option.map (fun x -> [x]) p) in
@@ -116,7 +116,7 @@ let traversal
       | Atom y ->
         let* b = hasArgs y in
         let* arg = a_map (castUpSubst sort bs y) args in
-        pure @@ if b then app_ref (name y) (List.concat_map sty_terms arg)
+        pure @@ if b then app_ref (name y) (List.(concat (map sty_terms arg)))
         else abs_ref "x" (no_args (ref_ "x"))
       | FunApp (f, p, xs) ->
         let* res = a_map (arg_map bs) xs in

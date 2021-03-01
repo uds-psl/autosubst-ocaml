@@ -43,9 +43,8 @@ type constructor =
 [@@deriving show]
 
 let getArgs { cpositions; _ } =
-  List.concat_map (fun { head; _ } ->
-      getArgSorts head)
-    cpositions
+  List.(concat (map (fun { head; _ } -> getArgSorts head)
+                  cpositions))
 
 type spec = (constructor list) tIdMap [@@deriving show]
 type tId_list = tId list [@@deriving show]

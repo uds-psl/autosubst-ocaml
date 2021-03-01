@@ -23,7 +23,7 @@ module SSet = Set.Make(String)
 let build_graph spec =
   let specl = AL.to_list spec in
   List.fold_left (fun g (t, cs) ->
-      let args = List.concat_map H.getArgs cs in
+      let args = List.(concat (map H.getArgs cs)) in
       List.fold_left (fun g arg -> G.add_edge g t arg) g args)
     G.empty specl
 
