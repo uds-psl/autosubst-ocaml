@@ -25,7 +25,10 @@ let appExpl_ n xs =
 let ident_decl_ s : Constrexpr.ident_decl  =
   (lident_ s, None)
 let eq_ t1 t2 =
-  app_ (ref_ "eq") [t1; t2]
+  CAst.make (Constrexpr.CNotation
+               (Some (Constrexpr.LastLonelyNotation),
+                (Constrexpr.InConstrEntry, "_ = _"),
+                ([ t1; t2 ], [], [], [])))
 
 let lname_ s = CAst.make (Names.Name (Names.Id.of_string s))
 let name_decl_ s = lname_ s, None
@@ -38,19 +41,14 @@ let forall_ binders rtype =
   Constrexpr_ops.mkProdCN binders rtype
 
 let arr_ tys tyend =
-  ref_ "a"
-  (* List.fold_right (fun t1 t2 ->
-   *     CAst.make (Constrexpr.CNotation
-   *                  (Some (Constrexpr.LastLonelyNotation),
-   *                   (Constrexpr.InConstrEntry, "_ -> _"),
-   *                   ([ t1; t2 ], [], [], []))))
-   *   tys tyend *)
-(* let arr1_ ty1 ty2 = arr_ [ty1] ty2 *)
-let arr1_ ty1 ty2 =
-  CAst.make (Constrexpr.CNotation
-               (Some (Constrexpr.LastLonelyNotation),
-                (Constrexpr.InConstrEntry, "_ -> _"),
-                ([ ty1; ty2 ], [], [], [])))
+  List.fold_right (fun t1 t2 ->
+      CAst.make (Constrexpr.CNotation
+                   (Some (Constrexpr.LastLonelyNotation),
+                    (Constrexpr.InConstrEntry, "_ -> _"),
+                    ([ t1; t2 ], [], [], []))))
+    tys tyend
+
+let arr1_ ty1 ty2 = arr_ [ty1] ty2
 
 type inductive_body = Vernacexpr.inductive_expr * Vernacexpr.decl_notation list
 let inductiveBody_ iname iparams ?rtype iconstructors =
@@ -155,15 +153,13 @@ let pr_vernac_expr =
 let parse_constr_expr expr_s = Pcoq.parse_string (Pcoq.Constr.lconstr) expr_s
 
 let setup_notations () =
-  let () = print_endline "Defining Notations" in
   let scope = "autosubst_scope" in
   let () = Notation.declare_scope scope in
-  (* let dummy_eq = app1_ (ref_ "x") (ref_ "y") in
-   * let () = Metasyntax.add_notation ~local:false None (Global.env()) dummy_eq (CAst.make "x = y", [Vernacexpr.SetLevel 70; Vernacexpr.SetOnlyPrinting]) (Some scope) in *)
+  let dummy_eq = app1_ (ref_ "x") (ref_ "y") in
+  let () = Metasyntax.add_notation ~local:false None (Global.env()) dummy_eq (CAst.make "x = y", [Vernacexpr.SetLevel 70; Vernacexpr.SetOnlyPrinting; Vernacexpr.SetAssoc Gramlib.Gramext.NonA]) (Some scope) in
   let dummy_arrow = app1_ (ref_ "A") (ref_ "B") in
   let () = Metasyntax.add_notation ~local:false None (Global.env()) dummy_arrow (CAst.make "A -> B", [Vernacexpr.SetLevel 70; Vernacexpr.SetOnlyPrinting; Vernacexpr.SetAssoc Gramlib.Gramext.RightA]) (Some scope) in
-  print_endline "Notations defined"
-
+  ()
 
 (* disable unused warning *)
 module [@warning "-32"] GenTests = struct
