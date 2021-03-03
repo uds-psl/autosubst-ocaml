@@ -28,7 +28,23 @@ dune build
 dune exec -- bin/main.exe <signature file> <output file> [coq|ucoq]
 # e.g. dune exec -- bin/main.exe signatures/fol.sig case-studies/examples/fol/fol_wellscoped.v coq
 #+END_SRC
+* Signatures
+You write signatures in extended HOAS. The following example contains all possible rules.
+Look in the signaturs/ directory for more examples.
+All things not in double quotes are identifiers and the same parsing rules apply as for Coq identifiers (except they need to be ascii as per a limitation of the parsing library I used).
+#+begin_src
+-- comments are like in Haskell
+tm : Type -- sort declarations
 
+list : Functor -- functor declarations
+
+-- declaring some constructors
+arr : ty -> ty -> ty
+all : (ty -> ty) -> ty -- the negative position here indicates a binder for a ty
+
+app : tm -> "list" (tm) -> tm        -- application of the list functor to the sort `tm`
+lam (p: nat) : (<p, tm> -> tm) -> tm -- a constructor with a parameter `p` which is then used in a variadic binder (i.e. it binds p values of `tm`)
+#+end_src
 * Repo
 You can find the code at https://gitlab.com/addapp/autosubst-ocaml
 * Demo
