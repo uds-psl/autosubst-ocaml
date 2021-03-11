@@ -24,6 +24,13 @@ jobs:
           - 8.9.1
           - 8.12.1
           - 8.13.0
+        include:
+          - coq-version: 8.9.1
+            ocaml-version: 4.09.1
+          - coq-version: 8.12.1
+            ocaml-version: 4.11.1
+          - coq-version: 8.13.0
+            ocaml-version: 4.11.1
     # The type of runner that the job will run on
     runs-on: ubuntu-18.04
 
@@ -39,7 +46,7 @@ jobs:
       - name: Use OCaml 4.11.1
         uses: avsm/setup-ocaml@v1
         with:
-          ocaml-version: 4.11.1
+          ocaml-version: ${{ matrix.ocaml-version }}
       # Runs a set of commands using the runners shell
       - name: Install dependencies
         run: |
