@@ -170,8 +170,8 @@ let zero_ sort binder ms =
 let mk_scons sort binder sigma ms =
   let open H in
   match binder with
-  | Single y -> if String.(sort = y) then app_ cons_ [zero_ sort (Single y) ms; sigma] else sigma
-  | BinderList (p, y) -> if String.(sort = y) then app_ref "scons_p" [ref_ p; zero_ sort (BinderList (p, y)) ms; sigma] else sigma
+  | Single y -> if sort = y then app_ cons_ [zero_ sort (Single y) ms; sigma] else sigma
+  | BinderList (p, y) -> if sort = y then app_ref "scons_p" [ref_ p; zero_ sort (BinderList (p, y)) ms; sigma] else sigma
 
 let upSubstT binder sort ms sigma =
   let* pat = patternSId sort binder in
@@ -332,10 +332,10 @@ let genUpExt (binder, sort) =
   let* (eqs, beqs) = genEqs sort "Eq"
       (List.map2 (>>>) (sty_terms xis) (sty_terms zetas)) (sty_terms rhos)
       (fun x y s -> pure @@ match y with
-         | H.Single z -> if String.(z = x)
+         | H.Single z -> if z = x
            then app_ref up_ren_ren__ [underscore_; underscore_; underscore_; s]
            else s
-         | H.BinderList (_, z) -> if String.(z = x)
+         | H.BinderList (_, z) -> if z = x
            then app_ref "up_ren_ren_p" [s]
            else s) in
   let ret s = eq_
@@ -421,7 +421,7 @@ let genUpExt (binder, sort) =
       (app_ref (compRenRen_ sort) (pat @ sty_terms zetas'
                                  @ List.map2 (>>>) (sty_terms zetas) pat
                                  @ List.map (fun x ->
-                                     (abs_ref "x" (if String.(x = z')
+                                     (abs_ref "x" (if x = z'
                                                  then scons_p_tail' (ref_ "x")
                                                  else eq_refl_))) substSorts
                                  @ [ app1_ sigma n ]))
@@ -500,7 +500,7 @@ let genUpSubstSubst (binder, sort) =
                     (sty_terms taus @ pat
                      @ List.map (const underscore_) pat'
                      @ List.map (fun substSort ->
-                         abs_ref "x" @@ eqSym_ (if String.(substSort = z')
+                         abs_ref "x" @@ eqSym_ (if substSort = z'
                                               then scons_p_tail' (ref_ "x")
                                               else eq_refl_)) substSorts
                      @ [ app1_ sigma n ])))
@@ -581,7 +581,7 @@ let genUpSubstSubst (binder, sort) =
                     (sty_terms taus @ pat
                      @ List.map (const underscore_) pat'
                      @ List.map (fun substSort ->
-                         abs_ref "x" (eqSym_ (if String.(substSort = z')
+                         abs_ref "x" (eqSym_ (if substSort = z'
                                              then scons_p_tail' (ref_ "x")
                                              else eq_refl_)))
                        substSorts
@@ -834,7 +834,7 @@ let genCodeT sorts upList =
   (* GENERATE RENAMINGS *)
   let* isRen = hasRenamings (List.hd sorts) in
   let guard_map ?(invert=false) f input =
-    m_guard Bool.(invert <> isRen) @@ a_map f input in
+    m_guard (invert <> isRen) @@ a_map f input in
   let guard_concat_map f input =
     m_guard isRen @@ a_concat_map f input in
   let* upRen = guard_map genUpRen upList in
