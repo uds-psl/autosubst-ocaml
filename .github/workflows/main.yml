@@ -43,7 +43,7 @@ jobs:
       - name: Run a one-line script
         run: echo Hello, world!
       
-      - name: Use OCaml 4.11.1
+      - name: Use OCaml ${{ matrix.ocaml-version }}
         uses: avsm/setup-ocaml@v1
         with:
           ocaml-version: ${{ matrix.ocaml-version }}
@@ -56,15 +56,12 @@ jobs:
       - name: Build app
         run: opam exec -- dune build     
       - name: Generate source files
-        run: ./generate.sh
+        run: |
+          eval $(opam env)
+          ./generate.sh
       - name: Compile generated files 
-        run: cd ./case-studies/examples && make
-
-          
-          
-          
-          
-          
-          
-          
-          
+        run: |
+          eval $(opam env)
+          cd ./case-studies/examples
+          make clean
+          make
