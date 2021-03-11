@@ -18,10 +18,12 @@ jobs:
   # This workflow contains a single job called "build"
   build:
     strategy:
-      fail-fast: false
+#       fail-fast: false
       matrix:
         coq-version:
-            - 8.12.1
+          - 8.9.1
+          - 8.12.1
+          - 8.13.0
     # The type of runner that the job will run on
     runs-on: ubuntu-18.04
 
@@ -40,9 +42,15 @@ jobs:
           ocaml-version: 4.11.1
       # Runs a set of commands using the runners shell
       - name: Install dependencies
-        run: opam install dune coq.8.12.1 angstrom ocamlgraph ppx_deriving
+        run: |
+          opam pin add coq ${{ matrix.coq-version }}
+          opam install dune angstrom ocamlgraph ppx_deriving
       - name: Build app
-        run: opam exec -- dune build        
+        run: opam exec -- dune build     
+      - name: Generate source files
+        run: ./generate.sh
+      - name: Compile generated files 
+        run: cd ./case-studies/examples && make
 
           
           
