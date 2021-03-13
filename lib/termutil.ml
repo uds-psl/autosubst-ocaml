@@ -6,7 +6,7 @@ open CoqSyntax
 module CE = Constrexpr
 module H = Hsig
 
-let type_ = ref_ "Type"
+let type_ = type_
 let nat_ = ref_ "nat"
 let none_ = ref_ "None"
 let some_ = ref_ "Some"
@@ -15,7 +15,7 @@ let plus_ = ref_ "plus"
 let shift_ = ref_ "shift"
 let cons_ = ref_ "scons"
 let var_zero_ = ref_ "var_zero"
-let underscore_ = ref_ "_"
+let underscore_ = underscore_
 let id_ = ref_ "id"
 
 let app_ref ?(expl=false) s t =

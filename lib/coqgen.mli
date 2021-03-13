@@ -13,6 +13,10 @@ type branch_expr = Constrexpr.branch_expr
 val ref_ : identifier -> constr_expr
 (* val num_ : int -> constr_expr *)
 
+val underscore_ : constr_expr
+val prop_ : constr_expr
+val type_ : constr_expr
+
 val app_ : constr_expr -> constr_exprs -> constr_expr
 val app1_ : constr_expr -> constr_expr -> constr_expr
 val appExpl_ : identifier -> constr_exprs -> constr_expr

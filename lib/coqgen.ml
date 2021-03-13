@@ -12,6 +12,11 @@ let reft_ t = Constrexpr_ops.mkRefC t
 let ref_ s =  reft_ (qualid_ s)
 let id_ s = Names.Id.of_string s
 let lident_ s = CAst.make (id_ s)
+
+let underscore_ = CAst.make Constrexpr.(CHole (None, Namegen.IntroAnonymous, None))
+let prop_ = CAst.make Constrexpr.(CSort (Glob_term.UNamed [CProp, 0]))
+let type_ = CAst.make Constrexpr.(CSort (Glob_term.UAnonymous { rigid = true }))
+
 (* let num_ n = *)
   (* CAst.make (Constrexpr.(CPrim (Numeral (NumTok.(Signed.of_bigint CDec (Bigint.of_int n)))))) *)
   (* Constrexpr.(CPrim (Numeral (NumTok.Signed.of_int_string (Int.to_string n)))) *)
@@ -39,6 +44,9 @@ let constructor_ cname ctype = (false, (lident_ cname, ctype))
 
 let forall_ binders rtype =
   Constrexpr_ops.mkProdCN binders rtype
+
+let forall1_ binder rtype =
+  forall_ [binder] rtype
 
 let arr_ tys tyend =
   List.fold_right (fun t1 t2 ->
@@ -101,11 +109,6 @@ let binder_ ?(implicit=false) ?btype bnames =
   let bk = Default (if implicit then Glob_term.MaxImplicit else Glob_term.Explicit) in
   let btype = Option.default (CAst.make @@ CHole (None, Namegen.IntroAnonymous, None)) btype in
   CLocalAssum (List.map lname_ bnames, bk, btype)
-
-(* let binder_ bnames ?(implicit=false) btype =
- *   let open Constrexpr in
- *   let bk = Default (if implicit then Glob_term.MaxImplicit else Glob_term.Explicit) in
- *   CLocalAssum (List.map ~f:lname_ bnames, bk, btype) *)
 
 let binder1_ ?implicit ?btype bname =
   binder_ ?implicit ?btype [bname]
