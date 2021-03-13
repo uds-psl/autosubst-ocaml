@@ -118,6 +118,8 @@ let lambda_ binders body =
   Constrexpr_ops.mkLambdaCN binders body
 
 type vernac_expr = Vernacexpr.vernac_expr
+type autosubst_exprs = { as_exprs: vernac_expr list; as_fext_exprs: vernac_expr list }
+
 
 let vernacend = Pp.str ".\n"
 

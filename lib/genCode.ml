@@ -5,6 +5,7 @@
 open Util
 
 module CS = CoqSyntax
+module CG = Coqgen
 module H = Hsig
 
 let unscopedPreamble = "Require Import axioms unscoped header_extensible.\n"
@@ -44,26 +45,30 @@ let getUps component =
 let genCode components =
   let open REM.Syntax in
   let open REM in
-  let* (_, code) = m_fold (fun (done_ups, sentences) component ->
+  let open CG in
+  let* (_, code, fext_code) = m_fold (fun (done_ups, vexprs, fext_exprs) component ->
       let* substSorts = substOf (List.hd component) in
       let new_ups = getUps substSorts in
       let ups = list_diff new_ups done_ups in
-      let* code_x = Generator.genCodeT component ups in
-      let sentences = sentences @ code_x in
-      pure @@ (ups @ done_ups, sentences))
-      ([], []) components in
-  pure code
+      let* { as_exprs; as_fext_exprs } = Generator.genCodeT component ups in
+      pure @@ (ups @ done_ups, vexprs @ as_exprs, fext_exprs @ as_fext_exprs))
+      ([], [], []) components in
+  pure { as_exprs = code; as_fext_exprs = fext_code }
+
+let make_file code =
+  let pps = (List.map Coqgen.pr_vernac_expr code) in
+  let preamble = get_preamble () in
+  String.concat "\n"
+    (preamble :: List.map Pp.string_of_ppcmds pps)
 
 (** Generate the Coq file. Here we convert the Coq AST to pretty print expressions and then to strings. *)
 let genFile () =
   let open REM.Syntax in
   let open REM in
+  let open CG in
   let* components = getComponents in
-  let* code = genCode components in
-  let pps = (List.map Coqgen.pr_vernac_expr code) in
-  let preamble = get_preamble () in
-  pure @@ (String.concat "\n"
-             (preamble :: List.map Pp.string_of_ppcmds pps))
+  let* { as_exprs = code; as_fext_exprs = fext_code } = genCode components in
+  pure (make_file code, make_file fext_code)
 
 (** Run the computation constructed by genFile *)
 let run_gen_code hsig = REM.run (genFile ()) hsig

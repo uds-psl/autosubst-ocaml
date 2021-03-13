@@ -40,6 +40,8 @@ type fixpoint_expr = Vernacexpr.fixpoint_expr
 val fixpointBody_ : identifier -> binder_expr list -> constr_expr -> constr_expr -> fixpoint_expr
 
 type vernac_expr = Vernacexpr.vernac_expr
+type autosubst_exprs = { as_exprs: vernac_expr list; as_fext_exprs: vernac_expr list }
+
 val inductive_ : inductive_body list -> vernac_expr
 val fixpoint_ : is_rec:bool -> fixpoint_expr list -> vernac_expr
 val definition_ : identifier -> binder_expr list -> ?rtype:constr_expr -> constr_expr -> vernac_expr
