@@ -4,6 +4,7 @@ set -euo pipefail
 # generate code for the example signatures
 for n in utlc stlc fcbv variadic pi num fol; do
     echo dune exec -- bin/main.exe signatures/${n}.sig case-studies/examples/${n}/${n}_wellscoped.v coq
+    mkdir -p case-studies/examples/${n}
     dune exec -- bin/main.exe signatures/${n}.sig case-studies/examples/${n}/${n}_wellscoped.v coq
 done
 
