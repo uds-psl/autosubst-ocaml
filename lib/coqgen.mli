@@ -50,4 +50,5 @@ val pr_constr_expr : constr_expr -> Pp.t
 val parse_constr_expr : string -> constr_expr
 val pr_vernac_expr : vernac_expr -> Pp.t
 
-val setup_notations : unit -> unit
+(*** Setup some state in the Coq library like a feedback printer and notations *)
+val setup_coq : unit -> unit

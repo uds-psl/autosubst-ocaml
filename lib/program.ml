@@ -17,7 +17,7 @@ let main (infile, outfile, scope_type) =
   let open ErrorM.Syntax in
   let open ErrorM in
   let () = Printexc.record_backtrace true in
-  let () = Coqgen.setup_notations () in
+  let () = Coqgen.setup_coq () in
   let () = Settings.scope_type := scope_type in
   (* parse input HOAS *)
   let* spec = read_signature infile |> SigParser.parse_signature in

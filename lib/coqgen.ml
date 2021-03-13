@@ -155,13 +155,28 @@ let pr_vernac_expr =
 
 let parse_constr_expr expr_s = Pcoq.parse_string (Pcoq.Constr.lconstr) expr_s
 
-let setup_notations () =
+let setup_coq () =
+  (* install a printer for feedback from Coq.
+   * Sometimes useful in debugging and it seems to mostly send messages so we only handle those *)
+  let _ = Feedback.(add_feeder (function { contents; _ } ->
+    match contents with
+    | Message (_, _, pp) -> print_endline ("Message from Coq: " ^ Pp.string_of_ppcmds pp)
+    | _ -> print_endline "Received feedback from Coq. Add cases to the printing function in coqgen.setup_coq if you want to see more.")) in
   let scope = "autosubst_scope" in
   let () = Notation.declare_scope scope in
-  let dummy_eq = app1_ (ref_ "x") (ref_ "y") in
-  let () = Metasyntax.add_notation ~local:false None (Global.env()) dummy_eq (CAst.make "x = y", [Vernacexpr.SetLevel 70; Vernacexpr.SetOnlyPrinting; Vernacexpr.SetAssoc Gramlib.Gramext.NonA]) (Some scope) in
-  let dummy_arrow = app1_ (ref_ "A") (ref_ "B") in
-  let () = Metasyntax.add_notation ~local:false None (Global.env()) dummy_arrow (CAst.make "A -> B", [Vernacexpr.SetLevel 70; Vernacexpr.SetOnlyPrinting; Vernacexpr.SetAssoc Gramlib.Gramext.RightA]) (Some scope) in
+  let dummy_eq =
+    app_ (lambda_ [ binder_ [ "a"; "b" ] ] prop_) [ (ref_ "x"); (ref_ "y") ] in
+  let () = Metasyntax.add_notation ~local:false None (Global.env ()) dummy_eq
+      (CAst.make "x = y", [ Vernacexpr.SetLevel 70
+                          ; Vernacexpr.SetOnlyPrinting
+                          ; Vernacexpr.SetAssoc Gramlib.Gramext.NonA ])
+      (Some scope) in
+  let dummy_arrow = forall1_ (binder1_ "A") (ref_ "B") in
+  let () = Metasyntax.add_notation ~local:false None (Global.env ()) dummy_arrow
+      (CAst.make "A -> B", [ Vernacexpr.SetLevel 70
+                           ; Vernacexpr.SetOnlyPrinting
+                           ; Vernacexpr.SetAssoc Gramlib.Gramext.RightA ])
+      (Some scope) in
   ()
 
 (* disable unused warning *)
