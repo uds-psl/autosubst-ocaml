@@ -1,38 +1,37 @@
 Require Import axioms fintype header_extensible.
+
 Inductive ty (n_ty : nat) : Type :=
   | var_ty : fin n_ty -> ty n_ty
   | top : ty n_ty
   | arr : ty n_ty -> ty n_ty -> ty n_ty
   | all : ty n_ty -> ty (S n_ty) -> ty n_ty
   | recty : list (prod (nat) (ty n_ty)) -> ty n_ty.
-Lemma congr_top {m_ty : nat} : top m_ty = top m_ty.
-Proof.
-exact (eq_refl).
-Qed.
-Lemma congr_arr {m_ty : nat} {s0 : ty m_ty} {s1 : ty m_ty} {t0 : ty m_ty}
-  {t1 : ty m_ty} (H0 : s0 = t0) (H1 : s1 = t1) :
-  arr m_ty s0 s1 = arr m_ty t0 t1.
-Proof.
-exact (eq_trans (eq_trans eq_refl (ap (fun x => arr m_ty x s1) H0))
-                (ap (fun x => arr m_ty t0 x) H1)).
-Qed.
-Lemma congr_all {m_ty : nat} {s0 : ty m_ty} {s1 : ty (S m_ty)} {t0 : ty m_ty}
-  {t1 : ty (S m_ty)} (H0 : s0 = t0) (H1 : s1 = t1) :
-  all m_ty s0 s1 = all m_ty t0 t1.
-Proof.
-exact (eq_trans (eq_trans eq_refl (ap (fun x => all m_ty x s1) H0))
-                (ap (fun x => all m_ty t0 x) H1)).
-Qed.
-Lemma congr_recty {m_ty : nat} {s0 : list (prod (nat) (ty m_ty))}
+
+Definition congr_top {m_ty : nat} : top m_ty = top m_ty := eq_refl.
+
+Definition congr_arr {m_ty : nat} {s0 : ty m_ty} {s1 : ty m_ty}
+  {t0 : ty m_ty} {t1 : ty m_ty} (H0 : s0 = t0) (H1 : s1 = t1) :
+  arr m_ty s0 s1 = arr m_ty t0 t1 :=
+  eq_trans (eq_trans eq_refl (ap (fun x => arr m_ty x s1) H0))
+    (ap (fun x => arr m_ty t0 x) H1).
+
+Definition congr_all {m_ty : nat} {s0 : ty m_ty} {s1 : ty (S m_ty)}
+  {t0 : ty m_ty} {t1 : ty (S m_ty)} (H0 : s0 = t0) (H1 : s1 = t1) :
+  all m_ty s0 s1 = all m_ty t0 t1 :=
+  eq_trans (eq_trans eq_refl (ap (fun x => all m_ty x s1) H0))
+    (ap (fun x => all m_ty t0 x) H1).
+
+Definition congr_recty {m_ty : nat} {s0 : list (prod (nat) (ty m_ty))}
   {t0 : list (prod (nat) (ty m_ty))} (H0 : s0 = t0) :
-  recty m_ty s0 = recty m_ty t0.
-Proof.
-exact (eq_trans eq_refl (ap (fun x => recty m_ty x) H0)).
-Qed.
+  recty m_ty s0 = recty m_ty t0 :=
+  eq_trans eq_refl (ap (fun x => recty m_ty x) H0).
+
 Definition upRen_ty_ty {m : nat} {n : nat} (xi : fin m -> fin n) :
   fin (S m) -> fin (S n) := up_ren xi.
+
 Definition upRen_list_ty_ty (p : nat) {m : nat} {n : nat}
   (xi : fin m -> fin n) : fin (plus p m) -> fin (plus p n) := upRen_p p xi.
+
 Fixpoint ren_ty {m_ty : nat} {n_ty : nat} (xi_ty : fin m_ty -> fin n_ty)
 (s : ty m_ty) : ty n_ty :=
   match s with
@@ -43,13 +42,16 @@ Fixpoint ren_ty {m_ty : nat} {n_ty : nat} (xi_ty : fin m_ty -> fin n_ty)
   | recty _ s0 =>
       recty n_ty (list_map (prod_map (fun x => x) (ren_ty xi_ty)) s0)
   end.
+
 Definition up_ty_ty {m : nat} {n_ty : nat} (sigma : fin m -> ty n_ty) :
   fin (S m) -> ty (S n_ty) :=
   scons (var_ty (S n_ty) var_zero) (funcomp (ren_ty shift) sigma).
+
 Definition up_list_ty_ty (p : nat) {m : nat} {n_ty : nat}
   (sigma : fin m -> ty n_ty) : fin (plus p m) -> ty (plus p n_ty) :=
   scons_p p (funcomp (var_ty (plus p n_ty)) (zero_p p))
     (funcomp (ren_ty (shift_p p)) sigma).
+
 Fixpoint subst_ty {m_ty : nat} {n_ty : nat} (sigma_ty : fin m_ty -> ty n_ty)
 (s : ty m_ty) : ty n_ty :=
   match s with
@@ -61,6 +63,7 @@ Fixpoint subst_ty {m_ty : nat} {n_ty : nat} (sigma_ty : fin m_ty -> ty n_ty)
   | recty _ s0 =>
       recty n_ty (list_map (prod_map (fun x => x) (subst_ty sigma_ty)) s0)
   end.
+
 Definition upId_ty_ty {m_ty : nat} (sigma : fin m_ty -> ty m_ty)
   (Eq : forall x, sigma x = var_ty m_ty x) :
   forall x, up_ty_ty sigma x = var_ty (S m_ty) x :=
@@ -69,12 +72,14 @@ Definition upId_ty_ty {m_ty : nat} (sigma : fin m_ty -> ty m_ty)
   | Some fin_n => ap (ren_ty shift) (Eq fin_n)
   | None => eq_refl
   end.
+
 Definition upId_list_ty_ty {p : nat} {m_ty : nat}
   (sigma : fin m_ty -> ty m_ty) (Eq : forall x, sigma x = var_ty m_ty x) :
   forall x, up_list_ty_ty p sigma x = var_ty (plus p m_ty) x :=
   fun n =>
   scons_p_eta (var_ty (plus p m_ty))
     (fun n => ap (ren_ty (shift_p p)) (Eq n)) (fun n => eq_refl).
+
 Fixpoint idSubst_ty {m_ty : nat} (sigma_ty : fin m_ty -> ty m_ty)
 (Eq_ty : forall x, sigma_ty x = var_ty m_ty x) (s : ty m_ty) :
 subst_ty sigma_ty s = s :=
@@ -91,6 +96,7 @@ subst_ty sigma_ty s = s :=
         (list_id (prod_id (fun x => eq_refl x) (idSubst_ty sigma_ty Eq_ty))
            s0)
   end.
+
 Definition upExtRen_ty_ty {m : nat} {n : nat} (xi : fin m -> fin n)
   (zeta : fin m -> fin n) (Eq : forall x, xi x = zeta x) :
   forall x, upRen_ty_ty xi x = upRen_ty_ty zeta x :=
@@ -99,11 +105,13 @@ Definition upExtRen_ty_ty {m : nat} {n : nat} (xi : fin m -> fin n)
   | Some fin_n => ap shift (Eq fin_n)
   | None => eq_refl
   end.
+
 Definition upExtRen_list_ty_ty {p : nat} {m : nat} {n : nat}
   (xi : fin m -> fin n) (zeta : fin m -> fin n)
   (Eq : forall x, xi x = zeta x) :
   forall x, upRen_list_ty_ty p xi x = upRen_list_ty_ty p zeta x :=
   fun n => scons_p_congr (fun n => eq_refl) (fun n => ap (shift_p p) (Eq n)).
+
 Fixpoint extRen_ty {m_ty : nat} {n_ty : nat} (xi_ty : fin m_ty -> fin n_ty)
 (zeta_ty : fin m_ty -> fin n_ty) (Eq_ty : forall x, xi_ty x = zeta_ty x)
 (s : ty m_ty) : ren_ty xi_ty s = ren_ty zeta_ty s :=
@@ -122,6 +130,7 @@ Fixpoint extRen_ty {m_ty : nat} {n_ty : nat} (xi_ty : fin m_ty -> fin n_ty)
         (list_ext
            (prod_ext (fun x => eq_refl x) (extRen_ty xi_ty zeta_ty Eq_ty)) s0)
   end.
+
 Definition upExt_ty_ty {m : nat} {n_ty : nat} (sigma : fin m -> ty n_ty)
   (tau : fin m -> ty n_ty) (Eq : forall x, sigma x = tau x) :
   forall x, up_ty_ty sigma x = up_ty_ty tau x :=
@@ -130,12 +139,14 @@ Definition upExt_ty_ty {m : nat} {n_ty : nat} (sigma : fin m -> ty n_ty)
   | Some fin_n => ap (ren_ty shift) (Eq fin_n)
   | None => eq_refl
   end.
+
 Definition upExt_list_ty_ty {p : nat} {m : nat} {n_ty : nat}
   (sigma : fin m -> ty n_ty) (tau : fin m -> ty n_ty)
   (Eq : forall x, sigma x = tau x) :
   forall x, up_list_ty_ty p sigma x = up_list_ty_ty p tau x :=
   fun n =>
   scons_p_congr (fun n => eq_refl) (fun n => ap (ren_ty (shift_p p)) (Eq n)).
+
 Fixpoint ext_ty {m_ty : nat} {n_ty : nat} (sigma_ty : fin m_ty -> ty n_ty)
 (tau_ty : fin m_ty -> ty n_ty) (Eq_ty : forall x, sigma_ty x = tau_ty x)
 (s : ty m_ty) : subst_ty sigma_ty s = subst_ty tau_ty s :=
@@ -154,17 +165,20 @@ Fixpoint ext_ty {m_ty : nat} {n_ty : nat} (sigma_ty : fin m_ty -> ty n_ty)
         (list_ext
            (prod_ext (fun x => eq_refl x) (ext_ty sigma_ty tau_ty Eq_ty)) s0)
   end.
+
 Definition up_ren_ren_ty_ty {k : nat} {l : nat} {m : nat}
   (xi : fin k -> fin l) (zeta : fin l -> fin m) (rho : fin k -> fin m)
   (Eq : forall x, funcomp zeta xi x = rho x) :
   forall x, funcomp (upRen_ty_ty zeta) (upRen_ty_ty xi) x = upRen_ty_ty rho x :=
   up_ren_ren xi zeta rho Eq.
+
 Definition up_ren_ren_list_ty_ty {p : nat} {k : nat} {l : nat} {m : nat}
   (xi : fin k -> fin l) (zeta : fin l -> fin m) (rho : fin k -> fin m)
   (Eq : forall x, funcomp zeta xi x = rho x) :
   forall x,
   funcomp (upRen_list_ty_ty p zeta) (upRen_list_ty_ty p xi) x =
   upRen_list_ty_ty p rho x := up_ren_ren_p Eq.
+
 Fixpoint compRenRen_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
 (xi_ty : fin m_ty -> fin k_ty) (zeta_ty : fin k_ty -> fin l_ty)
 (rho_ty : fin m_ty -> fin l_ty)
@@ -186,6 +200,7 @@ ren_ty zeta_ty (ren_ty xi_ty s) = ren_ty rho_ty s :=
            (prod_comp (fun x => eq_refl x)
               (compRenRen_ty xi_ty zeta_ty rho_ty Eq_ty)) s0)
   end.
+
 Definition up_ren_subst_ty_ty {k : nat} {l : nat} {m_ty : nat}
   (xi : fin k -> fin l) (tau : fin l -> ty m_ty) (theta : fin k -> ty m_ty)
   (Eq : forall x, funcomp tau xi x = theta x) :
@@ -195,6 +210,7 @@ Definition up_ren_subst_ty_ty {k : nat} {l : nat} {m_ty : nat}
   | Some fin_n => ap (ren_ty shift) (Eq fin_n)
   | None => eq_refl
   end.
+
 Definition up_ren_subst_list_ty_ty {p : nat} {k : nat} {l : nat} {m_ty : nat}
   (xi : fin k -> fin l) (tau : fin l -> ty m_ty) (theta : fin k -> ty m_ty)
   (Eq : forall x, funcomp tau xi x = theta x) :
@@ -206,6 +222,7 @@ Definition up_ren_subst_list_ty_ty {p : nat} {k : nat} {l : nat} {m_ty : nat}
     (scons_p_congr (fun z => scons_p_head' _ _ z)
        (fun z =>
         eq_trans (scons_p_tail' _ _ (xi z)) (ap (ren_ty (shift_p p)) (Eq z)))).
+
 Fixpoint compRenSubst_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
 (xi_ty : fin m_ty -> fin k_ty) (tau_ty : fin k_ty -> ty l_ty)
 (theta_ty : fin m_ty -> ty l_ty)
@@ -227,6 +244,7 @@ subst_ty tau_ty (ren_ty xi_ty s) = subst_ty theta_ty s :=
            (prod_comp (fun x => eq_refl x)
               (compRenSubst_ty xi_ty tau_ty theta_ty Eq_ty)) s0)
   end.
+
 Definition up_subst_ren_ty_ty {k : nat} {l_ty : nat} {m_ty : nat}
   (sigma : fin k -> ty l_ty) (zeta_ty : fin l_ty -> fin m_ty)
   (theta : fin k -> ty m_ty)
@@ -247,6 +265,7 @@ Definition up_subst_ren_ty_ty {k : nat} {l_ty : nat} {m_ty : nat}
            (ap (ren_ty shift) (Eq fin_n)))
   | None => eq_refl
   end.
+
 Definition up_subst_ren_list_ty_ty {p : nat} {k : nat} {l_ty : nat}
   {m_ty : nat} (sigma : fin k -> ty l_ty) (zeta_ty : fin l_ty -> fin m_ty)
   (theta : fin k -> ty m_ty)
@@ -267,6 +286,7 @@ Definition up_subst_ren_list_ty_ty {p : nat} {k : nat} {l_ty : nat}
                 (compRenRen_ty zeta_ty (shift_p p)
                    (funcomp (shift_p p) zeta_ty) (fun x => eq_refl) (sigma n)))
              (ap (ren_ty (shift_p p)) (Eq n))))).
+
 Fixpoint compSubstRen_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
 (sigma_ty : fin m_ty -> ty k_ty) (zeta_ty : fin k_ty -> fin l_ty)
 (theta_ty : fin m_ty -> ty l_ty)
@@ -288,6 +308,7 @@ Fixpoint compSubstRen_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
            (prod_comp (fun x => eq_refl x)
               (compSubstRen_ty sigma_ty zeta_ty theta_ty Eq_ty)) s0)
   end.
+
 Definition up_subst_subst_ty_ty {k : nat} {l_ty : nat} {m_ty : nat}
   (sigma : fin k -> ty l_ty) (tau_ty : fin l_ty -> ty m_ty)
   (theta : fin k -> ty m_ty)
@@ -307,6 +328,7 @@ Definition up_subst_subst_ty_ty {k : nat} {l_ty : nat} {m_ty : nat}
            (ap (ren_ty shift) (Eq fin_n)))
   | None => eq_refl
   end.
+
 Definition up_subst_subst_list_ty_ty {p : nat} {k : nat} {l_ty : nat}
   {m_ty : nat} (sigma : fin k -> ty l_ty) (tau_ty : fin l_ty -> ty m_ty)
   (theta : fin k -> ty m_ty)
@@ -328,6 +350,7 @@ Definition up_subst_subst_list_ty_ty {p : nat} {k : nat} {l_ty : nat}
                 (compSubstRen_ty tau_ty (shift_p p) _
                    (fun x => eq_sym (scons_p_tail' _ _ x)) (sigma n)))
              (ap (ren_ty (shift_p p)) (Eq n))))).
+
 Fixpoint compSubstSubst_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
 (sigma_ty : fin m_ty -> ty k_ty) (tau_ty : fin k_ty -> ty l_ty)
 (theta_ty : fin m_ty -> ty l_ty)
@@ -350,6 +373,7 @@ Fixpoint compSubstSubst_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
            (prod_comp (fun x => eq_refl x)
               (compSubstSubst_ty sigma_ty tau_ty theta_ty Eq_ty)) s0)
   end.
+
 Definition rinstInst_up_ty_ty {m : nat} {n_ty : nat} (xi : fin m -> fin n_ty)
   (sigma : fin m -> ty n_ty)
   (Eq : forall x, funcomp (var_ty n_ty) xi x = sigma x) :
@@ -359,6 +383,7 @@ Definition rinstInst_up_ty_ty {m : nat} {n_ty : nat} (xi : fin m -> fin n_ty)
   | Some fin_n => ap (ren_ty shift) (Eq fin_n)
   | None => eq_refl
   end.
+
 Definition rinstInst_up_list_ty_ty {p : nat} {m : nat} {n_ty : nat}
   (xi : fin m -> fin n_ty) (sigma : fin m -> ty n_ty)
   (Eq : forall x, funcomp (var_ty n_ty) xi x = sigma x) :
@@ -369,6 +394,7 @@ Definition rinstInst_up_list_ty_ty {p : nat} {m : nat} {n_ty : nat}
   eq_trans (scons_p_comp' _ _ (var_ty (plus p n_ty)) n)
     (scons_p_congr (fun z => eq_refl)
        (fun n => ap (ren_ty (shift_p p)) (Eq n))).
+
 Fixpoint rinst_inst_ty {m_ty : nat} {n_ty : nat}
 (xi_ty : fin m_ty -> fin n_ty) (sigma_ty : fin m_ty -> ty n_ty)
 (Eq_ty : forall x, funcomp (var_ty n_ty) xi_ty x = sigma_ty x) (s : ty m_ty)
@@ -389,106 +415,93 @@ Fixpoint rinst_inst_ty {m_ty : nat} {n_ty : nat}
            (prod_ext (fun x => eq_refl x)
               (rinst_inst_ty xi_ty sigma_ty Eq_ty)) s0)
   end.
-Lemma rinstInst_ty {m_ty : nat} {n_ty : nat} (xi_ty : fin m_ty -> fin n_ty) :
-  ren_ty xi_ty = subst_ty (funcomp (var_ty n_ty) xi_ty).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun x => rinst_inst_ty xi_ty _ (fun n => eq_refl) x)).
-Qed.
-Lemma instId_ty {m_ty : nat} : subst_ty (var_ty m_ty) = id.
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun x => idSubst_ty (var_ty m_ty) (fun n => eq_refl) (id x))).
-Qed.
-Lemma rinstId_ty {m_ty : nat} : @ren_ty m_ty m_ty id = id.
-Proof.
-exact (eq_trans (rinstInst_ty (id _)) instId_ty).
-Qed.
-Lemma varL_ty {m_ty : nat} {n_ty : nat} (sigma_ty : fin m_ty -> ty n_ty) :
-  funcomp (subst_ty sigma_ty) (var_ty m_ty) = sigma_ty.
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun x => eq_refl)).
-Qed.
-Lemma varLRen_ty {m_ty : nat} {n_ty : nat} (xi_ty : fin m_ty -> fin n_ty) :
-  funcomp (ren_ty xi_ty) (var_ty m_ty) = funcomp (var_ty n_ty) xi_ty.
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun x => eq_refl)).
-Qed.
-Lemma renRen_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
+
+Definition rinstInst_ty {m_ty : nat} {n_ty : nat}
+  (xi_ty : fin m_ty -> fin n_ty) :
+  ren_ty xi_ty = subst_ty (funcomp (var_ty n_ty) xi_ty) :=
+  FunctionalExtensionality.functional_extensionality _ _
+    (fun x => rinst_inst_ty xi_ty _ (fun n => eq_refl) x).
+
+Definition instId_ty {m_ty : nat} : subst_ty (var_ty m_ty) = id :=
+  FunctionalExtensionality.functional_extensionality _ _
+    (fun x => idSubst_ty (var_ty m_ty) (fun n => eq_refl) (id x)).
+
+Definition rinstId_ty {m_ty : nat} : @ren_ty m_ty m_ty id = id :=
+  eq_trans (rinstInst_ty (id _)) instId_ty.
+
+Definition varL_ty {m_ty : nat} {n_ty : nat} (sigma_ty : fin m_ty -> ty n_ty)
+  : funcomp (subst_ty sigma_ty) (var_ty m_ty) = sigma_ty :=
+  FunctionalExtensionality.functional_extensionality _ _ (fun x => eq_refl).
+
+Definition varLRen_ty {m_ty : nat} {n_ty : nat}
+  (xi_ty : fin m_ty -> fin n_ty) :
+  funcomp (ren_ty xi_ty) (var_ty m_ty) = funcomp (var_ty n_ty) xi_ty :=
+  FunctionalExtensionality.functional_extensionality _ _ (fun x => eq_refl).
+
+Definition renRen_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
   (xi_ty : fin m_ty -> fin k_ty) (zeta_ty : fin k_ty -> fin l_ty)
   (s : ty m_ty) :
-  ren_ty zeta_ty (ren_ty xi_ty s) = ren_ty (funcomp zeta_ty xi_ty) s.
-Proof.
-exact (compRenRen_ty xi_ty zeta_ty _ (fun n => eq_refl) s).
-Qed.
-Lemma renRen'_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
+  ren_ty zeta_ty (ren_ty xi_ty s) = ren_ty (funcomp zeta_ty xi_ty) s :=
+  compRenRen_ty xi_ty zeta_ty _ (fun n => eq_refl) s.
+
+Definition renRen'_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
   (xi_ty : fin m_ty -> fin k_ty) (zeta_ty : fin k_ty -> fin l_ty) :
-  funcomp (ren_ty zeta_ty) (ren_ty xi_ty) = ren_ty (funcomp zeta_ty xi_ty).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun n => renRen_ty xi_ty zeta_ty n)).
-Qed.
-Lemma compRen_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
+  funcomp (ren_ty zeta_ty) (ren_ty xi_ty) = ren_ty (funcomp zeta_ty xi_ty) :=
+  FunctionalExtensionality.functional_extensionality _ _
+    (fun n => renRen_ty xi_ty zeta_ty n).
+
+Definition compRen_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
   (sigma_ty : fin m_ty -> ty k_ty) (zeta_ty : fin k_ty -> fin l_ty)
   (s : ty m_ty) :
   ren_ty zeta_ty (subst_ty sigma_ty s) =
-  subst_ty (funcomp (ren_ty zeta_ty) sigma_ty) s.
-Proof.
-exact (compSubstRen_ty sigma_ty zeta_ty _ (fun n => eq_refl) s).
-Qed.
-Lemma compRen'_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
+  subst_ty (funcomp (ren_ty zeta_ty) sigma_ty) s :=
+  compSubstRen_ty sigma_ty zeta_ty _ (fun n => eq_refl) s.
+
+Definition compRen'_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
   (sigma_ty : fin m_ty -> ty k_ty) (zeta_ty : fin k_ty -> fin l_ty) :
   funcomp (ren_ty zeta_ty) (subst_ty sigma_ty) =
-  subst_ty (funcomp (ren_ty zeta_ty) sigma_ty).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun n => compRen_ty sigma_ty zeta_ty n)).
-Qed.
-Lemma renComp_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
+  subst_ty (funcomp (ren_ty zeta_ty) sigma_ty) :=
+  FunctionalExtensionality.functional_extensionality _ _
+    (fun n => compRen_ty sigma_ty zeta_ty n).
+
+Definition renComp_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
   (xi_ty : fin m_ty -> fin k_ty) (tau_ty : fin k_ty -> ty l_ty) (s : ty m_ty)
-  : subst_ty tau_ty (ren_ty xi_ty s) = subst_ty (funcomp tau_ty xi_ty) s.
-Proof.
-exact (compRenSubst_ty xi_ty tau_ty _ (fun n => eq_refl) s).
-Qed.
-Lemma renComp'_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
+  : subst_ty tau_ty (ren_ty xi_ty s) = subst_ty (funcomp tau_ty xi_ty) s :=
+  compRenSubst_ty xi_ty tau_ty _ (fun n => eq_refl) s.
+
+Definition renComp'_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
   (xi_ty : fin m_ty -> fin k_ty) (tau_ty : fin k_ty -> ty l_ty) :
-  funcomp (subst_ty tau_ty) (ren_ty xi_ty) = subst_ty (funcomp tau_ty xi_ty).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun n => renComp_ty xi_ty tau_ty n)).
-Qed.
-Lemma compComp_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
+  funcomp (subst_ty tau_ty) (ren_ty xi_ty) = subst_ty (funcomp tau_ty xi_ty) :=
+  FunctionalExtensionality.functional_extensionality _ _
+    (fun n => renComp_ty xi_ty tau_ty n).
+
+Definition compComp_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
   (sigma_ty : fin m_ty -> ty k_ty) (tau_ty : fin k_ty -> ty l_ty)
   (s : ty m_ty) :
   subst_ty tau_ty (subst_ty sigma_ty s) =
-  subst_ty (funcomp (subst_ty tau_ty) sigma_ty) s.
-Proof.
-exact (compSubstSubst_ty sigma_ty tau_ty _ (fun n => eq_refl) s).
-Qed.
-Lemma compComp'_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
+  subst_ty (funcomp (subst_ty tau_ty) sigma_ty) s :=
+  compSubstSubst_ty sigma_ty tau_ty _ (fun n => eq_refl) s.
+
+Definition compComp'_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
   (sigma_ty : fin m_ty -> ty k_ty) (tau_ty : fin k_ty -> ty l_ty) :
   funcomp (subst_ty tau_ty) (subst_ty sigma_ty) =
-  subst_ty (funcomp (subst_ty tau_ty) sigma_ty).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun n => compComp_ty sigma_ty tau_ty n)).
-Qed.
+  subst_ty (funcomp (subst_ty tau_ty) sigma_ty) :=
+  FunctionalExtensionality.functional_extensionality _ _
+    (fun n => compComp_ty sigma_ty tau_ty n).
+
 Inductive pat (n_ty : nat) : Type :=
   | patvar : ty n_ty -> pat n_ty
   | patlist : list (prod (nat) (pat n_ty)) -> pat n_ty.
-Lemma congr_patvar {m_ty : nat} {s0 : ty m_ty} {t0 : ty m_ty} (H0 : s0 = t0)
-  : patvar m_ty s0 = patvar m_ty t0.
-Proof.
-exact (eq_trans eq_refl (ap (fun x => patvar m_ty x) H0)).
-Qed.
-Lemma congr_patlist {m_ty : nat} {s0 : list (prod (nat) (pat m_ty))}
+
+Definition congr_patvar {m_ty : nat} {s0 : ty m_ty} {t0 : ty m_ty}
+  (H0 : s0 = t0) : patvar m_ty s0 = patvar m_ty t0 :=
+  eq_trans eq_refl (ap (fun x => patvar m_ty x) H0).
+
+Definition congr_patlist {m_ty : nat} {s0 : list (prod (nat) (pat m_ty))}
   {t0 : list (prod (nat) (pat m_ty))} (H0 : s0 = t0) :
-  patlist m_ty s0 = patlist m_ty t0.
-Proof.
-exact (eq_trans eq_refl (ap (fun x => patlist m_ty x) H0)).
-Qed.
+  patlist m_ty s0 = patlist m_ty t0 :=
+  eq_trans eq_refl (ap (fun x => patlist m_ty x) H0).
+
 Fixpoint ren_pat {m_ty : nat} {n_ty : nat} (xi_ty : fin m_ty -> fin n_ty)
 (s : pat m_ty) : pat n_ty :=
   match s with
@@ -496,6 +509,7 @@ Fixpoint ren_pat {m_ty : nat} {n_ty : nat} (xi_ty : fin m_ty -> fin n_ty)
   | patlist _ s0 =>
       patlist n_ty (list_map (prod_map (fun x => x) (ren_pat xi_ty)) s0)
   end.
+
 Fixpoint subst_pat {m_ty : nat} {n_ty : nat} (sigma_ty : fin m_ty -> ty n_ty)
 (s : pat m_ty) : pat n_ty :=
   match s with
@@ -503,6 +517,7 @@ Fixpoint subst_pat {m_ty : nat} {n_ty : nat} (sigma_ty : fin m_ty -> ty n_ty)
   | patlist _ s0 =>
       patlist n_ty (list_map (prod_map (fun x => x) (subst_pat sigma_ty)) s0)
   end.
+
 Fixpoint idSubst_pat {m_ty : nat} (sigma_ty : fin m_ty -> ty m_ty)
 (Eq_ty : forall x, sigma_ty x = var_ty m_ty x) (s : pat m_ty) :
 subst_pat sigma_ty s = s :=
@@ -513,6 +528,7 @@ subst_pat sigma_ty s = s :=
         (list_id (prod_id (fun x => eq_refl x) (idSubst_pat sigma_ty Eq_ty))
            s0)
   end.
+
 Fixpoint extRen_pat {m_ty : nat} {n_ty : nat} (xi_ty : fin m_ty -> fin n_ty)
 (zeta_ty : fin m_ty -> fin n_ty) (Eq_ty : forall x, xi_ty x = zeta_ty x)
 (s : pat m_ty) : ren_pat xi_ty s = ren_pat zeta_ty s :=
@@ -524,6 +540,7 @@ Fixpoint extRen_pat {m_ty : nat} {n_ty : nat} (xi_ty : fin m_ty -> fin n_ty)
            (prod_ext (fun x => eq_refl x) (extRen_pat xi_ty zeta_ty Eq_ty))
            s0)
   end.
+
 Fixpoint ext_pat {m_ty : nat} {n_ty : nat} (sigma_ty : fin m_ty -> ty n_ty)
 (tau_ty : fin m_ty -> ty n_ty) (Eq_ty : forall x, sigma_ty x = tau_ty x)
 (s : pat m_ty) : subst_pat sigma_ty s = subst_pat tau_ty s :=
@@ -534,6 +551,7 @@ Fixpoint ext_pat {m_ty : nat} {n_ty : nat} (sigma_ty : fin m_ty -> ty n_ty)
         (list_ext
            (prod_ext (fun x => eq_refl x) (ext_pat sigma_ty tau_ty Eq_ty)) s0)
   end.
+
 Fixpoint compRenRen_pat {k_ty : nat} {l_ty : nat} {m_ty : nat}
 (xi_ty : fin m_ty -> fin k_ty) (zeta_ty : fin k_ty -> fin l_ty)
 (rho_ty : fin m_ty -> fin l_ty)
@@ -547,6 +565,7 @@ ren_pat zeta_ty (ren_pat xi_ty s) = ren_pat rho_ty s :=
            (prod_comp (fun x => eq_refl x)
               (compRenRen_pat xi_ty zeta_ty rho_ty Eq_ty)) s0)
   end.
+
 Fixpoint compRenSubst_pat {k_ty : nat} {l_ty : nat} {m_ty : nat}
 (xi_ty : fin m_ty -> fin k_ty) (tau_ty : fin k_ty -> ty l_ty)
 (theta_ty : fin m_ty -> ty l_ty)
@@ -561,6 +580,7 @@ subst_pat tau_ty (ren_pat xi_ty s) = subst_pat theta_ty s :=
            (prod_comp (fun x => eq_refl x)
               (compRenSubst_pat xi_ty tau_ty theta_ty Eq_ty)) s0)
   end.
+
 Fixpoint compSubstRen_pat {k_ty : nat} {l_ty : nat} {m_ty : nat}
 (sigma_ty : fin m_ty -> ty k_ty) (zeta_ty : fin k_ty -> fin l_ty)
 (theta_ty : fin m_ty -> ty l_ty)
@@ -576,6 +596,7 @@ ren_pat zeta_ty (subst_pat sigma_ty s) = subst_pat theta_ty s :=
            (prod_comp (fun x => eq_refl x)
               (compSubstRen_pat sigma_ty zeta_ty theta_ty Eq_ty)) s0)
   end.
+
 Fixpoint compSubstSubst_pat {k_ty : nat} {l_ty : nat} {m_ty : nat}
 (sigma_ty : fin m_ty -> ty k_ty) (tau_ty : fin k_ty -> ty l_ty)
 (theta_ty : fin m_ty -> ty l_ty)
@@ -591,6 +612,7 @@ subst_pat tau_ty (subst_pat sigma_ty s) = subst_pat theta_ty s :=
            (prod_comp (fun x => eq_refl x)
               (compSubstSubst_pat sigma_ty tau_ty theta_ty Eq_ty)) s0)
   end.
+
 Fixpoint rinst_inst_pat {m_ty : nat} {n_ty : nat}
 (xi_ty : fin m_ty -> fin n_ty) (sigma_ty : fin m_ty -> ty n_ty)
 (Eq_ty : forall x, funcomp (var_ty n_ty) xi_ty x = sigma_ty x) (s : pat m_ty)
@@ -603,82 +625,73 @@ Fixpoint rinst_inst_pat {m_ty : nat} {n_ty : nat}
            (prod_ext (fun x => eq_refl x)
               (rinst_inst_pat xi_ty sigma_ty Eq_ty)) s0)
   end.
-Lemma rinstInst_pat {m_ty : nat} {n_ty : nat} (xi_ty : fin m_ty -> fin n_ty)
-  : ren_pat xi_ty = subst_pat (funcomp (var_ty n_ty) xi_ty).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun x => rinst_inst_pat xi_ty _ (fun n => eq_refl) x)).
-Qed.
-Lemma instId_pat {m_ty : nat} : subst_pat (var_ty m_ty) = id.
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun x => idSubst_pat (var_ty m_ty) (fun n => eq_refl) (id x))).
-Qed.
-Lemma rinstId_pat {m_ty : nat} : @ren_pat m_ty m_ty id = id.
-Proof.
-exact (eq_trans (rinstInst_pat (id _)) instId_pat).
-Qed.
-Lemma renRen_pat {k_ty : nat} {l_ty : nat} {m_ty : nat}
+
+Definition rinstInst_pat {m_ty : nat} {n_ty : nat}
+  (xi_ty : fin m_ty -> fin n_ty) :
+  ren_pat xi_ty = subst_pat (funcomp (var_ty n_ty) xi_ty) :=
+  FunctionalExtensionality.functional_extensionality _ _
+    (fun x => rinst_inst_pat xi_ty _ (fun n => eq_refl) x).
+
+Definition instId_pat {m_ty : nat} : subst_pat (var_ty m_ty) = id :=
+  FunctionalExtensionality.functional_extensionality _ _
+    (fun x => idSubst_pat (var_ty m_ty) (fun n => eq_refl) (id x)).
+
+Definition rinstId_pat {m_ty : nat} : @ren_pat m_ty m_ty id = id :=
+  eq_trans (rinstInst_pat (id _)) instId_pat.
+
+Definition renRen_pat {k_ty : nat} {l_ty : nat} {m_ty : nat}
   (xi_ty : fin m_ty -> fin k_ty) (zeta_ty : fin k_ty -> fin l_ty)
   (s : pat m_ty) :
-  ren_pat zeta_ty (ren_pat xi_ty s) = ren_pat (funcomp zeta_ty xi_ty) s.
-Proof.
-exact (compRenRen_pat xi_ty zeta_ty _ (fun n => eq_refl) s).
-Qed.
-Lemma renRen'_pat {k_ty : nat} {l_ty : nat} {m_ty : nat}
+  ren_pat zeta_ty (ren_pat xi_ty s) = ren_pat (funcomp zeta_ty xi_ty) s :=
+  compRenRen_pat xi_ty zeta_ty _ (fun n => eq_refl) s.
+
+Definition renRen'_pat {k_ty : nat} {l_ty : nat} {m_ty : nat}
   (xi_ty : fin m_ty -> fin k_ty) (zeta_ty : fin k_ty -> fin l_ty) :
-  funcomp (ren_pat zeta_ty) (ren_pat xi_ty) = ren_pat (funcomp zeta_ty xi_ty).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun n => renRen_pat xi_ty zeta_ty n)).
-Qed.
-Lemma compRen_pat {k_ty : nat} {l_ty : nat} {m_ty : nat}
+  funcomp (ren_pat zeta_ty) (ren_pat xi_ty) = ren_pat (funcomp zeta_ty xi_ty) :=
+  FunctionalExtensionality.functional_extensionality _ _
+    (fun n => renRen_pat xi_ty zeta_ty n).
+
+Definition compRen_pat {k_ty : nat} {l_ty : nat} {m_ty : nat}
   (sigma_ty : fin m_ty -> ty k_ty) (zeta_ty : fin k_ty -> fin l_ty)
   (s : pat m_ty) :
   ren_pat zeta_ty (subst_pat sigma_ty s) =
-  subst_pat (funcomp (ren_ty zeta_ty) sigma_ty) s.
-Proof.
-exact (compSubstRen_pat sigma_ty zeta_ty _ (fun n => eq_refl) s).
-Qed.
-Lemma compRen'_pat {k_ty : nat} {l_ty : nat} {m_ty : nat}
+  subst_pat (funcomp (ren_ty zeta_ty) sigma_ty) s :=
+  compSubstRen_pat sigma_ty zeta_ty _ (fun n => eq_refl) s.
+
+Definition compRen'_pat {k_ty : nat} {l_ty : nat} {m_ty : nat}
   (sigma_ty : fin m_ty -> ty k_ty) (zeta_ty : fin k_ty -> fin l_ty) :
   funcomp (ren_pat zeta_ty) (subst_pat sigma_ty) =
-  subst_pat (funcomp (ren_ty zeta_ty) sigma_ty).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun n => compRen_pat sigma_ty zeta_ty n)).
-Qed.
-Lemma renComp_pat {k_ty : nat} {l_ty : nat} {m_ty : nat}
+  subst_pat (funcomp (ren_ty zeta_ty) sigma_ty) :=
+  FunctionalExtensionality.functional_extensionality _ _
+    (fun n => compRen_pat sigma_ty zeta_ty n).
+
+Definition renComp_pat {k_ty : nat} {l_ty : nat} {m_ty : nat}
   (xi_ty : fin m_ty -> fin k_ty) (tau_ty : fin k_ty -> ty l_ty)
   (s : pat m_ty) :
-  subst_pat tau_ty (ren_pat xi_ty s) = subst_pat (funcomp tau_ty xi_ty) s.
-Proof.
-exact (compRenSubst_pat xi_ty tau_ty _ (fun n => eq_refl) s).
-Qed.
-Lemma renComp'_pat {k_ty : nat} {l_ty : nat} {m_ty : nat}
+  subst_pat tau_ty (ren_pat xi_ty s) = subst_pat (funcomp tau_ty xi_ty) s :=
+  compRenSubst_pat xi_ty tau_ty _ (fun n => eq_refl) s.
+
+Definition renComp'_pat {k_ty : nat} {l_ty : nat} {m_ty : nat}
   (xi_ty : fin m_ty -> fin k_ty) (tau_ty : fin k_ty -> ty l_ty) :
   funcomp (subst_pat tau_ty) (ren_pat xi_ty) =
-  subst_pat (funcomp tau_ty xi_ty).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun n => renComp_pat xi_ty tau_ty n)).
-Qed.
-Lemma compComp_pat {k_ty : nat} {l_ty : nat} {m_ty : nat}
+  subst_pat (funcomp tau_ty xi_ty) :=
+  FunctionalExtensionality.functional_extensionality _ _
+    (fun n => renComp_pat xi_ty tau_ty n).
+
+Definition compComp_pat {k_ty : nat} {l_ty : nat} {m_ty : nat}
   (sigma_ty : fin m_ty -> ty k_ty) (tau_ty : fin k_ty -> ty l_ty)
   (s : pat m_ty) :
   subst_pat tau_ty (subst_pat sigma_ty s) =
-  subst_pat (funcomp (subst_ty tau_ty) sigma_ty) s.
-Proof.
-exact (compSubstSubst_pat sigma_ty tau_ty _ (fun n => eq_refl) s).
-Qed.
-Lemma compComp'_pat {k_ty : nat} {l_ty : nat} {m_ty : nat}
+  subst_pat (funcomp (subst_ty tau_ty) sigma_ty) s :=
+  compSubstSubst_pat sigma_ty tau_ty _ (fun n => eq_refl) s.
+
+Definition compComp'_pat {k_ty : nat} {l_ty : nat} {m_ty : nat}
   (sigma_ty : fin m_ty -> ty k_ty) (tau_ty : fin k_ty -> ty l_ty) :
   funcomp (subst_pat tau_ty) (subst_pat sigma_ty) =
-  subst_pat (funcomp (subst_ty tau_ty) sigma_ty).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun n => compComp_pat sigma_ty tau_ty n)).
-Qed.
+  subst_pat (funcomp (subst_ty tau_ty) sigma_ty) :=
+  FunctionalExtensionality.functional_extensionality _ _
+    (fun n => compComp_pat sigma_ty tau_ty n).
+
 Inductive tm (n_ty n_tm : nat) : Type :=
   | var_tm : fin n_tm -> tm n_ty n_tm
   | app : tm n_ty n_tm -> tm n_ty n_tm -> tm n_ty n_tm
@@ -690,77 +703,73 @@ Inductive tm (n_ty n_tm : nat) : Type :=
   | letpat :
       forall p : nat,
       pat n_ty -> tm n_ty n_tm -> tm n_ty (plus p n_tm) -> tm n_ty n_tm.
-Lemma congr_app {m_ty m_tm : nat} {s0 : tm m_ty m_tm} {s1 : tm m_ty m_tm}
-  {t0 : tm m_ty m_tm} {t1 : tm m_ty m_tm} (H0 : s0 = t0) (H1 : s1 = t1) :
-  app m_ty m_tm s0 s1 = app m_ty m_tm t0 t1.
-Proof.
-exact (eq_trans
-                (eq_trans eq_refl (ap (fun x => app m_ty m_tm x s1) H0))
-                (ap (fun x => app m_ty m_tm t0 x) H1)).
-Qed.
-Lemma congr_tapp {m_ty m_tm : nat} {s0 : tm m_ty m_tm} {s1 : ty m_ty}
+
+Definition congr_app {m_ty m_tm : nat} {s0 : tm m_ty m_tm}
+  {s1 : tm m_ty m_tm} {t0 : tm m_ty m_tm} {t1 : tm m_ty m_tm} (H0 : s0 = t0)
+  (H1 : s1 = t1) : app m_ty m_tm s0 s1 = app m_ty m_tm t0 t1 :=
+  eq_trans (eq_trans eq_refl (ap (fun x => app m_ty m_tm x s1) H0))
+    (ap (fun x => app m_ty m_tm t0 x) H1).
+
+Definition congr_tapp {m_ty m_tm : nat} {s0 : tm m_ty m_tm} {s1 : ty m_ty}
   {t0 : tm m_ty m_tm} {t1 : ty m_ty} (H0 : s0 = t0) (H1 : s1 = t1) :
-  tapp m_ty m_tm s0 s1 = tapp m_ty m_tm t0 t1.
-Proof.
-exact (eq_trans
-                (eq_trans eq_refl (ap (fun x => tapp m_ty m_tm x s1) H0))
-                (ap (fun x => tapp m_ty m_tm t0 x) H1)).
-Qed.
-Lemma congr_abs {m_ty m_tm : nat} {s0 : ty m_ty} {s1 : tm m_ty (S m_tm)}
+  tapp m_ty m_tm s0 s1 = tapp m_ty m_tm t0 t1 :=
+  eq_trans (eq_trans eq_refl (ap (fun x => tapp m_ty m_tm x s1) H0))
+    (ap (fun x => tapp m_ty m_tm t0 x) H1).
+
+Definition congr_abs {m_ty m_tm : nat} {s0 : ty m_ty} {s1 : tm m_ty (S m_tm)}
   {t0 : ty m_ty} {t1 : tm m_ty (S m_tm)} (H0 : s0 = t0) (H1 : s1 = t1) :
-  abs m_ty m_tm s0 s1 = abs m_ty m_tm t0 t1.
-Proof.
-exact (eq_trans
-                (eq_trans eq_refl (ap (fun x => abs m_ty m_tm x s1) H0))
-                (ap (fun x => abs m_ty m_tm t0 x) H1)).
-Qed.
-Lemma congr_tabs {m_ty m_tm : nat} {s0 : ty m_ty} {s1 : tm (S m_ty) m_tm}
-  {t0 : ty m_ty} {t1 : tm (S m_ty) m_tm} (H0 : s0 = t0) (H1 : s1 = t1) :
-  tabs m_ty m_tm s0 s1 = tabs m_ty m_tm t0 t1.
-Proof.
-exact (eq_trans
-                (eq_trans eq_refl (ap (fun x => tabs m_ty m_tm x s1) H0))
-                (ap (fun x => tabs m_ty m_tm t0 x) H1)).
-Qed.
-Lemma congr_rectm {m_ty m_tm : nat} {s0 : list (prod (nat) (tm m_ty m_tm))}
+  abs m_ty m_tm s0 s1 = abs m_ty m_tm t0 t1 :=
+  eq_trans (eq_trans eq_refl (ap (fun x => abs m_ty m_tm x s1) H0))
+    (ap (fun x => abs m_ty m_tm t0 x) H1).
+
+Definition congr_tabs {m_ty m_tm : nat} {s0 : ty m_ty}
+  {s1 : tm (S m_ty) m_tm} {t0 : ty m_ty} {t1 : tm (S m_ty) m_tm}
+  (H0 : s0 = t0) (H1 : s1 = t1) :
+  tabs m_ty m_tm s0 s1 = tabs m_ty m_tm t0 t1 :=
+  eq_trans (eq_trans eq_refl (ap (fun x => tabs m_ty m_tm x s1) H0))
+    (ap (fun x => tabs m_ty m_tm t0 x) H1).
+
+Definition congr_rectm {m_ty m_tm : nat}
+  {s0 : list (prod (nat) (tm m_ty m_tm))}
   {t0 : list (prod (nat) (tm m_ty m_tm))} (H0 : s0 = t0) :
-  rectm m_ty m_tm s0 = rectm m_ty m_tm t0.
-Proof.
-exact (eq_trans eq_refl (ap (fun x => rectm m_ty m_tm x) H0)).
-Qed.
-Lemma congr_proj {m_ty m_tm : nat} {s0 : tm m_ty m_tm} {s1 : nat}
+  rectm m_ty m_tm s0 = rectm m_ty m_tm t0 :=
+  eq_trans eq_refl (ap (fun x => rectm m_ty m_tm x) H0).
+
+Definition congr_proj {m_ty m_tm : nat} {s0 : tm m_ty m_tm} {s1 : nat}
   {t0 : tm m_ty m_tm} {t1 : nat} (H0 : s0 = t0) (H1 : s1 = t1) :
-  proj m_ty m_tm s0 s1 = proj m_ty m_tm t0 t1.
-Proof.
-exact (eq_trans
-                (eq_trans eq_refl (ap (fun x => proj m_ty m_tm x s1) H0))
-                (ap (fun x => proj m_ty m_tm t0 x) H1)).
-Qed.
-Lemma congr_letpat {p : nat} {m_ty m_tm : nat} {s0 : pat m_ty}
+  proj m_ty m_tm s0 s1 = proj m_ty m_tm t0 t1 :=
+  eq_trans (eq_trans eq_refl (ap (fun x => proj m_ty m_tm x s1) H0))
+    (ap (fun x => proj m_ty m_tm t0 x) H1).
+
+Definition congr_letpat {p : nat} {m_ty m_tm : nat} {s0 : pat m_ty}
   {s1 : tm m_ty m_tm} {s2 : tm m_ty (plus p m_tm)} {t0 : pat m_ty}
   {t1 : tm m_ty m_tm} {t2 : tm m_ty (plus p m_tm)} (H0 : s0 = t0)
   (H1 : s1 = t1) (H2 : s2 = t2) :
-  letpat m_ty m_tm p s0 s1 s2 = letpat m_ty m_tm p t0 t1 t2.
-Proof.
-exact (eq_trans
-                (eq_trans
-                   (eq_trans eq_refl
-                      (ap (fun x => letpat m_ty m_tm p x s1 s2) H0))
-                   (ap (fun x => letpat m_ty m_tm p t0 x s2) H1))
-                (ap (fun x => letpat m_ty m_tm p t0 t1 x) H2)).
-Qed.
+  letpat m_ty m_tm p s0 s1 s2 = letpat m_ty m_tm p t0 t1 t2 :=
+  eq_trans
+    (eq_trans
+       (eq_trans eq_refl (ap (fun x => letpat m_ty m_tm p x s1 s2) H0))
+       (ap (fun x => letpat m_ty m_tm p t0 x s2) H1))
+    (ap (fun x => letpat m_ty m_tm p t0 t1 x) H2).
+
 Definition upRen_ty_tm {m : nat} {n : nat} (xi : fin m -> fin n) :
   fin m -> fin n := xi.
+
 Definition upRen_tm_ty {m : nat} {n : nat} (xi : fin m -> fin n) :
   fin m -> fin n := xi.
+
 Definition upRen_tm_tm {m : nat} {n : nat} (xi : fin m -> fin n) :
   fin (S m) -> fin (S n) := up_ren xi.
+
 Definition upRen_list_ty_tm (p : nat) {m : nat} {n : nat}
   (xi : fin m -> fin n) : fin m -> fin n := xi.
+
 Definition upRen_list_tm_ty (p : nat) {m : nat} {n : nat}
   (xi : fin m -> fin n) : fin m -> fin n := xi.
+
 Definition upRen_list_tm_tm (p : nat) {m : nat} {n : nat}
   (xi : fin m -> fin n) : fin (plus p m) -> fin (plus p n) := upRen_p p xi.
+
 Fixpoint ren_tm {m_ty m_tm : nat} {n_ty n_tm : nat}
 (xi_ty : fin m_ty -> fin n_ty) (xi_tm : fin m_tm -> fin n_tm)
 (s : tm m_ty m_tm) : tm n_ty n_tm :=
@@ -785,24 +794,31 @@ Fixpoint ren_tm {m_ty m_tm : nat} {n_ty n_tm : nat}
       letpat n_ty n_tm p (ren_pat xi_ty s0) (ren_tm xi_ty xi_tm s1)
         (ren_tm (upRen_list_tm_ty p xi_ty) (upRen_list_tm_tm p xi_tm) s2)
   end.
+
 Definition up_ty_tm {m : nat} {n_ty n_tm : nat}
   (sigma : fin m -> tm n_ty n_tm) : fin m -> tm (S n_ty) n_tm :=
   funcomp (ren_tm shift id) sigma.
+
 Definition up_tm_ty {m : nat} {n_ty : nat} (sigma : fin m -> ty n_ty) :
   fin m -> ty n_ty := funcomp (ren_ty id) sigma.
+
 Definition up_tm_tm {m : nat} {n_ty n_tm : nat}
   (sigma : fin m -> tm n_ty n_tm) : fin (S m) -> tm n_ty (S n_tm) :=
   scons (var_tm n_ty (S n_tm) var_zero) (funcomp (ren_tm id shift) sigma).
+
 Definition up_list_ty_tm (p : nat) {m : nat} {n_ty n_tm : nat}
   (sigma : fin m -> tm n_ty n_tm) : fin m -> tm (plus p n_ty) n_tm :=
   funcomp (ren_tm (shift_p p) id) sigma.
+
 Definition up_list_tm_ty (p : nat) {m : nat} {n_ty : nat}
   (sigma : fin m -> ty n_ty) : fin m -> ty n_ty := funcomp (ren_ty id) sigma.
+
 Definition up_list_tm_tm (p : nat) {m : nat} {n_ty n_tm : nat}
   (sigma : fin m -> tm n_ty n_tm) :
   fin (plus p m) -> tm n_ty (plus p n_tm) :=
   scons_p p (funcomp (var_tm n_ty (plus p n_tm)) (zero_p p))
     (funcomp (ren_tm id (shift_p p)) sigma).
+
 Fixpoint subst_tm {m_ty m_tm : nat} {n_ty n_tm : nat}
 (sigma_ty : fin m_ty -> ty n_ty) (sigma_tm : fin m_tm -> tm n_ty n_tm)
 (s : tm m_ty m_tm) : tm n_ty n_tm :=
@@ -829,14 +845,17 @@ Fixpoint subst_tm {m_ty m_tm : nat} {n_ty n_tm : nat}
         (subst_tm sigma_ty sigma_tm s1)
         (subst_tm (up_list_tm_ty p sigma_ty) (up_list_tm_tm p sigma_tm) s2)
   end.
+
 Definition upId_ty_tm {m_ty m_tm : nat} (sigma : fin m_tm -> tm m_ty m_tm)
   (Eq : forall x, sigma x = var_tm m_ty m_tm x) :
   forall x, up_ty_tm sigma x = var_tm (S m_ty) m_tm x :=
   fun n => ap (ren_tm shift id) (Eq n).
+
 Definition upId_tm_ty {m_ty : nat} (sigma : fin m_ty -> ty m_ty)
   (Eq : forall x, sigma x = var_ty m_ty x) :
   forall x, up_tm_ty sigma x = var_ty m_ty x :=
   fun n => ap (ren_ty id) (Eq n).
+
 Definition upId_tm_tm {m_ty m_tm : nat} (sigma : fin m_tm -> tm m_ty m_tm)
   (Eq : forall x, sigma x = var_tm m_ty m_tm x) :
   forall x, up_tm_tm sigma x = var_tm m_ty (S m_tm) x :=
@@ -845,15 +864,18 @@ Definition upId_tm_tm {m_ty m_tm : nat} (sigma : fin m_tm -> tm m_ty m_tm)
   | Some fin_n => ap (ren_tm id shift) (Eq fin_n)
   | None => eq_refl
   end.
+
 Definition upId_list_ty_tm {p : nat} {m_ty m_tm : nat}
   (sigma : fin m_tm -> tm m_ty m_tm)
   (Eq : forall x, sigma x = var_tm m_ty m_tm x) :
   forall x, up_list_ty_tm p sigma x = var_tm (plus p m_ty) m_tm x :=
   fun n => ap (ren_tm (shift_p p) id) (Eq n).
+
 Definition upId_list_tm_ty {p : nat} {m_ty : nat}
   (sigma : fin m_ty -> ty m_ty) (Eq : forall x, sigma x = var_ty m_ty x) :
   forall x, up_list_tm_ty p sigma x = var_ty m_ty x :=
   fun n => ap (ren_ty id) (Eq n).
+
 Definition upId_list_tm_tm {p : nat} {m_ty m_tm : nat}
   (sigma : fin m_tm -> tm m_ty m_tm)
   (Eq : forall x, sigma x = var_tm m_ty m_tm x) :
@@ -861,6 +883,7 @@ Definition upId_list_tm_tm {p : nat} {m_ty m_tm : nat}
   fun n =>
   scons_p_eta (var_tm m_ty (plus p m_tm))
     (fun n => ap (ren_tm id (shift_p p)) (Eq n)) (fun n => eq_refl).
+
 Fixpoint idSubst_tm {m_ty m_tm : nat} (sigma_ty : fin m_ty -> ty m_ty)
 (sigma_tm : fin m_tm -> tm m_ty m_tm)
 (Eq_ty : forall x, sigma_ty x = var_ty m_ty x)
@@ -896,12 +919,15 @@ subst_tm sigma_ty sigma_tm s = s :=
         (idSubst_tm (up_list_tm_ty p sigma_ty) (up_list_tm_tm p sigma_tm)
            (upId_list_tm_ty _ Eq_ty) (upId_list_tm_tm _ Eq_tm) s2)
   end.
+
 Definition upExtRen_ty_tm {m : nat} {n : nat} (xi : fin m -> fin n)
   (zeta : fin m -> fin n) (Eq : forall x, xi x = zeta x) :
   forall x, upRen_ty_tm xi x = upRen_ty_tm zeta x := fun n => Eq n.
+
 Definition upExtRen_tm_ty {m : nat} {n : nat} (xi : fin m -> fin n)
   (zeta : fin m -> fin n) (Eq : forall x, xi x = zeta x) :
   forall x, upRen_tm_ty xi x = upRen_tm_ty zeta x := fun n => Eq n.
+
 Definition upExtRen_tm_tm {m : nat} {n : nat} (xi : fin m -> fin n)
   (zeta : fin m -> fin n) (Eq : forall x, xi x = zeta x) :
   forall x, upRen_tm_tm xi x = upRen_tm_tm zeta x :=
@@ -910,21 +936,25 @@ Definition upExtRen_tm_tm {m : nat} {n : nat} (xi : fin m -> fin n)
   | Some fin_n => ap shift (Eq fin_n)
   | None => eq_refl
   end.
+
 Definition upExtRen_list_ty_tm {p : nat} {m : nat} {n : nat}
   (xi : fin m -> fin n) (zeta : fin m -> fin n)
   (Eq : forall x, xi x = zeta x) :
   forall x, upRen_list_ty_tm p xi x = upRen_list_ty_tm p zeta x :=
   fun n => Eq n.
+
 Definition upExtRen_list_tm_ty {p : nat} {m : nat} {n : nat}
   (xi : fin m -> fin n) (zeta : fin m -> fin n)
   (Eq : forall x, xi x = zeta x) :
   forall x, upRen_list_tm_ty p xi x = upRen_list_tm_ty p zeta x :=
   fun n => Eq n.
+
 Definition upExtRen_list_tm_tm {p : nat} {m : nat} {n : nat}
   (xi : fin m -> fin n) (zeta : fin m -> fin n)
   (Eq : forall x, xi x = zeta x) :
   forall x, upRen_list_tm_tm p xi x = upRen_list_tm_tm p zeta x :=
   fun n => scons_p_congr (fun n => eq_refl) (fun n => ap (shift_p p) (Eq n)).
+
 Fixpoint extRen_tm {m_ty m_tm : nat} {n_ty n_tm : nat}
 (xi_ty : fin m_ty -> fin n_ty) (xi_tm : fin m_tm -> fin n_tm)
 (zeta_ty : fin m_ty -> fin n_ty) (zeta_tm : fin m_tm -> fin n_tm)
@@ -964,15 +994,18 @@ ren_tm xi_ty xi_tm s = ren_tm zeta_ty zeta_tm s :=
            (upRen_list_tm_ty p zeta_ty) (upRen_list_tm_tm p zeta_tm)
            (upExtRen_list_tm_ty _ _ Eq_ty) (upExtRen_list_tm_tm _ _ Eq_tm) s2)
   end.
+
 Definition upExt_ty_tm {m : nat} {n_ty n_tm : nat}
   (sigma : fin m -> tm n_ty n_tm) (tau : fin m -> tm n_ty n_tm)
   (Eq : forall x, sigma x = tau x) :
   forall x, up_ty_tm sigma x = up_ty_tm tau x :=
   fun n => ap (ren_tm shift id) (Eq n).
+
 Definition upExt_tm_ty {m : nat} {n_ty : nat} (sigma : fin m -> ty n_ty)
   (tau : fin m -> ty n_ty) (Eq : forall x, sigma x = tau x) :
   forall x, up_tm_ty sigma x = up_tm_ty tau x :=
   fun n => ap (ren_ty id) (Eq n).
+
 Definition upExt_tm_tm {m : nat} {n_ty n_tm : nat}
   (sigma : fin m -> tm n_ty n_tm) (tau : fin m -> tm n_ty n_tm)
   (Eq : forall x, sigma x = tau x) :
@@ -982,16 +1015,19 @@ Definition upExt_tm_tm {m : nat} {n_ty n_tm : nat}
   | Some fin_n => ap (ren_tm id shift) (Eq fin_n)
   | None => eq_refl
   end.
+
 Definition upExt_list_ty_tm {p : nat} {m : nat} {n_ty n_tm : nat}
   (sigma : fin m -> tm n_ty n_tm) (tau : fin m -> tm n_ty n_tm)
   (Eq : forall x, sigma x = tau x) :
   forall x, up_list_ty_tm p sigma x = up_list_ty_tm p tau x :=
   fun n => ap (ren_tm (shift_p p) id) (Eq n).
+
 Definition upExt_list_tm_ty {p : nat} {m : nat} {n_ty : nat}
   (sigma : fin m -> ty n_ty) (tau : fin m -> ty n_ty)
   (Eq : forall x, sigma x = tau x) :
   forall x, up_list_tm_ty p sigma x = up_list_tm_ty p tau x :=
   fun n => ap (ren_ty id) (Eq n).
+
 Definition upExt_list_tm_tm {p : nat} {m : nat} {n_ty n_tm : nat}
   (sigma : fin m -> tm n_ty n_tm) (tau : fin m -> tm n_ty n_tm)
   (Eq : forall x, sigma x = tau x) :
@@ -999,6 +1035,7 @@ Definition upExt_list_tm_tm {p : nat} {m : nat} {n_ty n_tm : nat}
   fun n =>
   scons_p_congr (fun n => eq_refl)
     (fun n => ap (ren_tm id (shift_p p)) (Eq n)).
+
 Fixpoint ext_tm {m_ty m_tm : nat} {n_ty n_tm : nat}
 (sigma_ty : fin m_ty -> ty n_ty) (sigma_tm : fin m_tm -> tm n_ty n_tm)
 (tau_ty : fin m_ty -> ty n_ty) (tau_tm : fin m_tm -> tm n_ty n_tm)
@@ -1038,39 +1075,46 @@ subst_tm sigma_ty sigma_tm s = subst_tm tau_ty tau_tm s :=
            (up_list_tm_ty p tau_ty) (up_list_tm_tm p tau_tm)
            (upExt_list_tm_ty _ _ Eq_ty) (upExt_list_tm_tm _ _ Eq_tm) s2)
   end.
+
 Definition up_ren_ren_ty_tm {k : nat} {l : nat} {m : nat}
   (xi : fin k -> fin l) (zeta : fin l -> fin m) (rho : fin k -> fin m)
   (Eq : forall x, funcomp zeta xi x = rho x) :
   forall x, funcomp (upRen_ty_tm zeta) (upRen_ty_tm xi) x = upRen_ty_tm rho x :=
   Eq.
+
 Definition up_ren_ren_tm_ty {k : nat} {l : nat} {m : nat}
   (xi : fin k -> fin l) (zeta : fin l -> fin m) (rho : fin k -> fin m)
   (Eq : forall x, funcomp zeta xi x = rho x) :
   forall x, funcomp (upRen_tm_ty zeta) (upRen_tm_ty xi) x = upRen_tm_ty rho x :=
   Eq.
+
 Definition up_ren_ren_tm_tm {k : nat} {l : nat} {m : nat}
   (xi : fin k -> fin l) (zeta : fin l -> fin m) (rho : fin k -> fin m)
   (Eq : forall x, funcomp zeta xi x = rho x) :
   forall x, funcomp (upRen_tm_tm zeta) (upRen_tm_tm xi) x = upRen_tm_tm rho x :=
   up_ren_ren xi zeta rho Eq.
+
 Definition up_ren_ren_list_ty_tm {p : nat} {k : nat} {l : nat} {m : nat}
   (xi : fin k -> fin l) (zeta : fin l -> fin m) (rho : fin k -> fin m)
   (Eq : forall x, funcomp zeta xi x = rho x) :
   forall x,
   funcomp (upRen_list_ty_tm p zeta) (upRen_list_ty_tm p xi) x =
   upRen_list_ty_tm p rho x := Eq.
+
 Definition up_ren_ren_list_tm_ty {p : nat} {k : nat} {l : nat} {m : nat}
   (xi : fin k -> fin l) (zeta : fin l -> fin m) (rho : fin k -> fin m)
   (Eq : forall x, funcomp zeta xi x = rho x) :
   forall x,
   funcomp (upRen_list_tm_ty p zeta) (upRen_list_tm_ty p xi) x =
   upRen_list_tm_ty p rho x := Eq.
+
 Definition up_ren_ren_list_tm_tm {p : nat} {k : nat} {l : nat} {m : nat}
   (xi : fin k -> fin l) (zeta : fin l -> fin m) (rho : fin k -> fin m)
   (Eq : forall x, funcomp zeta xi x = rho x) :
   forall x,
   funcomp (upRen_list_tm_tm p zeta) (upRen_list_tm_tm p xi) x =
   upRen_list_tm_tm p rho x := up_ren_ren_p Eq.
+
 Fixpoint compRenRen_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
 (xi_ty : fin m_ty -> fin k_ty) (xi_tm : fin m_tm -> fin k_tm)
 (zeta_ty : fin k_ty -> fin l_ty) (zeta_tm : fin k_tm -> fin l_tm)
@@ -1119,16 +1163,19 @@ ren_tm zeta_ty zeta_tm (ren_tm xi_ty xi_tm s) = ren_tm rho_ty rho_tm s :=
            (upRen_list_tm_ty p rho_ty) (upRen_list_tm_tm p rho_tm) Eq_ty
            (up_ren_ren_p Eq_tm) s2)
   end.
+
 Definition up_ren_subst_ty_tm {k : nat} {l : nat} {m_ty m_tm : nat}
   (xi : fin k -> fin l) (tau : fin l -> tm m_ty m_tm)
   (theta : fin k -> tm m_ty m_tm) (Eq : forall x, funcomp tau xi x = theta x)
   : forall x, funcomp (up_ty_tm tau) (upRen_ty_tm xi) x = up_ty_tm theta x :=
   fun n => ap (ren_tm shift id) (Eq n).
+
 Definition up_ren_subst_tm_ty {k : nat} {l : nat} {m_ty : nat}
   (xi : fin k -> fin l) (tau : fin l -> ty m_ty) (theta : fin k -> ty m_ty)
   (Eq : forall x, funcomp tau xi x = theta x) :
   forall x, funcomp (up_tm_ty tau) (upRen_tm_ty xi) x = up_tm_ty theta x :=
   fun n => ap (ren_ty id) (Eq n).
+
 Definition up_ren_subst_tm_tm {k : nat} {l : nat} {m_ty m_tm : nat}
   (xi : fin k -> fin l) (tau : fin l -> tm m_ty m_tm)
   (theta : fin k -> tm m_ty m_tm) (Eq : forall x, funcomp tau xi x = theta x)
@@ -1138,6 +1185,7 @@ Definition up_ren_subst_tm_tm {k : nat} {l : nat} {m_ty m_tm : nat}
   | Some fin_n => ap (ren_tm id shift) (Eq fin_n)
   | None => eq_refl
   end.
+
 Definition up_ren_subst_list_ty_tm {p : nat} {k : nat} {l : nat}
   {m_ty m_tm : nat} (xi : fin k -> fin l) (tau : fin l -> tm m_ty m_tm)
   (theta : fin k -> tm m_ty m_tm) (Eq : forall x, funcomp tau xi x = theta x)
@@ -1145,12 +1193,14 @@ Definition up_ren_subst_list_ty_tm {p : nat} {k : nat} {l : nat}
   forall x,
   funcomp (up_list_ty_tm p tau) (upRen_list_ty_tm p xi) x =
   up_list_ty_tm p theta x := fun n => ap (ren_tm (shift_p p) id) (Eq n).
+
 Definition up_ren_subst_list_tm_ty {p : nat} {k : nat} {l : nat} {m_ty : nat}
   (xi : fin k -> fin l) (tau : fin l -> ty m_ty) (theta : fin k -> ty m_ty)
   (Eq : forall x, funcomp tau xi x = theta x) :
   forall x,
   funcomp (up_list_tm_ty p tau) (upRen_list_tm_ty p xi) x =
   up_list_tm_ty p theta x := fun n => ap (ren_ty id) (Eq n).
+
 Definition up_ren_subst_list_tm_tm {p : nat} {k : nat} {l : nat}
   {m_ty m_tm : nat} (xi : fin k -> fin l) (tau : fin l -> tm m_ty m_tm)
   (theta : fin k -> tm m_ty m_tm) (Eq : forall x, funcomp tau xi x = theta x)
@@ -1164,6 +1214,7 @@ Definition up_ren_subst_list_tm_tm {p : nat} {k : nat} {l : nat}
        (fun z =>
         eq_trans (scons_p_tail' _ _ (xi z))
           (ap (ren_tm id (shift_p p)) (Eq z)))).
+
 Fixpoint compRenSubst_tm {k_ty k_tm : nat} {l_ty l_tm : nat}
 {m_ty m_tm : nat} (xi_ty : fin m_ty -> fin k_ty)
 (xi_tm : fin m_tm -> fin k_tm) (tau_ty : fin k_ty -> ty l_ty)
@@ -1217,6 +1268,7 @@ subst_tm tau_ty tau_tm (ren_tm xi_ty xi_tm s) = subst_tm theta_ty theta_tm s
            (up_list_tm_tm p theta_tm) (up_ren_subst_list_tm_ty _ _ _ Eq_ty)
            (up_ren_subst_list_tm_tm _ _ _ Eq_tm) s2)
   end.
+
 Definition up_subst_ren_ty_tm {k : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
   (sigma : fin k -> tm l_ty l_tm) (zeta_ty : fin l_ty -> fin m_ty)
   (zeta_tm : fin l_tm -> fin m_tm) (theta : fin k -> tm m_ty m_tm)
@@ -1234,6 +1286,7 @@ Definition up_subst_ren_ty_tm {k : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
           (compRenRen_tm zeta_ty zeta_tm shift id (funcomp shift zeta_ty)
              (funcomp id zeta_tm) (fun x => eq_refl) (fun x => eq_refl)
              (sigma n))) (ap (ren_tm shift id) (Eq n))).
+
 Definition up_subst_ren_tm_ty {k : nat} {l_ty : nat} {m_ty : nat}
   (sigma : fin k -> ty l_ty) (zeta_ty : fin l_ty -> fin m_ty)
   (theta : fin k -> ty m_ty)
@@ -1249,6 +1302,7 @@ Definition up_subst_ren_tm_ty {k : nat} {l_ty : nat} {m_ty : nat}
        (eq_sym
           (compRenRen_ty zeta_ty id (funcomp id zeta_ty) (fun x => eq_refl)
              (sigma n))) (ap (ren_ty id) (Eq n))).
+
 Definition up_subst_ren_tm_tm {k : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
   (sigma : fin k -> tm l_ty l_tm) (zeta_ty : fin l_ty -> fin m_ty)
   (zeta_tm : fin l_tm -> fin m_tm) (theta : fin k -> tm m_ty m_tm)
@@ -1271,6 +1325,7 @@ Definition up_subst_ren_tm_tm {k : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
            (ap (ren_tm id shift) (Eq fin_n)))
   | None => eq_refl
   end.
+
 Definition up_subst_ren_list_ty_tm {p : nat} {k : nat} {l_ty l_tm : nat}
   {m_ty m_tm : nat} (sigma : fin k -> tm l_ty l_tm)
   (zeta_ty : fin l_ty -> fin m_ty) (zeta_tm : fin l_tm -> fin m_tm)
@@ -1291,6 +1346,7 @@ Definition up_subst_ren_list_ty_tm {p : nat} {k : nat} {l_ty l_tm : nat}
              (funcomp (shift_p p) zeta_ty) (funcomp id zeta_tm)
              (fun x => eq_refl) (fun x => eq_refl) (sigma n)))
        (ap (ren_tm (shift_p p) id) (Eq n))).
+
 Definition up_subst_ren_list_tm_ty {p : nat} {k : nat} {l_ty : nat}
   {m_ty : nat} (sigma : fin k -> ty l_ty) (zeta_ty : fin l_ty -> fin m_ty)
   (theta : fin k -> ty m_ty)
@@ -1306,6 +1362,7 @@ Definition up_subst_ren_list_tm_ty {p : nat} {k : nat} {l_ty : nat}
        (eq_sym
           (compRenRen_ty zeta_ty id (funcomp id zeta_ty) (fun x => eq_refl)
              (sigma n))) (ap (ren_ty id) (Eq n))).
+
 Definition up_subst_ren_list_tm_tm {p : nat} {k : nat} {l_ty l_tm : nat}
   {m_ty m_tm : nat} (sigma : fin k -> tm l_ty l_tm)
   (zeta_ty : fin l_ty -> fin m_ty) (zeta_tm : fin l_tm -> fin m_tm)
@@ -1330,6 +1387,7 @@ Definition up_subst_ren_list_tm_tm {p : nat} {k : nat} {l_ty l_tm : nat}
                    (funcomp id zeta_ty) (funcomp (shift_p p) zeta_tm)
                    (fun x => eq_refl) (fun x => eq_refl) (sigma n)))
              (ap (ren_tm id (shift_p p)) (Eq n))))).
+
 Fixpoint compSubstRen_tm {k_ty k_tm : nat} {l_ty l_tm : nat}
 {m_ty m_tm : nat} (sigma_ty : fin m_ty -> ty k_ty)
 (sigma_tm : fin m_tm -> tm k_ty k_tm) (zeta_ty : fin k_ty -> fin l_ty)
@@ -1385,6 +1443,7 @@ subst_tm theta_ty theta_tm s :=
            (up_list_tm_tm p theta_tm) (up_subst_ren_list_tm_ty _ _ _ Eq_ty)
            (up_subst_ren_list_tm_tm _ _ _ _ Eq_tm) s2)
   end.
+
 Definition up_subst_subst_ty_tm {k : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
   (sigma : fin k -> tm l_ty l_tm) (tau_ty : fin l_ty -> ty m_ty)
   (tau_tm : fin l_tm -> tm m_ty m_tm) (theta : fin k -> tm m_ty m_tm)
@@ -1403,6 +1462,7 @@ Definition up_subst_subst_ty_tm {k : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
              (funcomp (ren_ty shift) tau_ty)
              (funcomp (ren_tm shift id) tau_tm) (fun x => eq_refl)
              (fun x => eq_refl) (sigma n))) (ap (ren_tm shift id) (Eq n))).
+
 Definition up_subst_subst_tm_ty {k : nat} {l_ty : nat} {m_ty : nat}
   (sigma : fin k -> ty l_ty) (tau_ty : fin l_ty -> ty m_ty)
   (theta : fin k -> ty m_ty)
@@ -1417,6 +1477,7 @@ Definition up_subst_subst_tm_ty {k : nat} {l_ty : nat} {m_ty : nat}
        (eq_sym
           (compSubstRen_ty tau_ty id (funcomp (ren_ty id) tau_ty)
              (fun x => eq_refl) (sigma n))) (ap (ren_ty id) (Eq n))).
+
 Definition up_subst_subst_tm_tm {k : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
   (sigma : fin k -> tm l_ty l_tm) (tau_ty : fin l_ty -> ty m_ty)
   (tau_tm : fin l_tm -> tm m_ty m_tm) (theta : fin k -> tm m_ty m_tm)
@@ -1440,6 +1501,7 @@ Definition up_subst_subst_tm_tm {k : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
            (ap (ren_tm id shift) (Eq fin_n)))
   | None => eq_refl
   end.
+
 Definition up_subst_subst_list_ty_tm {p : nat} {k : nat} {l_ty l_tm : nat}
   {m_ty m_tm : nat} (sigma : fin k -> tm l_ty l_tm)
   (tau_ty : fin l_ty -> ty m_ty) (tau_tm : fin l_tm -> tm m_ty m_tm)
@@ -1461,6 +1523,7 @@ Definition up_subst_subst_list_ty_tm {p : nat} {k : nat} {l_ty l_tm : nat}
              (fun x => eq_sym (scons_p_tail' _ _ x))
              (fun x => eq_sym eq_refl) (sigma n)))
        (ap (ren_tm (shift_p p) id) (Eq n))).
+
 Definition up_subst_subst_list_tm_ty {p : nat} {k : nat} {l_ty : nat}
   {m_ty : nat} (sigma : fin k -> ty l_ty) (tau_ty : fin l_ty -> ty m_ty)
   (theta : fin k -> ty m_ty)
@@ -1476,6 +1539,7 @@ Definition up_subst_subst_list_tm_ty {p : nat} {k : nat} {l_ty : nat}
        (eq_sym
           (compSubstRen_ty tau_ty id _ (fun x => eq_sym eq_refl) (sigma n)))
        (ap (ren_ty id) (Eq n))).
+
 Definition up_subst_subst_list_tm_tm {p : nat} {k : nat} {l_ty l_tm : nat}
   {m_ty m_tm : nat} (sigma : fin k -> tm l_ty l_tm)
   (tau_ty : fin l_ty -> ty m_ty) (tau_tm : fin l_tm -> tm m_ty m_tm)
@@ -1501,6 +1565,7 @@ Definition up_subst_subst_list_tm_tm {p : nat} {k : nat} {l_ty l_tm : nat}
                    (fun x => eq_sym eq_refl)
                    (fun x => eq_sym (scons_p_tail' _ _ x)) (sigma n)))
              (ap (ren_tm id (shift_p p)) (Eq n))))).
+
 Fixpoint compSubstSubst_tm {k_ty k_tm : nat} {l_ty l_tm : nat}
 {m_ty m_tm : nat} (sigma_ty : fin m_ty -> ty k_ty)
 (sigma_tm : fin m_tm -> tm k_ty k_tm) (tau_ty : fin k_ty -> ty l_ty)
@@ -1556,17 +1621,20 @@ subst_tm theta_ty theta_tm s :=
            (up_list_tm_tm p theta_tm) (up_subst_subst_list_tm_ty _ _ _ Eq_ty)
            (up_subst_subst_list_tm_tm _ _ _ _ Eq_tm) s2)
   end.
+
 Definition rinstInst_up_ty_tm {m : nat} {n_ty n_tm : nat}
   (xi : fin m -> fin n_tm) (sigma : fin m -> tm n_ty n_tm)
   (Eq : forall x, funcomp (var_tm n_ty n_tm) xi x = sigma x) :
   forall x,
   funcomp (var_tm (S n_ty) n_tm) (upRen_ty_tm xi) x = up_ty_tm sigma x :=
   fun n => ap (ren_tm shift id) (Eq n).
+
 Definition rinstInst_up_tm_ty {m : nat} {n_ty : nat} (xi : fin m -> fin n_ty)
   (sigma : fin m -> ty n_ty)
   (Eq : forall x, funcomp (var_ty n_ty) xi x = sigma x) :
   forall x, funcomp (var_ty n_ty) (upRen_tm_ty xi) x = up_tm_ty sigma x :=
   fun n => ap (ren_ty id) (Eq n).
+
 Definition rinstInst_up_tm_tm {m : nat} {n_ty n_tm : nat}
   (xi : fin m -> fin n_tm) (sigma : fin m -> tm n_ty n_tm)
   (Eq : forall x, funcomp (var_tm n_ty n_tm) xi x = sigma x) :
@@ -1577,18 +1645,21 @@ Definition rinstInst_up_tm_tm {m : nat} {n_ty n_tm : nat}
   | Some fin_n => ap (ren_tm id shift) (Eq fin_n)
   | None => eq_refl
   end.
+
 Definition rinstInst_up_list_ty_tm {p : nat} {m : nat} {n_ty n_tm : nat}
   (xi : fin m -> fin n_tm) (sigma : fin m -> tm n_ty n_tm)
   (Eq : forall x, funcomp (var_tm n_ty n_tm) xi x = sigma x) :
   forall x,
   funcomp (var_tm (plus p n_ty) n_tm) (upRen_list_ty_tm p xi) x =
   up_list_ty_tm p sigma x := fun n => ap (ren_tm (shift_p p) id) (Eq n).
+
 Definition rinstInst_up_list_tm_ty {p : nat} {m : nat} {n_ty : nat}
   (xi : fin m -> fin n_ty) (sigma : fin m -> ty n_ty)
   (Eq : forall x, funcomp (var_ty n_ty) xi x = sigma x) :
   forall x,
   funcomp (var_ty n_ty) (upRen_list_tm_ty p xi) x = up_list_tm_ty p sigma x :=
   fun n => ap (ren_ty id) (Eq n).
+
 Definition rinstInst_up_list_tm_tm {p : nat} {m : nat} {n_ty n_tm : nat}
   (xi : fin m -> fin n_tm) (sigma : fin m -> tm n_ty n_tm)
   (Eq : forall x, funcomp (var_tm n_ty n_tm) xi x = sigma x) :
@@ -1599,6 +1670,7 @@ Definition rinstInst_up_list_tm_tm {p : nat} {m : nat} {n_ty n_tm : nat}
   eq_trans (scons_p_comp' _ _ (var_tm n_ty (plus p n_tm)) n)
     (scons_p_congr (fun z => eq_refl)
        (fun n => ap (ren_tm id (shift_p p)) (Eq n))).
+
 Fixpoint rinst_inst_tm {m_ty m_tm : nat} {n_ty n_tm : nat}
 (xi_ty : fin m_ty -> fin n_ty) (xi_tm : fin m_tm -> fin n_tm)
 (sigma_ty : fin m_ty -> ty n_ty) (sigma_tm : fin m_tm -> tm n_ty n_tm)
@@ -1639,120 +1711,105 @@ Fixpoint rinst_inst_tm {m_ty m_tm : nat} {n_ty n_tm : nat}
            (rinstInst_up_list_tm_ty _ _ Eq_ty)
            (rinstInst_up_list_tm_tm _ _ Eq_tm) s2)
   end.
-Lemma rinstInst_tm {m_ty m_tm : nat} {n_ty n_tm : nat}
+
+Definition rinstInst_tm {m_ty m_tm : nat} {n_ty n_tm : nat}
   (xi_ty : fin m_ty -> fin n_ty) (xi_tm : fin m_tm -> fin n_tm) :
   ren_tm xi_ty xi_tm =
-  subst_tm (funcomp (var_ty n_ty) xi_ty) (funcomp (var_tm n_ty n_tm) xi_tm).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun x =>
-                 rinst_inst_tm xi_ty xi_tm _ _ (fun n => eq_refl)
-                   (fun n => eq_refl) x)).
-Qed.
-Lemma instId_tm {m_ty m_tm : nat} :
-  subst_tm (var_ty m_ty) (var_tm m_ty m_tm) = id.
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun x =>
-                 idSubst_tm (var_ty m_ty) (var_tm m_ty m_tm)
-                   (fun n => eq_refl) (fun n => eq_refl) (id x))).
-Qed.
-Lemma rinstId_tm {m_ty m_tm : nat} : @ren_tm m_ty m_tm m_ty m_tm id id = id.
-Proof.
-exact (eq_trans (rinstInst_tm (id _) (id _)) instId_tm).
-Qed.
-Lemma varL_tm {m_ty m_tm : nat} {n_ty n_tm : nat}
+  subst_tm (funcomp (var_ty n_ty) xi_ty) (funcomp (var_tm n_ty n_tm) xi_tm) :=
+  FunctionalExtensionality.functional_extensionality _ _
+    (fun x =>
+     rinst_inst_tm xi_ty xi_tm _ _ (fun n => eq_refl) (fun n => eq_refl) x).
+
+Definition instId_tm {m_ty m_tm : nat} :
+  subst_tm (var_ty m_ty) (var_tm m_ty m_tm) = id :=
+  FunctionalExtensionality.functional_extensionality _ _
+    (fun x =>
+     idSubst_tm (var_ty m_ty) (var_tm m_ty m_tm) (fun n => eq_refl)
+       (fun n => eq_refl) (id x)).
+
+Definition rinstId_tm {m_ty m_tm : nat} :
+  @ren_tm m_ty m_tm m_ty m_tm id id = id :=
+  eq_trans (rinstInst_tm (id _) (id _)) instId_tm.
+
+Definition varL_tm {m_ty m_tm : nat} {n_ty n_tm : nat}
   (sigma_ty : fin m_ty -> ty n_ty) (sigma_tm : fin m_tm -> tm n_ty n_tm) :
-  funcomp (subst_tm sigma_ty sigma_tm) (var_tm m_ty m_tm) = sigma_tm.
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun x => eq_refl)).
-Qed.
-Lemma varLRen_tm {m_ty m_tm : nat} {n_ty n_tm : nat}
+  funcomp (subst_tm sigma_ty sigma_tm) (var_tm m_ty m_tm) = sigma_tm :=
+  FunctionalExtensionality.functional_extensionality _ _ (fun x => eq_refl).
+
+Definition varLRen_tm {m_ty m_tm : nat} {n_ty n_tm : nat}
   (xi_ty : fin m_ty -> fin n_ty) (xi_tm : fin m_tm -> fin n_tm) :
   funcomp (ren_tm xi_ty xi_tm) (var_tm m_ty m_tm) =
-  funcomp (var_tm n_ty n_tm) xi_tm.
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun x => eq_refl)).
-Qed.
-Lemma renRen_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
+  funcomp (var_tm n_ty n_tm) xi_tm :=
+  FunctionalExtensionality.functional_extensionality _ _ (fun x => eq_refl).
+
+Definition renRen_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
   (xi_ty : fin m_ty -> fin k_ty) (xi_tm : fin m_tm -> fin k_tm)
   (zeta_ty : fin k_ty -> fin l_ty) (zeta_tm : fin k_tm -> fin l_tm)
   (s : tm m_ty m_tm) :
   ren_tm zeta_ty zeta_tm (ren_tm xi_ty xi_tm s) =
-  ren_tm (funcomp zeta_ty xi_ty) (funcomp zeta_tm xi_tm) s.
-Proof.
-exact (compRenRen_tm xi_ty xi_tm zeta_ty zeta_tm _ _
-                (fun n => eq_refl) (fun n => eq_refl) s).
-Qed.
-Lemma renRen'_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
+  ren_tm (funcomp zeta_ty xi_ty) (funcomp zeta_tm xi_tm) s :=
+  compRenRen_tm xi_ty xi_tm zeta_ty zeta_tm _ _ (fun n => eq_refl)
+    (fun n => eq_refl) s.
+
+Definition renRen'_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
   (xi_ty : fin m_ty -> fin k_ty) (xi_tm : fin m_tm -> fin k_tm)
   (zeta_ty : fin k_ty -> fin l_ty) (zeta_tm : fin k_tm -> fin l_tm) :
   funcomp (ren_tm zeta_ty zeta_tm) (ren_tm xi_ty xi_tm) =
-  ren_tm (funcomp zeta_ty xi_ty) (funcomp zeta_tm xi_tm).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun n => renRen_tm xi_ty xi_tm zeta_ty zeta_tm n)).
-Qed.
-Lemma compRen_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
+  ren_tm (funcomp zeta_ty xi_ty) (funcomp zeta_tm xi_tm) :=
+  FunctionalExtensionality.functional_extensionality _ _
+    (fun n => renRen_tm xi_ty xi_tm zeta_ty zeta_tm n).
+
+Definition compRen_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
   (sigma_ty : fin m_ty -> ty k_ty) (sigma_tm : fin m_tm -> tm k_ty k_tm)
   (zeta_ty : fin k_ty -> fin l_ty) (zeta_tm : fin k_tm -> fin l_tm)
   (s : tm m_ty m_tm) :
   ren_tm zeta_ty zeta_tm (subst_tm sigma_ty sigma_tm s) =
   subst_tm (funcomp (ren_ty zeta_ty) sigma_ty)
-    (funcomp (ren_tm zeta_ty zeta_tm) sigma_tm) s.
-Proof.
-exact (compSubstRen_tm sigma_ty sigma_tm zeta_ty zeta_tm _ _
-                (fun n => eq_refl) (fun n => eq_refl) s).
-Qed.
-Lemma compRen'_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
+    (funcomp (ren_tm zeta_ty zeta_tm) sigma_tm) s :=
+  compSubstRen_tm sigma_ty sigma_tm zeta_ty zeta_tm _ _ (fun n => eq_refl)
+    (fun n => eq_refl) s.
+
+Definition compRen'_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
   (sigma_ty : fin m_ty -> ty k_ty) (sigma_tm : fin m_tm -> tm k_ty k_tm)
   (zeta_ty : fin k_ty -> fin l_ty) (zeta_tm : fin k_tm -> fin l_tm) :
   funcomp (ren_tm zeta_ty zeta_tm) (subst_tm sigma_ty sigma_tm) =
   subst_tm (funcomp (ren_ty zeta_ty) sigma_ty)
-    (funcomp (ren_tm zeta_ty zeta_tm) sigma_tm).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun n => compRen_tm sigma_ty sigma_tm zeta_ty zeta_tm n)).
-Qed.
-Lemma renComp_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
+    (funcomp (ren_tm zeta_ty zeta_tm) sigma_tm) :=
+  FunctionalExtensionality.functional_extensionality _ _
+    (fun n => compRen_tm sigma_ty sigma_tm zeta_ty zeta_tm n).
+
+Definition renComp_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
   (xi_ty : fin m_ty -> fin k_ty) (xi_tm : fin m_tm -> fin k_tm)
   (tau_ty : fin k_ty -> ty l_ty) (tau_tm : fin k_tm -> tm l_ty l_tm)
   (s : tm m_ty m_tm) :
   subst_tm tau_ty tau_tm (ren_tm xi_ty xi_tm s) =
-  subst_tm (funcomp tau_ty xi_ty) (funcomp tau_tm xi_tm) s.
-Proof.
-exact (compRenSubst_tm xi_ty xi_tm tau_ty tau_tm _ _
-                (fun n => eq_refl) (fun n => eq_refl) s).
-Qed.
-Lemma renComp'_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
+  subst_tm (funcomp tau_ty xi_ty) (funcomp tau_tm xi_tm) s :=
+  compRenSubst_tm xi_ty xi_tm tau_ty tau_tm _ _ (fun n => eq_refl)
+    (fun n => eq_refl) s.
+
+Definition renComp'_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
   (xi_ty : fin m_ty -> fin k_ty) (xi_tm : fin m_tm -> fin k_tm)
   (tau_ty : fin k_ty -> ty l_ty) (tau_tm : fin k_tm -> tm l_ty l_tm) :
   funcomp (subst_tm tau_ty tau_tm) (ren_tm xi_ty xi_tm) =
-  subst_tm (funcomp tau_ty xi_ty) (funcomp tau_tm xi_tm).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun n => renComp_tm xi_ty xi_tm tau_ty tau_tm n)).
-Qed.
-Lemma compComp_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
+  subst_tm (funcomp tau_ty xi_ty) (funcomp tau_tm xi_tm) :=
+  FunctionalExtensionality.functional_extensionality _ _
+    (fun n => renComp_tm xi_ty xi_tm tau_ty tau_tm n).
+
+Definition compComp_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
   (sigma_ty : fin m_ty -> ty k_ty) (sigma_tm : fin m_tm -> tm k_ty k_tm)
   (tau_ty : fin k_ty -> ty l_ty) (tau_tm : fin k_tm -> tm l_ty l_tm)
   (s : tm m_ty m_tm) :
   subst_tm tau_ty tau_tm (subst_tm sigma_ty sigma_tm s) =
   subst_tm (funcomp (subst_ty tau_ty) sigma_ty)
-    (funcomp (subst_tm tau_ty tau_tm) sigma_tm) s.
-Proof.
-exact (compSubstSubst_tm sigma_ty sigma_tm tau_ty tau_tm _ _
-                (fun n => eq_refl) (fun n => eq_refl) s).
-Qed.
-Lemma compComp'_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
+    (funcomp (subst_tm tau_ty tau_tm) sigma_tm) s :=
+  compSubstSubst_tm sigma_ty sigma_tm tau_ty tau_tm _ _ (fun n => eq_refl)
+    (fun n => eq_refl) s.
+
+Definition compComp'_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
   (sigma_ty : fin m_ty -> ty k_ty) (sigma_tm : fin m_tm -> tm k_ty k_tm)
   (tau_ty : fin k_ty -> ty l_ty) (tau_tm : fin k_tm -> tm l_ty l_tm) :
   funcomp (subst_tm tau_ty tau_tm) (subst_tm sigma_ty sigma_tm) =
   subst_tm (funcomp (subst_ty tau_ty) sigma_ty)
-    (funcomp (subst_tm tau_ty tau_tm) sigma_tm).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun n => compComp_tm sigma_ty sigma_tm tau_ty tau_tm n)).
-Qed.
+    (funcomp (subst_tm tau_ty tau_tm) sigma_tm) :=
+  FunctionalExtensionality.functional_extensionality _ _
+    (fun n => compComp_tm sigma_ty sigma_tm tau_ty tau_tm n).

@@ -60,10 +60,10 @@ let genFile () =
   let open REM in
   let* components = getComponents in
   let* code = genCode components in
-  let ps = (List.map Coqgen.pr_vernac_expr code) in
+  let pps = (List.map Coqgen.pr_vernac_expr code) in
   let preamble = get_preamble () in
-  pure @@ (preamble
-           ^ String.concat "" (List.map Pp.string_of_ppcmds ps))
+  pure @@ (String.concat "\n"
+             (preamble :: List.map Pp.string_of_ppcmds pps))
 
 (** Run the computation constructed by genFile *)
 let run_gen_code hsig = REM.run (genFile ()) hsig

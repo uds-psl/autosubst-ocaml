@@ -88,11 +88,11 @@ let genCongruence sort H.{ cparameters; cname; cpositions } =
                              (ref_ ("H"^string_of_int i))) in
       (i + 1, t'))
       (0, eq_refl_) cpositions in
-  pure @@ lemma_ (congr_ cname) (bparameters @ bms @ bss @ bts @ beqs) eq proof'
+  pure @@ definition_ (congr_ cname) (bparameters @ bms @ bss @ bts @ beqs) ~rtype:eq proof'
 
 let genCongruences sort =
   let* ctrs = constructors sort in
-  a_concat_map (genCongruence sort) ctrs
+  a_map (genCongruence sort) ctrs
 
 let traversal
     sort scope name ?(no_args=fun s -> app1_ eq_refl_ s) ~ret
@@ -657,7 +657,7 @@ let genUpSubstSubst (binder, sort) =
                            @ List.map (const underscore_) substSorts
                            @ List.map (const (abs_ref "n" eq_refl_)) substSorts
                            @ [ ref_ "x" ]))) in
-  pure @@ lemma_ (rinstInstFun_ sort) scopeBinders ret proof
+  pure @@ definition_ (rinstInstFun_ sort) scopeBinders ~rtype:ret proof
 
  let genLemmaVarL sort =
   let* v = V.genVariables sort [ `MS; `NS; `SIGMAS (`MS, `NS) ] in
@@ -665,7 +665,7 @@ let genUpSubstSubst (binder, sort) =
   let* sigma' = toVar sort sigmas in
   let ret = eq_ (app_var_constr sort ms >>> app_ref (subst_ sort) (sty_terms sigmas)) sigma' in
   let proof = fext_ (abs_ref "x" eq_refl_) in
-    pure @@ lemma_ (varLFun_ sort) scopeBinders ret proof
+    pure @@ definition_ (varLFun_ sort) scopeBinders ~rtype:ret proof
 
  let genLemmaVarLRen sort =
   let* v = V.genVariables sort [ `MS; `NS; `XIS (`MS, `NS) ] in
@@ -675,7 +675,7 @@ let genUpSubstSubst (binder, sort) =
       (app_var_constr sort ms >>> app_ref (ren_ sort) (sty_terms xis))
       (xi' >>> (app_var_constr sort ns)) in
   let proof = fext_ (abs_ref "x" eq_refl_) in
-  pure @@ lemma_ (varLRenFun_ sort) scopeBinders ret proof
+  pure @@ definition_ (varLRenFun_ sort) scopeBinders ~rtype:ret proof
 
 let genLemmaInstId sort =
   let* (ms, bms) = introScopeVar "m" sort in
@@ -687,7 +687,7 @@ let genLemmaInstId sort =
                           (vars
                            @ List.map (const (abs_ref "n" eq_refl_)) substSorts
                            @ [ app_id_ (ref_ "x") ]))) in
-  pure @@ lemma_ (instIdFun_ sort) bms ret proof
+  pure @@ definition_ (instIdFun_ sort) bms ~rtype:ret proof
 
 let genLemmaRinstId sort =
   let* (ms, bms) = introScopeVar "m" sort in
@@ -702,7 +702,7 @@ let genLemmaRinstId sort =
   let proof = eqTrans_
       (app_ref (rinstInstFun_ sort) (List.map (const (app_id_ underscore_)) substSorts))
       (ref_ (instIdFun_ sort)) in
-  pure @@ lemma_ (rinstIdFun_ sort) bms ret proof
+  pure @@ definition_ (rinstIdFun_ sort) bms ~rtype:ret proof
 
  let genLemmaRenRenComp sort =
   let* v = V.genVariables sort [ `KS; `LS; `MS; `XIS (`MS, `KS); `ZETAS (`KS, `LS) ] in
@@ -728,10 +728,10 @@ let genLemmaRinstId sort =
                            (sty_terms xis
                             @ sty_terms zetas
                             @ [ ref_ "n" ]))) in
-  pure [ lemma_ (renRen_ sort) (scopeBinders
+  pure [ definition_ (renRen_ sort) (scopeBinders
                                 @ [ binder1_ ~btype:(app_sort sort ms) s ])
-           ret proof
-       ; lemma_ (renRen'_ sort) scopeBinders ret' proof' ]
+           ~rtype:ret proof
+       ; definition_ (renRen'_ sort) scopeBinders ~rtype:ret' proof' ]
 
 let genLemmaCompRenSubst sort =
   let* v = V.genVariables sort [ `KS; `LS; `MS; `SIGMAS (`MS, `KS); `ZETAS (`KS, `LS) ] in
@@ -757,10 +757,10 @@ let genLemmaCompRenSubst sort =
                            (sty_terms sigmas
                             @ sty_terms zetas
                             @ [ ref_ "n" ]))) in
-  pure [ lemma_ (compRen_ sort) (scopeBinders
+  pure [ definition_ (compRen_ sort) (scopeBinders
                                  @ [ binder1_ ~btype:(app_sort sort ms) s ])
-                ret proof
-       ; lemma_ (compRen'_ sort) scopeBinders ret' proof' ]
+                ~rtype:ret proof
+       ; definition_ (compRen'_ sort) scopeBinders ~rtype:ret' proof' ]
 
  let genLemmaCompSubstRen sort =
   let* v = V.genVariables sort [ `KS; `LS; `MS; `XIS (`MS, `KS); `TAUS (`KS, `LS) ] in
@@ -786,10 +786,10 @@ let genLemmaCompRenSubst sort =
                            (sty_terms xis
                             @ sty_terms taus
                             @ [ref_ "n"]))) in
-  pure [ lemma_ (renComp_ sort) (scopeBinders
+  pure [ definition_ (renComp_ sort) (scopeBinders
                                  @ [ binder1_ ~btype:(app_sort sort ms) s ])
-                ret proof
-       ; lemma_ (renComp'_ sort) scopeBinders ret' proof' ]
+                ~rtype:ret proof
+       ; definition_ (renComp'_ sort) scopeBinders ~rtype:ret' proof' ]
 
 let genLemmaCompSubstSubst sort =
   let* v = V.genVariables sort [ `KS; `LS; `MS; `SIGMAS (`MS, `KS); `TAUS (`KS, `LS) ] in
@@ -815,10 +815,10 @@ let genLemmaCompSubstSubst sort =
                            (sty_terms sigmas
                             @ sty_terms taus
                             @ [ref_ "n"]))) in
-  pure [ lemma_ (compComp_ sort) (scopeBinders
+  pure [ definition_ (compComp_ sort) (scopeBinders
                                   @ [ binder1_ ~btype:(app_sort sort ms) s ])
-                ret proof
-         ; lemma_ (compComp'_ sort) scopeBinders ret' proof' ]
+                ~rtype:ret proof
+         ; definition_ (compComp'_ sort) scopeBinders ~rtype:ret' proof' ]
 
 (** This function delegates to all the different code generation functions and in the end
  ** aggregates all the returned vernacular expressions. *)
@@ -894,5 +894,5 @@ let genCodeT sorts upList =
              upSubstRen @ mk_fixpoint compSubstRen @
              upSubstSubst @ mk_fixpoint compSubstSubst @ upSubstSubstNoRen @
              upRinstInst @ mk_fixpoint rinstInst @
-             List.concat (lemmaRenSubst @ lemmaInstId @ lemmaRinstId @ lemmaVarL @ lemmaVarLRen @ lemmaSubstRenRen @ lemmaSubstCompRen @ lemmaSubstRenComp @ lemmaSubstComp)
+             (lemmaRenSubst @ lemmaInstId @ lemmaRinstId @ lemmaVarL @ lemmaVarLRen @ lemmaSubstRenRen @ lemmaSubstCompRen @ lemmaSubstRenComp @ lemmaSubstComp)
           )

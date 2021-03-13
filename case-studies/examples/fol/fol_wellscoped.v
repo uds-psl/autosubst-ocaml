@@ -1,27 +1,31 @@
 Require Import axioms fintype header_extensible.
+
 Inductive term (n_term : nat) : Type :=
   | var_term : fin n_term -> term n_term
   | Func : forall f : nat, cod (fin f) (term n_term) -> term n_term.
-Lemma congr_Func {f : nat} {m_term : nat} {s0 : cod (fin f) (term m_term)}
-  {t0 : cod (fin f) (term m_term)} (H0 : s0 = t0) :
-  Func m_term f s0 = Func m_term f t0.
-Proof.
-exact (eq_trans eq_refl (ap (fun x => Func m_term f x) H0)).
-Qed.
+
+Definition congr_Func {f : nat} {m_term : nat}
+  {s0 : cod (fin f) (term m_term)} {t0 : cod (fin f) (term m_term)}
+  (H0 : s0 = t0) : Func m_term f s0 = Func m_term f t0 :=
+  eq_trans eq_refl (ap (fun x => Func m_term f x) H0).
+
 Fixpoint subst_term {m_term : nat} {n_term : nat}
 (sigma_term : fin m_term -> term n_term) (s : term m_term) : term n_term :=
   match s with
   | var_term _ s0 => sigma_term s0
   | Func _ f s0 => Func n_term f (cod_map (subst_term sigma_term) s0)
   end.
+
 Definition up_term_term {m : nat} {n_term : nat}
   (sigma : fin m -> term n_term) : fin (S m) -> term (S n_term) :=
   scons (var_term (S n_term) var_zero)
     (funcomp (subst_term (funcomp (var_term _) shift)) sigma).
+
 Definition up_list_term_term (p : nat) {m : nat} {n_term : nat}
   (sigma : fin m -> term n_term) : fin (plus p m) -> term (plus p n_term) :=
   scons_p p (funcomp (var_term (plus p n_term)) (zero_p p))
     (funcomp (subst_term (funcomp (var_term _) (shift_p p))) sigma).
+
 Definition upId_term_term {m_term : nat} (sigma : fin m_term -> term m_term)
   (Eq : forall x, sigma x = var_term m_term x) :
   forall x, up_term_term sigma x = var_term (S m_term) x :=
@@ -30,6 +34,7 @@ Definition upId_term_term {m_term : nat} (sigma : fin m_term -> term m_term)
   | Some fin_n => ap (subst_term (funcomp (var_term _) shift)) (Eq fin_n)
   | None => eq_refl
   end.
+
 Definition upId_list_term_term {p : nat} {m_term : nat}
   (sigma : fin m_term -> term m_term)
   (Eq : forall x, sigma x = var_term m_term x) :
@@ -38,6 +43,7 @@ Definition upId_list_term_term {p : nat} {m_term : nat}
   scons_p_eta (var_term (plus p m_term))
     (fun n => ap (subst_term (funcomp (var_term _) (shift_p p))) (Eq n))
     (fun n => eq_refl).
+
 Fixpoint idSubst_term {m_term : nat} (sigma_term : fin m_term -> term m_term)
 (Eq_term : forall x, sigma_term x = var_term m_term x) (s : term m_term) :
 subst_term sigma_term s = s :=
@@ -45,6 +51,7 @@ subst_term sigma_term s = s :=
   | var_term _ s0 => Eq_term s0
   | Func _ f s0 => congr_Func (cod_id (idSubst_term sigma_term Eq_term) s0)
   end.
+
 Definition upExt_term_term {m : nat} {n_term : nat}
   (sigma : fin m -> term n_term) (tau : fin m -> term n_term)
   (Eq : forall x, sigma x = tau x) :
@@ -54,6 +61,7 @@ Definition upExt_term_term {m : nat} {n_term : nat}
   | Some fin_n => ap (subst_term (funcomp (var_term _) shift)) (Eq fin_n)
   | None => eq_refl
   end.
+
 Definition upExt_list_term_term {p : nat} {m : nat} {n_term : nat}
   (sigma : fin m -> term n_term) (tau : fin m -> term n_term)
   (Eq : forall x, sigma x = tau x) :
@@ -61,6 +69,7 @@ Definition upExt_list_term_term {p : nat} {m : nat} {n_term : nat}
   fun n =>
   scons_p_congr (fun n => eq_refl)
     (fun n => ap (subst_term (funcomp (var_term _) (shift_p p))) (Eq n)).
+
 Fixpoint ext_term {m_term : nat} {n_term : nat}
 (sigma_term : fin m_term -> term n_term)
 (tau_term : fin m_term -> term n_term)
@@ -71,6 +80,7 @@ subst_term sigma_term s = subst_term tau_term s :=
   | Func _ f s0 =>
       congr_Func (cod_ext (ext_term sigma_term tau_term Eq_term) s0)
   end.
+
 Fixpoint compSubstSubst_term {k_term : nat} {l_term : nat} {m_term : nat}
 (sigma_term : fin m_term -> term k_term)
 (tau_term : fin k_term -> term l_term)
@@ -86,6 +96,7 @@ subst_term tau_term (subst_term sigma_term s) = subst_term theta_term s :=
         (cod_comp
            (compSubstSubst_term sigma_term tau_term theta_term Eq_term) s0)
   end.
+
 Definition up_subst_subst_term_term {k : nat} {l_term : nat} {m_term : nat}
   (sigma : fin k -> term l_term) (tau_term : fin l_term -> term m_term)
   (theta : fin k -> term m_term)
@@ -108,6 +119,7 @@ Definition up_subst_subst_term_term {k : nat} {l_term : nat} {m_term : nat}
            (ap (subst_term (funcomp (var_term _) shift)) (Eq fin_n)))
   | None => eq_refl
   end.
+
 Definition up_subst_subst_list_term_term {p : nat} {k : nat} {l_term : nat}
   {m_term : nat} (sigma : fin k -> term l_term)
   (tau_term : fin l_term -> term m_term) (theta : fin k -> term m_term)
@@ -134,19 +146,16 @@ Definition up_subst_subst_list_term_term {p : nat} {k : nat} {l_term : nat}
                    (funcomp (var_term _) (shift_p p)) _
                    (fun x => eq_sym (scons_p_tail' _ _ x)) (sigma n)))
              (ap (subst_term (funcomp (var_term _) (shift_p p))) (Eq n))))).
-Lemma instId_term {m_term : nat} : subst_term (var_term m_term) = id.
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun x =>
-                 idSubst_term (var_term m_term) (fun n => eq_refl) (id x))).
-Qed.
-Lemma varL_term {m_term : nat} {n_term : nat}
+
+Definition instId_term {m_term : nat} : subst_term (var_term m_term) = id :=
+  FunctionalExtensionality.functional_extensionality _ _
+    (fun x => idSubst_term (var_term m_term) (fun n => eq_refl) (id x)).
+
+Definition varL_term {m_term : nat} {n_term : nat}
   (sigma_term : fin m_term -> term n_term) :
-  funcomp (subst_term sigma_term) (var_term m_term) = sigma_term.
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun x => eq_refl)).
-Qed.
+  funcomp (subst_term sigma_term) (var_term m_term) = sigma_term :=
+  FunctionalExtensionality.functional_extensionality _ _ (fun x => eq_refl).
+
 Inductive form (n_term : nat) : Type :=
   | Fal : form n_term
   | Pred : forall p : nat, cod (fin p) (term n_term) -> form n_term
@@ -155,47 +164,40 @@ Inductive form (n_term : nat) : Type :=
   | Disj : form n_term -> form n_term -> form n_term
   | All : form (S n_term) -> form n_term
   | Ex : form (S n_term) -> form n_term.
-Lemma congr_Fal {m_term : nat} : Fal m_term = Fal m_term.
-Proof.
-exact (eq_refl).
-Qed.
-Lemma congr_Pred {p : nat} {m_term : nat} {s0 : cod (fin p) (term m_term)}
-  {t0 : cod (fin p) (term m_term)} (H0 : s0 = t0) :
-  Pred m_term p s0 = Pred m_term p t0.
-Proof.
-exact (eq_trans eq_refl (ap (fun x => Pred m_term p x) H0)).
-Qed.
-Lemma congr_Impl {m_term : nat} {s0 : form m_term} {s1 : form m_term}
+
+Definition congr_Fal {m_term : nat} : Fal m_term = Fal m_term := eq_refl.
+
+Definition congr_Pred {p : nat} {m_term : nat}
+  {s0 : cod (fin p) (term m_term)} {t0 : cod (fin p) (term m_term)}
+  (H0 : s0 = t0) : Pred m_term p s0 = Pred m_term p t0 :=
+  eq_trans eq_refl (ap (fun x => Pred m_term p x) H0).
+
+Definition congr_Impl {m_term : nat} {s0 : form m_term} {s1 : form m_term}
   {t0 : form m_term} {t1 : form m_term} (H0 : s0 = t0) (H1 : s1 = t1) :
-  Impl m_term s0 s1 = Impl m_term t0 t1.
-Proof.
-exact (eq_trans (eq_trans eq_refl (ap (fun x => Impl m_term x s1) H0))
-                (ap (fun x => Impl m_term t0 x) H1)).
-Qed.
-Lemma congr_Conj {m_term : nat} {s0 : form m_term} {s1 : form m_term}
+  Impl m_term s0 s1 = Impl m_term t0 t1 :=
+  eq_trans (eq_trans eq_refl (ap (fun x => Impl m_term x s1) H0))
+    (ap (fun x => Impl m_term t0 x) H1).
+
+Definition congr_Conj {m_term : nat} {s0 : form m_term} {s1 : form m_term}
   {t0 : form m_term} {t1 : form m_term} (H0 : s0 = t0) (H1 : s1 = t1) :
-  Conj m_term s0 s1 = Conj m_term t0 t1.
-Proof.
-exact (eq_trans (eq_trans eq_refl (ap (fun x => Conj m_term x s1) H0))
-                (ap (fun x => Conj m_term t0 x) H1)).
-Qed.
-Lemma congr_Disj {m_term : nat} {s0 : form m_term} {s1 : form m_term}
+  Conj m_term s0 s1 = Conj m_term t0 t1 :=
+  eq_trans (eq_trans eq_refl (ap (fun x => Conj m_term x s1) H0))
+    (ap (fun x => Conj m_term t0 x) H1).
+
+Definition congr_Disj {m_term : nat} {s0 : form m_term} {s1 : form m_term}
   {t0 : form m_term} {t1 : form m_term} (H0 : s0 = t0) (H1 : s1 = t1) :
-  Disj m_term s0 s1 = Disj m_term t0 t1.
-Proof.
-exact (eq_trans (eq_trans eq_refl (ap (fun x => Disj m_term x s1) H0))
-                (ap (fun x => Disj m_term t0 x) H1)).
-Qed.
-Lemma congr_All {m_term : nat} {s0 : form (S m_term)} {t0 : form (S m_term)}
-  (H0 : s0 = t0) : All m_term s0 = All m_term t0.
-Proof.
-exact (eq_trans eq_refl (ap (fun x => All m_term x) H0)).
-Qed.
-Lemma congr_Ex {m_term : nat} {s0 : form (S m_term)} {t0 : form (S m_term)}
-  (H0 : s0 = t0) : Ex m_term s0 = Ex m_term t0.
-Proof.
-exact (eq_trans eq_refl (ap (fun x => Ex m_term x) H0)).
-Qed.
+  Disj m_term s0 s1 = Disj m_term t0 t1 :=
+  eq_trans (eq_trans eq_refl (ap (fun x => Disj m_term x s1) H0))
+    (ap (fun x => Disj m_term t0 x) H1).
+
+Definition congr_All {m_term : nat} {s0 : form (S m_term)}
+  {t0 : form (S m_term)} (H0 : s0 = t0) : All m_term s0 = All m_term t0 :=
+  eq_trans eq_refl (ap (fun x => All m_term x) H0).
+
+Definition congr_Ex {m_term : nat} {s0 : form (S m_term)}
+  {t0 : form (S m_term)} (H0 : s0 = t0) : Ex m_term s0 = Ex m_term t0 :=
+  eq_trans eq_refl (ap (fun x => Ex m_term x) H0).
+
 Fixpoint subst_form {m_term : nat} {n_term : nat}
 (sigma_term : fin m_term -> term n_term) (s : form m_term) : form n_term :=
   match s with
@@ -210,6 +212,7 @@ Fixpoint subst_form {m_term : nat} {n_term : nat}
   | All _ s0 => All n_term (subst_form (up_term_term sigma_term) s0)
   | Ex _ s0 => Ex n_term (subst_form (up_term_term sigma_term) s0)
   end.
+
 Fixpoint idSubst_form {m_term : nat} (sigma_term : fin m_term -> term m_term)
 (Eq_term : forall x, sigma_term x = var_term m_term x) (s : form m_term) :
 subst_form sigma_term s = s :=
@@ -232,6 +235,7 @@ subst_form sigma_term s = s :=
       congr_Ex
         (idSubst_form (up_term_term sigma_term) (upId_term_term _ Eq_term) s0)
   end.
+
 Fixpoint ext_form {m_term : nat} {n_term : nat}
 (sigma_term : fin m_term -> term n_term)
 (tau_term : fin m_term -> term n_term)
@@ -259,6 +263,7 @@ subst_form sigma_term s = subst_form tau_term s :=
         (ext_form (up_term_term sigma_term) (up_term_term tau_term)
            (upExt_term_term _ _ Eq_term) s0)
   end.
+
 Fixpoint compSubstSubst_form {k_term : nat} {l_term : nat} {m_term : nat}
 (sigma_term : fin m_term -> term k_term)
 (tau_term : fin k_term -> term l_term)
@@ -296,9 +301,7 @@ subst_form tau_term (subst_form sigma_term s) = subst_form theta_term s :=
            (up_term_term tau_term) (up_term_term theta_term)
            (up_subst_subst_term_term _ _ _ Eq_term) s0)
   end.
-Lemma instId_form {m_term : nat} : subst_form (var_term m_term) = id.
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun x =>
-                 idSubst_form (var_term m_term) (fun n => eq_refl) (id x))).
-Qed.
+
+Definition instId_form {m_term : nat} : subst_form (var_term m_term) = id :=
+  FunctionalExtensionality.functional_extensionality _ _
+    (fun x => idSubst_form (var_term m_term) (fun n => eq_refl) (id x)).

@@ -11,7 +11,6 @@ type binder_expr = Constrexpr.local_binder_expr
 type branch_expr = Constrexpr.branch_expr
 
 val ref_ : identifier -> constr_expr
-(* val num_ : int -> constr_expr *)
 
 val underscore_ : constr_expr
 val prop_ : constr_expr
@@ -43,12 +42,10 @@ val fixpointBody_ : identifier -> binder_expr list -> constr_expr -> constr_expr
 type vernac_expr = Vernacexpr.vernac_expr
 val inductive_ : inductive_body list -> vernac_expr
 val fixpoint_ : is_rec:bool -> fixpoint_expr list -> vernac_expr
-val lemma_ : identifier -> binder_expr list -> constr_expr -> constr_expr -> vernac_expr list
 val definition_ : identifier -> binder_expr list -> ?rtype:constr_expr -> constr_expr -> vernac_expr
 
-val pr_constr_expr : constr_expr -> Pp.t
 val parse_constr_expr : string -> constr_expr
 val pr_vernac_expr : vernac_expr -> Pp.t
 
-(*** Setup some state in the Coq library like a feedback printer and notations *)
+(** Setup some state in the Coq library like a feedback printer and notations *)
 val setup_coq : unit -> unit

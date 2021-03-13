@@ -1,19 +1,24 @@
 Require Import axioms fintype header_extensible.
+
 Inductive chan (n_chan : nat) : Type :=
     var_chan : fin n_chan -> chan n_chan.
+
 Definition subst_chan {m_chan : nat} {n_chan : nat}
   (sigma_chan : fin m_chan -> chan n_chan) (s : chan m_chan) : chan n_chan :=
   match s with
   | var_chan _ s0 => sigma_chan s0
   end.
+
 Definition up_chan_chan {m : nat} {n_chan : nat}
   (sigma : fin m -> chan n_chan) : fin (S m) -> chan (S n_chan) :=
   scons (var_chan (S n_chan) var_zero)
     (funcomp (subst_chan (funcomp (var_chan _) shift)) sigma).
+
 Definition up_list_chan_chan (p : nat) {m : nat} {n_chan : nat}
   (sigma : fin m -> chan n_chan) : fin (plus p m) -> chan (plus p n_chan) :=
   scons_p p (funcomp (var_chan (plus p n_chan)) (zero_p p))
     (funcomp (subst_chan (funcomp (var_chan _) (shift_p p))) sigma).
+
 Definition upId_chan_chan {m_chan : nat} (sigma : fin m_chan -> chan m_chan)
   (Eq : forall x, sigma x = var_chan m_chan x) :
   forall x, up_chan_chan sigma x = var_chan (S m_chan) x :=
@@ -22,6 +27,7 @@ Definition upId_chan_chan {m_chan : nat} (sigma : fin m_chan -> chan m_chan)
   | Some fin_n => ap (subst_chan (funcomp (var_chan _) shift)) (Eq fin_n)
   | None => eq_refl
   end.
+
 Definition upId_list_chan_chan {p : nat} {m_chan : nat}
   (sigma : fin m_chan -> chan m_chan)
   (Eq : forall x, sigma x = var_chan m_chan x) :
@@ -30,6 +36,7 @@ Definition upId_list_chan_chan {p : nat} {m_chan : nat}
   scons_p_eta (var_chan (plus p m_chan))
     (fun n => ap (subst_chan (funcomp (var_chan _) (shift_p p))) (Eq n))
     (fun n => eq_refl).
+
 Definition idSubst_chan {m_chan : nat}
   (sigma_chan : fin m_chan -> chan m_chan)
   (Eq_chan : forall x, sigma_chan x = var_chan m_chan x) (s : chan m_chan) :
@@ -37,6 +44,7 @@ Definition idSubst_chan {m_chan : nat}
   match s with
   | var_chan _ s0 => Eq_chan s0
   end.
+
 Definition upExt_chan_chan {m : nat} {n_chan : nat}
   (sigma : fin m -> chan n_chan) (tau : fin m -> chan n_chan)
   (Eq : forall x, sigma x = tau x) :
@@ -46,6 +54,7 @@ Definition upExt_chan_chan {m : nat} {n_chan : nat}
   | Some fin_n => ap (subst_chan (funcomp (var_chan _) shift)) (Eq fin_n)
   | None => eq_refl
   end.
+
 Definition upExt_list_chan_chan {p : nat} {m : nat} {n_chan : nat}
   (sigma : fin m -> chan n_chan) (tau : fin m -> chan n_chan)
   (Eq : forall x, sigma x = tau x) :
@@ -53,6 +62,7 @@ Definition upExt_list_chan_chan {p : nat} {m : nat} {n_chan : nat}
   fun n =>
   scons_p_congr (fun n => eq_refl)
     (fun n => ap (subst_chan (funcomp (var_chan _) (shift_p p))) (Eq n)).
+
 Definition ext_chan {m_chan : nat} {n_chan : nat}
   (sigma_chan : fin m_chan -> chan n_chan)
   (tau_chan : fin m_chan -> chan n_chan)
@@ -61,6 +71,7 @@ Definition ext_chan {m_chan : nat} {n_chan : nat}
   match s with
   | var_chan _ s0 => Eq_chan s0
   end.
+
 Definition compSubstSubst_chan {k_chan : nat} {l_chan : nat} {m_chan : nat}
   (sigma_chan : fin m_chan -> chan k_chan)
   (tau_chan : fin k_chan -> chan l_chan)
@@ -72,6 +83,7 @@ Definition compSubstSubst_chan {k_chan : nat} {l_chan : nat} {m_chan : nat}
   match s with
   | var_chan _ s0 => Eq_chan s0
   end.
+
 Definition up_subst_subst_chan_chan {k : nat} {l_chan : nat} {m_chan : nat}
   (sigma : fin k -> chan l_chan) (tau_chan : fin l_chan -> chan m_chan)
   (theta : fin k -> chan m_chan)
@@ -94,6 +106,7 @@ Definition up_subst_subst_chan_chan {k : nat} {l_chan : nat} {m_chan : nat}
            (ap (subst_chan (funcomp (var_chan _) shift)) (Eq fin_n)))
   | None => eq_refl
   end.
+
 Definition up_subst_subst_list_chan_chan {p : nat} {k : nat} {l_chan : nat}
   {m_chan : nat} (sigma : fin k -> chan l_chan)
   (tau_chan : fin l_chan -> chan m_chan) (theta : fin k -> chan m_chan)
@@ -120,19 +133,16 @@ Definition up_subst_subst_list_chan_chan {p : nat} {k : nat} {l_chan : nat}
                    (funcomp (var_chan _) (shift_p p)) _
                    (fun x => eq_sym (scons_p_tail' _ _ x)) (sigma n)))
              (ap (subst_chan (funcomp (var_chan _) (shift_p p))) (Eq n))))).
-Lemma instId_chan {m_chan : nat} : subst_chan (var_chan m_chan) = id.
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun x =>
-                 idSubst_chan (var_chan m_chan) (fun n => eq_refl) (id x))).
-Qed.
-Lemma varL_chan {m_chan : nat} {n_chan : nat}
+
+Definition instId_chan {m_chan : nat} : subst_chan (var_chan m_chan) = id :=
+  FunctionalExtensionality.functional_extensionality _ _
+    (fun x => idSubst_chan (var_chan m_chan) (fun n => eq_refl) (id x)).
+
+Definition varL_chan {m_chan : nat} {n_chan : nat}
   (sigma_chan : fin m_chan -> chan n_chan) :
-  funcomp (subst_chan sigma_chan) (var_chan m_chan) = sigma_chan.
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun x => eq_refl)).
-Qed.
+  funcomp (subst_chan sigma_chan) (var_chan m_chan) = sigma_chan :=
+  FunctionalExtensionality.functional_extensionality _ _ (fun x => eq_refl).
+
 Inductive proc (n_chan : nat) : Type :=
   | Nil : proc n_chan
   | Bang : proc n_chan -> proc n_chan
@@ -140,45 +150,38 @@ Inductive proc (n_chan : nat) : Type :=
   | Par : proc n_chan -> proc n_chan -> proc n_chan
   | In : chan n_chan -> proc (S n_chan) -> proc n_chan
   | Out : chan n_chan -> chan n_chan -> proc n_chan -> proc n_chan.
-Lemma congr_Nil {m_chan : nat} : Nil m_chan = Nil m_chan.
-Proof.
-exact (eq_refl).
-Qed.
-Lemma congr_Bang {m_chan : nat} {s0 : proc m_chan} {t0 : proc m_chan}
-  (H0 : s0 = t0) : Bang m_chan s0 = Bang m_chan t0.
-Proof.
-exact (eq_trans eq_refl (ap (fun x => Bang m_chan x) H0)).
-Qed.
-Lemma congr_Res {m_chan : nat} {s0 : proc (S m_chan)} {t0 : proc (S m_chan)}
-  (H0 : s0 = t0) : Res m_chan s0 = Res m_chan t0.
-Proof.
-exact (eq_trans eq_refl (ap (fun x => Res m_chan x) H0)).
-Qed.
-Lemma congr_Par {m_chan : nat} {s0 : proc m_chan} {s1 : proc m_chan}
+
+Definition congr_Nil {m_chan : nat} : Nil m_chan = Nil m_chan := eq_refl.
+
+Definition congr_Bang {m_chan : nat} {s0 : proc m_chan} {t0 : proc m_chan}
+  (H0 : s0 = t0) : Bang m_chan s0 = Bang m_chan t0 :=
+  eq_trans eq_refl (ap (fun x => Bang m_chan x) H0).
+
+Definition congr_Res {m_chan : nat} {s0 : proc (S m_chan)}
+  {t0 : proc (S m_chan)} (H0 : s0 = t0) : Res m_chan s0 = Res m_chan t0 :=
+  eq_trans eq_refl (ap (fun x => Res m_chan x) H0).
+
+Definition congr_Par {m_chan : nat} {s0 : proc m_chan} {s1 : proc m_chan}
   {t0 : proc m_chan} {t1 : proc m_chan} (H0 : s0 = t0) (H1 : s1 = t1) :
-  Par m_chan s0 s1 = Par m_chan t0 t1.
-Proof.
-exact (eq_trans (eq_trans eq_refl (ap (fun x => Par m_chan x s1) H0))
-                (ap (fun x => Par m_chan t0 x) H1)).
-Qed.
-Lemma congr_In {m_chan : nat} {s0 : chan m_chan} {s1 : proc (S m_chan)}
+  Par m_chan s0 s1 = Par m_chan t0 t1 :=
+  eq_trans (eq_trans eq_refl (ap (fun x => Par m_chan x s1) H0))
+    (ap (fun x => Par m_chan t0 x) H1).
+
+Definition congr_In {m_chan : nat} {s0 : chan m_chan} {s1 : proc (S m_chan)}
   {t0 : chan m_chan} {t1 : proc (S m_chan)} (H0 : s0 = t0) (H1 : s1 = t1) :
-  In m_chan s0 s1 = In m_chan t0 t1.
-Proof.
-exact (eq_trans (eq_trans eq_refl (ap (fun x => In m_chan x s1) H0))
-                (ap (fun x => In m_chan t0 x) H1)).
-Qed.
-Lemma congr_Out {m_chan : nat} {s0 : chan m_chan} {s1 : chan m_chan}
+  In m_chan s0 s1 = In m_chan t0 t1 :=
+  eq_trans (eq_trans eq_refl (ap (fun x => In m_chan x s1) H0))
+    (ap (fun x => In m_chan t0 x) H1).
+
+Definition congr_Out {m_chan : nat} {s0 : chan m_chan} {s1 : chan m_chan}
   {s2 : proc m_chan} {t0 : chan m_chan} {t1 : chan m_chan} {t2 : proc m_chan}
   (H0 : s0 = t0) (H1 : s1 = t1) (H2 : s2 = t2) :
-  Out m_chan s0 s1 s2 = Out m_chan t0 t1 t2.
-Proof.
-exact (eq_trans
-                (eq_trans
-                   (eq_trans eq_refl (ap (fun x => Out m_chan x s1 s2) H0))
-                   (ap (fun x => Out m_chan t0 x s2) H1))
-                (ap (fun x => Out m_chan t0 t1 x) H2)).
-Qed.
+  Out m_chan s0 s1 s2 = Out m_chan t0 t1 t2 :=
+  eq_trans
+    (eq_trans (eq_trans eq_refl (ap (fun x => Out m_chan x s1 s2) H0))
+       (ap (fun x => Out m_chan t0 x s2) H1))
+    (ap (fun x => Out m_chan t0 t1 x) H2).
+
 Fixpoint subst_proc {m_chan : nat} {n_chan : nat}
 (sigma_chan : fin m_chan -> chan n_chan) (s : proc m_chan) : proc n_chan :=
   match s with
@@ -194,6 +197,7 @@ Fixpoint subst_proc {m_chan : nat} {n_chan : nat}
       Out n_chan (subst_chan sigma_chan s0) (subst_chan sigma_chan s1)
         (subst_proc sigma_chan s2)
   end.
+
 Fixpoint idSubst_proc {m_chan : nat} (sigma_chan : fin m_chan -> chan m_chan)
 (Eq_chan : forall x, sigma_chan x = var_chan m_chan x) (s : proc m_chan) :
 subst_proc sigma_chan s = s :=
@@ -214,6 +218,7 @@ subst_proc sigma_chan s = s :=
         (idSubst_chan sigma_chan Eq_chan s1)
         (idSubst_proc sigma_chan Eq_chan s2)
   end.
+
 Fixpoint ext_proc {m_chan : nat} {n_chan : nat}
 (sigma_chan : fin m_chan -> chan n_chan)
 (tau_chan : fin m_chan -> chan n_chan)
@@ -238,6 +243,7 @@ subst_proc sigma_chan s = subst_proc tau_chan s :=
         (ext_chan sigma_chan tau_chan Eq_chan s1)
         (ext_proc sigma_chan tau_chan Eq_chan s2)
   end.
+
 Fixpoint compSubstSubst_proc {k_chan : nat} {l_chan : nat} {m_chan : nat}
 (sigma_chan : fin m_chan -> chan k_chan)
 (tau_chan : fin k_chan -> chan l_chan)
@@ -272,9 +278,7 @@ subst_proc tau_chan (subst_proc sigma_chan s) = subst_proc theta_chan s :=
         (compSubstSubst_chan sigma_chan tau_chan theta_chan Eq_chan s1)
         (compSubstSubst_proc sigma_chan tau_chan theta_chan Eq_chan s2)
   end.
-Lemma instId_proc {m_chan : nat} : subst_proc (var_chan m_chan) = id.
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-                (fun x =>
-                 idSubst_proc (var_chan m_chan) (fun n => eq_refl) (id x))).
-Qed.
+
+Definition instId_proc {m_chan : nat} : subst_proc (var_chan m_chan) = id :=
+  FunctionalExtensionality.functional_extensionality _ _
+    (fun x => idSubst_proc (var_chan m_chan) (fun n => eq_refl) (id x)).

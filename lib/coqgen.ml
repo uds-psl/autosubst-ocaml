@@ -17,9 +17,6 @@ let underscore_ = CAst.make Constrexpr.(CHole (None, Namegen.IntroAnonymous, Non
 let prop_ = CAst.make Constrexpr.(CSort (Glob_term.UNamed [CProp, 0]))
 let type_ = CAst.make Constrexpr.(CSort (Glob_term.UAnonymous { rigid = true }))
 
-(* let num_ n = *)
-  (* CAst.make (Constrexpr.(CPrim (Numeral (NumTok.(Signed.of_bigint CDec (Bigint.of_int n)))))) *)
-  (* Constrexpr.(CPrim (Numeral (NumTok.Signed.of_int_string (Int.to_string n)))) *)
 let app_ f xs =
   Constrexpr_ops.mkAppC (f, xs)
 let app1_ f x =
@@ -27,8 +24,6 @@ let app1_ f x =
 let appExpl_ n xs =
   CAst.make @@ Constrexpr.CAppExpl ((None, qualid_ n, None), xs)
 
-let ident_decl_ s : Constrexpr.ident_decl  =
-  (lident_ s, None)
 let eq_ t1 t2 =
   CAst.make (Constrexpr.CNotation
                (Some (Constrexpr.LastLonelyNotation),
@@ -123,35 +118,14 @@ let lambda_ binders body =
   Constrexpr_ops.mkLambdaCN binders body
 
 type vernac_expr = Vernacexpr.vernac_expr
-let lemma_ lname lbinders ltype lbody =
-  let open Vernacexpr in
-  let pexpr = (ident_decl_ lname, (lbinders, ltype)) in
-  let lbegin = VernacStartTheoremProof (Decls.Lemma, [pexpr]) in
-  let lbody = VernacExactProof lbody in
-  let lend = VernacEndProof (Proved (Opaque, None)) in
-  [lbegin; lbody; lend]
 
 let vernacend = Pp.str ".\n"
 
-let pr_constr_expr cexpr =
-  let env = Global.env () in
-  let sigma = Evd.from_env env in
-  Ppconstr.pr_lconstr_expr env sigma cexpr
-
-let pr_exact_expr cexpr =
-  let open Pp in
-  str "exact (" ++ pr_constr_expr cexpr ++ str ")" ++ vernacend
-
 (** I catch the VernacExactProof constructor because the way Coq normally prints it does not
  ** work well with proof general. So I explicitly add an `exact (...)` *)
-let pr_vernac_expr =
-  let open Vernacexpr in
+let pr_vernac_expr vexpr =
   let open Pp in
-  function
-  | VernacExactProof cexpr ->
-    str "Proof" ++ vernacend ++ pr_exact_expr cexpr
-  | vexpr ->
-    Ppvernac.pr_vernac_expr vexpr ++ vernacend
+  Ppvernac.pr_vernac_expr vexpr ++ vernacend
 
 let parse_constr_expr expr_s = Pcoq.parse_string (Pcoq.Constr.lconstr) expr_s
 
@@ -221,8 +195,8 @@ module [@warning "-32"] GenTests = struct
         app1_ (ref_ "lam") (ref_ "t0")
       ] in
     let lbody = ref_ "False" in
-    let lemma = lemma_ lname lbinders ltype lbody in
-    Pp.seq @@ List.map pr_vernac_expr lemma
+    let lemma = definition_ lname lbinders ~rtype:ltype lbody in
+    pr_vernac_expr lemma
 
   (* This sadly just prints cc_plugin@cc:0 (or similar) which is probably a correct internal representation of the congruence tactic but now what I was looking for. *)
   (* let print_congruence () : Pp.t =
