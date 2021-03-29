@@ -3,7 +3,6 @@
 axioms.v
 unscoped.v
 fintype.v
-header_extensible.v
 
 utlc/utlc_unscoped.v
 utlc/utlc_wellscoped.v

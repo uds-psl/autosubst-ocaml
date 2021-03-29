@@ -8,8 +8,8 @@ module CS = CoqSyntax
 module CG = Coqgen
 module H = Hsig
 
-let unscopedPreamble = "Require Import axioms unscoped header_extensible.\n"
-let scopedPreamble = "Require Import axioms fintype header_extensible.\n"
+let unscopedPreamble = "Require Import axioms unscoped.\n"
+let scopedPreamble = "Require Import axioms fintype.\n"
 
 let get_preamble () =
   match !Settings.scope_type with
