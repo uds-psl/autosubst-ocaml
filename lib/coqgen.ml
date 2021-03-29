@@ -117,17 +117,42 @@ let branch_ cname cargs_s bcont =
 let lambda_ binders body =
   Constrexpr_ops.mkLambdaCN binders body
 
+let ident_decl_ s : Constrexpr.ident_decl  =
+  (lident_ s, None)
+
+let lemma_ lname lbinders ltype lbody =
+  let open Vernacexpr in
+  let pexpr = (ident_decl_ lname, (lbinders, ltype)) in
+  let lbegin = VernacStartTheoremProof (Decls.Lemma, [pexpr]) in
+  let lbody = VernacExactProof lbody in
+  let lend = VernacEndProof (Proved (Transparent, None)) in
+  [lbegin; lbody; lend]
+
 type vernac_expr = Vernacexpr.vernac_expr
 type autosubst_exprs = { as_exprs: vernac_expr list; as_fext_exprs: vernac_expr list }
 
 
 let vernacend = Pp.str ".\n"
 
+let pr_constr_expr cexpr =
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  Ppconstr.pr_lconstr_expr env sigma cexpr
+
+let pr_exact_expr cexpr =
+  let open Pp in
+  str "exact (" ++ pr_constr_expr cexpr ++ str ")" ++ vernacend
+
 (** I catch the VernacExactProof constructor because the way Coq normally prints it does not
  ** work well with proof general. So I explicitly add an `exact (...)` *)
-let pr_vernac_expr vexpr =
+let pr_vernac_expr =
+  let open Vernacexpr in
   let open Pp in
-  Ppvernac.pr_vernac_expr vexpr ++ vernacend
+  function
+  | VernacExactProof cexpr ->
+    str "Proof" ++ vernacend ++ pr_exact_expr cexpr
+  | vexpr ->
+    Ppvernac.pr_vernac_expr vexpr ++ vernacend
 
 let parse_constr_expr expr_s = Pcoq.parse_string (Pcoq.Constr.lconstr) expr_s
 

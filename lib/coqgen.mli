@@ -45,6 +45,7 @@ type autosubst_exprs = { as_exprs: vernac_expr list; as_fext_exprs: vernac_expr 
 val inductive_ : inductive_body list -> vernac_expr
 val fixpoint_ : is_rec:bool -> fixpoint_expr list -> vernac_expr
 val definition_ : identifier -> binder_expr list -> ?rtype:constr_expr -> constr_expr -> vernac_expr
+val lemma_ : identifier -> binder_expr list -> constr_expr -> constr_expr -> vernac_expr list
 
 val parse_constr_expr : string -> constr_expr
 val pr_vernac_expr : vernac_expr -> Pp.t
