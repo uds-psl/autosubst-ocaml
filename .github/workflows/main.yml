@@ -54,13 +54,19 @@ jobs:
       matrix:
         coq-version:
           # - 8.9.1
-          - 8.12.1
+          - 8.10.2
+          - 8.11.2
+          - 8.12.2
           - 8.13.0
         include:
           # - coq-version: 8.9.1
           #   ocaml-version: 4.07.1
-          - coq-version: 8.12.1
-            ocaml-version: 4.11.1
+          - coq-version: 8.10.2
+            ocaml-version: 4.07.1
+          - coq-version: 8.11.2
+            ocaml-version: 4.07.1
+          - coq-version: 8.12.2
+            ocaml-version: 4.07.1
           - coq-version: 8.13.0
             ocaml-version: 4.11.1
     steps:
