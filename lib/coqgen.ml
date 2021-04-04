@@ -120,12 +120,12 @@ let lambda_ binders body =
 let ident_decl_ s : Constrexpr.ident_decl  =
   (lident_ s, None)
 
-let lemma_ lname lbinders ltype lbody =
+let lemma_ ?(opaque=true) lname lbinders ltype lbody =
   let open Vernacexpr in
   let pexpr = (ident_decl_ lname, (lbinders, ltype)) in
   let lbegin = VernacStartTheoremProof (Decls.Lemma, [pexpr]) in
   let lbody = VernacExactProof lbody in
-  let lend = VernacEndProof (Proved (Transparent, None)) in
+  let lend = VernacEndProof (Proved ((if opaque then Opaque else Transparent), None)) in
   [lbegin; lbody; lend]
 
 type vernac_expr = Vernacexpr.vernac_expr

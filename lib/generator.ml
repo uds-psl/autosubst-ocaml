@@ -140,7 +140,7 @@ let genUpRen (binder, sort) =
   let defBody = definitionBody sort binder
       (app_ref "up_ren" [xi], xi)
       (fun m _ -> app_ref "upRen_p" [ref_ m; xi], xi) in
-  pure @@ lemma_ (upRen_ sort binder) (bpms @ scopeBinders) (renT m' n') defBody
+  pure @@ lemma_ ~opaque:false (upRen_ sort binder) (bpms @ scopeBinders) (renT m' n') defBody
 
 let genRenaming sort =
   let* v = V.genVariables sort [ `MS; `NS; `XIS (`MS, `NS) ] in
@@ -188,7 +188,7 @@ let genUpS (binder, sort) =
   let (_, bpms) = bparameters binder in
   let m' = succ_ m sort binder in
   let* n' = upSubst sort [binder] ns in
-  pure @@ lemma_ (up_ sort binder) (bpms @ scopeBinders) (substT m' n' sort) sigma
+  pure @@ lemma_ ~opaque:false (up_ sort binder) (bpms @ scopeBinders) (substT m' n' sort) sigma
 
 let genSubstitution sort =
   let* v = V.genVariables sort [ `MS; `NS; `SIGMAS (`MS, `NS) ] in
