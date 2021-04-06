@@ -12,8 +12,8 @@ let parse_arguments () =
 
 let main () =
   let open ErrorM in
-  let args = parse_arguments () in
-  match run (Program.main args) with
+  let (infile, outfile, scope_type) = parse_arguments () in
+  match run (Program.(main (infile, outfile, scope_type, GE810))) with
     | Ok x -> print_endline x
     | Error x -> print_endline ("Error:\n" ^ x)
 
