@@ -8,13 +8,17 @@ module CS = CoqSyntax
 module CG = Coqgen
 module H = Hsig
 
-let unscopedPreamble = "Require Import axioms unscoped.\n"
-let scopedPreamble = "Require Import axioms fintype.\n"
+let unscoped_preamble = "Require Import core unscoped.\n"
+let unscoped_preamble_axioms = "Require Import core core_axioms unscoped unscoped_axioms.\n"
+let scoped_preamble = "Require Import core fintype.\n"
+let scoped_preamble_axioms = "Require Import core core_axioms fintype fintype_axioms.\n"
+let base_preamble = Scanf.format_from_string "Require Import %s.\n" "%s"
 
-let get_preamble () =
+let get_preambles outfile_basename =
+  let base_preamble = Printf.sprintf base_preamble outfile_basename in
   match !Settings.scope_type with
-  | H.Unscoped -> unscopedPreamble
-  | H.WellScoped -> scopedPreamble
+  | H.Unscoped -> (unscoped_preamble, unscoped_preamble_axioms ^ base_preamble)
+  | H.WellScoped -> (scoped_preamble, scoped_preamble_axioms ^ base_preamble)
 
 (** Generate all the liftings (= Up = fatarrow^y_x) for all pairs of sorts in the current component.
  ** So that we can later build the lifting functions "X_ty_ty", "X_ty_vl" etc. *)
@@ -55,20 +59,20 @@ let genCode components =
       ([], [], []) components in
   pure { as_exprs = code; as_fext_exprs = fext_code }
 
-let make_file code =
+let make_file code preamble =
   let pps = (List.map Coqgen.pr_vernac_expr code) in
-  let preamble = get_preamble () in
   String.concat "\n"
     (preamble :: List.map Pp.string_of_ppcmds pps)
 
 (** Generate the Coq file. Here we convert the Coq AST to pretty print expressions and then to strings. *)
-let genFile () =
+let genFile outfile_basename =
   let open REM.Syntax in
   let open REM in
   let open CG in
   let* components = getComponents in
   let* { as_exprs = code; as_fext_exprs = fext_code } = genCode components in
-  pure (make_file code, make_file fext_code)
+  let preamble, preamble_axioms = get_preambles outfile_basename in
+  pure (make_file code preamble, make_file fext_code preamble_axioms)
 
 (** Run the computation constructed by genFile *)
-let run_gen_code hsig = REM.run (genFile ()) hsig
+let run_gen_code hsig outfile = REM.run (genFile outfile) hsig

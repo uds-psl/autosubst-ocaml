@@ -1,4 +1,4 @@
-Require Import core axioms fintype.
+Require Import core core_axioms fintype.
 Import ScopedNotations.
 
 Lemma scons_eta {T} {n : nat} (f : fin (S n) -> T) :

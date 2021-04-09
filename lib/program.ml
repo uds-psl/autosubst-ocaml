@@ -22,44 +22,55 @@ let copy_file src dst = write_file dst (read_file src)
 
 let copy_static_files dir scope_type coq_version =
   let open Filename in
-  let () = copy_file "data/axioms.v" (concat dir "axioms.v") in
+  let () = copy_file "data/core.v" (concat dir "core.v") in
+  let () = copy_file "data/core_axioms.v" (concat dir "core_axioms.v") in
   match scope_type, coq_version with
   | H.WellScoped, LT810 ->
     copy_file "data/fintype_809.v" (concat dir "fintype.v")
   | H.Unscoped, LT810 ->
     copy_file "data/unscoped_809.v" (concat dir "unscoped.v")
   | H.WellScoped, GE810 ->
-    copy_file "data/fintype.v" (concat dir "fintype.v")
+    let () = copy_file "data/fintype.v" (concat dir "fintype.v") in
+    let () = copy_file "data/fintype_axioms.v" (concat dir "fintype_axioms.v") in
+    ()
   | H.Unscoped, GE810 ->
-    copy_file "data/unscoped.v" (concat dir "unscoped.v")
+    let () = copy_file "data/unscoped.v" (concat dir "unscoped.v") in
+    let () = copy_file "data/unscoped_axioms.v" (concat dir "unscoped_axioms.v") in
+    ()
 
 let make_filenames outfile =
   let open Filename in
-  let outfile_name = remove_extension outfile in
+  let outfile_name = basename (remove_extension outfile) in
+  let dir = dirname outfile in
   (* could happen that we don't have an extension *)
   if (outfile = outfile_name)
-  then outfile, outfile, outfile ^ "_asimpl"
+  then dir, outfile, outfile, outfile ^ "_axioms"
   else
     let ext = extension outfile in
-    outfile_name, outfile_name ^ ext, outfile_name ^ "_asimpl" ^ ext
+    dir, outfile_name, outfile_name ^ ext, outfile_name ^ "_axioms" ^ ext
 
+let create_outdir dir =
+  let open Unix in
+  try let _ = opendir dir in ()
+  with Unix_error (ENOENT, _, _) ->
+    Unix.mkdir dir 0o755
 
 let main (infile, outfile, scope_type, coq_version) =
   let open ErrorM.Syntax in
   let open ErrorM in
-  let dir, outfile, outfile_fext = make_filenames outfile in
+  let dir, outfile_basename, outfile, outfile_fext = make_filenames outfile in
   let () = Printexc.record_backtrace true in
   let () = Coqgen.setup_coq () in
   let () = Settings.scope_type := scope_type in
   (* setup static files *)
-  let () = Unix.mkdir dir 0o755 in
+  let () = create_outdir dir in
   let () = copy_static_files dir scope_type coq_version in
   (* parse input HOAS *)
   let* spec = read_file infile |> SigParser.parse_signature in
   let* signature = SigAnalyzer.build_signature spec in
   (* generate dot graph *)
   (* generate code *)
-  let* code, fext_code = GenCode.run_gen_code signature in
+  let* code, fext_code = GenCode.run_gen_code signature outfile_basename in
   (* write file *)
   let open Filename in
   let () = write_file (concat dir outfile) code in

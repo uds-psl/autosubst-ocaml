@@ -1,4 +1,4 @@
-Require Import core axioms unscoped.
+Require Import core core_axioms unscoped.
 Import UnscopedNotations.
 
 #[ local ]
