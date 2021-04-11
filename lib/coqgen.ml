@@ -74,11 +74,11 @@ let definition_ dname dbinders ?rtype dbody =
   VernacDefinition ((NoDischarge, Decls.Definition), dname, dexpr)
 
 type fixpoint_expr = Vernacexpr.fixpoint_expr
-let fixpointBody_ name binders rtype body =
+let fixpointBody_ name binders rtype body struc =
   let open Vernacexpr in
   let feg = { fname=lident_ name;
               univs=None;
-              rec_order=None;
+              rec_order=Some (CAst.make (Constrexpr.CStructRec (lident_ struc)));
               binders;
               rtype;
               body_def=Some body;
@@ -209,7 +209,7 @@ module [@warning "-32"] GenTests = struct
                                   ]))
       ]
     in
-    let fix = fixpoint_ ~is_rec:true [fixpointBody_ fname binders rtype body_def] in
+    let fix = fixpoint_ ~is_rec:true [fixpointBody_ fname binders rtype body_def "s"] in
     pr_vernac_expr fix
 
   let print_utlc_lemma () : Pp.t =

@@ -37,7 +37,7 @@ val constructor_ : identifier -> constr_expr -> constructor_expr
 val inductiveBody_ : identifier -> binder_expr list -> ?rtype:constr_expr -> constructor_expr list -> inductive_body
 
 type fixpoint_expr = Vernacexpr.fixpoint_expr
-val fixpointBody_ : identifier -> binder_expr list -> constr_expr -> constr_expr -> fixpoint_expr
+val fixpointBody_ : identifier -> binder_expr list -> constr_expr -> constr_expr -> identifier -> fixpoint_expr
 
 type vernac_expr = Vernacexpr.vernac_expr
 type autosubst_exprs = { as_exprs: vernac_expr list; as_fext_exprs: vernac_expr list }

@@ -128,7 +128,7 @@ let traversal
       (sem (List.map fst cparameters) cname positions) in
   let* constr_pattern = a_map mk_constr_pattern cs in
   let t = match_ (ref_ s) (var_pattern @ constr_pattern) in
-  pure @@ fixpointBody_ (name sort) (bargs @ [binder1_ ~btype:(app_sort sort scope) s]) (ret (ref_ s)) t
+  pure @@ fixpointBody_ (name sort) (bargs @ [binder1_ ~btype:(app_sort sort scope) s]) (ret (ref_ s)) t s
 
 (* UpRen in sort x by the binder *)
 let genUpRen (binder, sort) =
