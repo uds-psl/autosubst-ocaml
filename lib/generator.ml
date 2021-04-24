@@ -66,6 +66,7 @@ let genCongruence sort H.{ cparameters; cname; cpositions } =
   let* (ms, bms) = introScopeVar "m" sort in
   let ss = getPattern "s" cpositions in
   let ts = getPattern "t" cpositions in
+  let hs = getPattern "H" cpositions in
   let mkBinders xs = a_map2_exn (fun x H.{binders; head} ->
       let* arg_type = genArg sort ms binders head in
       pure @@ binder1_ ~implicit:true ~btype:arg_type x)
@@ -74,20 +75,20 @@ let genCongruence sort H.{ cparameters; cname; cpositions } =
   let* bts = mkBinders ts in
   let bparameters = createImpBinders cparameters in
   let parameters' = List.(mk_refs (map fst cparameters)) in
-  let eqs = List.map2 (fun x y -> eq_ (ref_ x) (ref_ y)) ss ts in
   let ss = mk_refs ss in
   let ts = mk_refs ts in
+  let eqs = List.map2 eq_ ss ts in
+  let beqs = List.map2 (fun h ty -> binder1_ ~btype:ty h) hs eqs in
   let eq = eq_
       (app_constr cname ms (parameters' @ ss))
       (app_constr cname ms (parameters' @ ts)) in
-  let beqs = List.mapi (fun n s -> binder1_ ~btype:s ("H" ^ string_of_int n)) eqs in
   let x = VarState.tfresh "x" in
-  let (_, proof') = List.fold_left (fun (i, t) _ ->
+  let (_, proof') = List.fold_left (fun (i, t) h ->
       let ss' = list_take ts i @ [ref_ x] @ (list_drop ss (i + 1)) in
       let t' = eqTrans_ t (ap_ (abs_ref "x" (app_constr cname ms (parameters' @ ss')))
-                             (ref_ ("H"^string_of_int i))) in
+                             (ref_ h)) in
       (i + 1, t'))
-      (0, eq_refl_) cpositions in
+      (0, eq_refl_) hs in
   pure @@ lemma_ (congr_ cname) (bparameters @ bms @ bss @ bts @ beqs) eq proof'
 
 let genCongruences sort =
