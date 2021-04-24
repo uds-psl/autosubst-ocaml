@@ -63,15 +63,8 @@ module ExtraFunctionsList (MON: M.Monad.MONAD) = struct
     let* f' = map f a in
     map f' b
 
-  let rec invert = function
-    | [] -> pure []
-    | m :: ms ->
-      let* m' = m in
-      let* ms' = invert ms in
-      pure @@ m' :: ms'
-
   let a_map2_exn f a b =
-    invert @@ List.map2 f a b
+    sequence @@ List.map2 f a b
 
   let rec m_fold_left ~f ~init xs =
     match xs with
