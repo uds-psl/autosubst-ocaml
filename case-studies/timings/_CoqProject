@@ -1,0 +1,40 @@
+-Q . ""
+
+axioms.v
+unscoped.v
+fintype.v
+
+test3.v
+test_3_3.v
+test_6_3.v
+test_6_3_new.v
+test_7_3.v
+test_8_3.v
+test_8_1.v
+test_9_1.v
+test_10_3.v
+test_3_10.v
+
+utlc/utlc_unscoped.v
+utlc/utlc_wellscoped.v
+
+stlc/stlc_unscoped.v
+stlc/stlc_wellscoped.v
+
+fcbv/fcbv_unscoped.v
+fcbv/fcbv_wellscoped.v
+
+# unscoped fol uses the cod functor on (fin f) not sure I we want that. And atm in the unscoped library
+# we don't define nat. The way autosubst2 does it would lead to an error anyways because there fin=nat when unscoped.
+# fol/fol_unscoped.v
+fol/fol_wellscoped.v
+
+pi/pi_unscoped.v
+pi/pi_wellscoped.v
+
+num/num_unscoped.v
+num/num_wellscoped.v
+
+# variadic unscoped is not supported
+# variadic/variadic_unscoped.v
+variadic/variadic_wellscoped.v

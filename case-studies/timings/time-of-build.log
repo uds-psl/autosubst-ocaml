@@ -1,0 +1,36 @@
+make[2]: 'test_3_3.vos' is up to date.
+COQC -vos test_3_3.v
+test_3_3.vos (real: 0.77, user: 0.60, sys: 0.15, mem: 365744 ko)
+COQC -vos test_3_10.v
+test_3_10.vos (real: 2.01, user: 1.83, sys: 0.16, mem: 412764 ko)
+COQC -vos test_10_3.v
+COQC -vos test_6_3.v
+test_6_3.vos (real: 31.26, user: 30.59, sys: 0.23, mem: 536048 ko)
+COQC -vos test_7_3.v
+test_7_3.vos (real: 241.55, user: 240.31, sys: 0.41, mem: 1062208 ko)
+COQC -vos test_8_3.v
+test_8_3.vos (real: 2069.50, user: 2061.55, sys: 2.59, mem: 4581224 ko)
+COQC -vos test_8_1.v
+test_8_1.vos (real: 730.42, user: 726.61, sys: 1.15, mem: 3038376 ko)
+COQC -vos test_9_1.v
+COQC -vos test_9_1.v
+COQC -vos test_9_1.v
+test_9_1.vos (real: 6395.03, user: 6102.03, sys: 63.80, mem: 15065184 ko)
+make[2]: 'test_6_3.vos' is up to date.
+COQC -vos test_6_3.v
+test_6_3.vos (real: 38.02, user: 37.16, sys: 0.32, mem: 535836 ko)
+COQC test_6_3.v
+test_6_3.vo (real: 34.06, user: 33.43, sys: 0.22, mem: 511852 ko)
+make[2]: 'test_6_3.vos' is up to date.
+COQC -vos test_6_3.v
+test_6_3.vos (real: 27.95, user: 27.72, sys: 0.18, mem: 535988 ko)
+COQC -vos test_6_3_new.v
+test_6_3_new.vos (real: 38.16, user: 37.61, sys: 0.23, mem: 534256 ko)
+COQC -vos test_6_3_new.v
+test_6_3_new.vos (real: 34.33, user: 34.03, sys: 0.22, mem: 537112 ko)
+COQC -vos test_6_3_new.v
+test_6_3_new.vos (real: 28.99, user: 28.72, sys: 0.22, mem: 536988 ko)
+COQC -vos test_6_3.v
+test_6_3.vos (real: 28.73, user: 28.26, sys: 0.22, mem: 536200 ko)
+COQC test_6_3.v
+test_6_3.vo (real: 28.59, user: 28.25, sys: 0.24, mem: 511556 ko)
