@@ -11,12 +11,12 @@ Require Import Coq.Logic.FunctionalExtensionality.
 Require Import Program.Tactics.
 Require Import core.
 
-Tactic Notation "nointr" tactic(t) :=
+Tactic Notation "autosubst_nointr" tactic(t) :=
   let m := fresh "marker" in
   pose (m := tt);
   t; revert_until m; clear m.
 
-Ltac fext := nointr repeat (
+Ltac fext := autosubst_nointr repeat (
   match goal with
     [ |- ?x = ?y ] =>
     (refine (@functional_extensionality_dep _ _ _ _ _) ||
