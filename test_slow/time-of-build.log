@@ -1,0 +1,58 @@
+COQC core.v
+core.vo (real: 0.22, user: 0.13, sys: 0.08, mem: 168548 ko)
+COQC fintype.v
+fintype.vo (real: 0.31, user: 0.18, sys: 0.13, mem: 241344 ko)
+COQC test.v
+test.vo (real: 3.14, user: 2.95, sys: 0.16, mem: 382764 ko)
+COQC core.v
+core.vo (real: 0.21, user: 0.16, sys: 0.03, mem: 168480 ko)
+COQC fintype.v
+fintype.vo (real: 0.29, user: 0.17, sys: 0.11, mem: 241200 ko)
+COQC test_8_3.v
+test_8_3.vo (real: 6.93, user: 6.65, sys: 0.19, mem: 433148 ko)
+make[2]: *** No rule to make target 'test_9_3.vo'.  Stop.
+COQC test_9_1.v
+test_9_1.vo (real: 3.71, user: 3.52, sys: 0.15, mem: 378968 ko)
+COQC core.v
+core.vo (real: 0.24, user: 0.15, sys: 0.08, mem: 168580 ko)
+COQC fintype.v
+fintype.vo (real: 0.33, user: 0.22, sys: 0.10, mem: 241256 ko)
+COQC test_20_1.v
+test_20_1.vo (real: 94.98, user: 93.30, sys: 0.48, mem: 562020 ko)
+COQC core.v
+core.vo (real: 0.20, user: 0.12, sys: 0.07, mem: 168496 ko)
+COQC fintype.v
+fintype.vo (real: 0.32, user: 0.21, sys: 0.10, mem: 241012 ko)
+COQC test_100_1.v
+make[2]: *** No rule to make target 'test_50_1.v', needed by 'test_50_1.vo'.  Stop.
+COQC core.v
+core.vo (real: 0.20, user: 0.12, sys: 0.07, mem: 168416 ko)
+COQC fintype.v
+fintype.vo (real: 0.29, user: 0.17, sys: 0.11, mem: 241272 ko)
+COQC test_50_1.v
+COQC core.v
+core.vo (real: 0.22, user: 0.13, sys: 0.07, mem: 168572 ko)
+COQC fintype.v
+fintype.vo (real: 0.27, user: 0.18, sys: 0.07, mem: 241244 ko)
+COQC test_6_1.v
+Finished transaction in 1.945 secs (1.941u,0.s) (successful)
+test_6_1.vo (real: 9.41, user: 9.22, sys: 0.16, mem: 417884 ko)
+COQC core.v
+core.vo (real: 0.20, user: 0.14, sys: 0.05, mem: 168544 ko)
+COQC fintype.v
+fintype.vo (real: 0.27, user: 0.17, sys: 0.09, mem: 240952 ko)
+COQC test_6_1_struct.v
+test_6_1_struct.vo (real: 1.16, user: 1.01, sys: 0.14, mem: 360900 ko)
+COQC core.v
+core.vo (real: 0.19, user: 0.11, sys: 0.07, mem: 168480 ko)
+make[2]: *** No rule to make target 'unscoped.vo', needed by 'test_6_3_unscoped.vo'.  Stop.
+COQC unscoped.v
+unscoped.vo (real: 0.17, user: 0.12, sys: 0.05, mem: 151748 ko)
+COQC test_6_3_unscoped.v
+test_6_3_unscoped.vo (real: 2.43, user: 2.28, sys: 0.13, mem: 373476 ko)
+COQC core.v
+core.vo (real: 0.19, user: 0.13, sys: 0.05, mem: 168640 ko)
+COQC fintype.v
+fintype.vo (real: 0.27, user: 0.17, sys: 0.10, mem: 241188 ko)
+COQC test_6_3_wellscoped.v
+test_6_3_wellscoped.vo (real: 34.78, user: 34.37, sys: 0.24, mem: 495712 ko)
