@@ -75,3 +75,6 @@ time-of-build-pretty.log
 
 Makefile.coq
 Makefile.coq.conf
+
+output
+output_submission
