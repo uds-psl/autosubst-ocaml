@@ -20,14 +20,17 @@ KAT="case-studies/kathrin/coq/"
 generate_file() {
     file=$1
     scope=$2
-    echo dune exec -- bin/main.exe ${KAT}${file}.sig ${KAT}${file}_pre.v ${scope}
-    dune exec -- bin/main.exe ${KAT}${file}.sig ${KAT}${file}_pre.v ${scope}
+    echo dune exec -- bin/main.exe ${KAT}${file}.sig ${KAT}${file}.v ${scope}
+    dune exec -- bin/main.exe ${KAT}${file}.sig ${KAT}${file}.v ${scope}
 }
 append_tactics() {
     file=$1
-    echo cat ${KAT}${file}_pre.v ${KAT}${file}_rest.v > ${KAT}${file}.v
-    cat ${KAT}${file}_pre.v ${KAT}${file}_rest.v > ${KAT}${file}.v
+    echo cat ${KAT}${file}_axioms.v ${KAT}${file}_rest.v > ${KAT}${file}_axioms.v
+    cat ${KAT}${file}_axioms.v ${KAT}${file}_rest.v > ${KAT}${file}_axioms.v
 }
+
+echo cp data/core.v data/core_axioms.v data/fintype_809.v data/unscoped_809.v ${KAT}
+cp data/core.v data/core_axioms.v data/fintype_809.v data/unscoped_809.v ${KAT}
 
 # the case study only contains one instance of unscoped code
 generate_file "Chapter3/utlc_pure" ucoq
