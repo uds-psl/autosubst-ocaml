@@ -64,7 +64,10 @@ let main (infile, outfile, scope_type, coq_version) =
   let () = Settings.scope_type := scope_type in
   (* setup static files *)
   let () = create_outdir dir in
-  let () = copy_static_files dir scope_type coq_version in
+  let generate_static_files = true in
+  let () = if generate_static_files
+    then copy_static_files dir scope_type coq_version
+    else () in
   (* parse input HOAS *)
   let* spec = read_file infile |> SigParser.parse_signature in
   let* signature = SigAnalyzer.build_signature spec in
@@ -73,6 +76,13 @@ let main (infile, outfile, scope_type, coq_version) =
   let* code, fext_code = GenCode.run_gen_code signature outfile_basename in
   (* write file *)
   let open Filename in
-  let () = write_file (concat dir outfile) code in
-  let () = write_file (concat dir outfile_fext) fext_code in
+  let axioms_separate = true in
+  let () = if axioms_separate
+    then
+      let () = write_file (concat dir outfile) code in
+      let () = write_file (concat dir outfile_fext) fext_code in
+      ()
+    else
+      let () = write_file (concat dir outfile) (code ^ fext_code) in
+      () in
   pure "done"
