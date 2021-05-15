@@ -93,7 +93,7 @@ let genCongruence sort H.{ cparameters; cname; cpositions } =
 
 let genCongruences sort =
   let* ctrs = constructors sort in
-  a_concat_map (genCongruence sort) ctrs
+  a_map (genCongruence sort) ctrs
 
 let traversal
     sort scope name ?(no_args=fun s -> app1_ eq_refl_ s) ~ret
@@ -822,7 +822,7 @@ let genLemmaCompSubstSubst sort =
         lemma_ (compComp'_ sort) scopeBinders ret' proof')
 
 (** This function delegates to all the different code generation functions and in the end
- ** aggregates all the returned vernacular expressions. *)
+ ** aggregates all the returned vernacular units. *)
 let genCodeT sorts upList =
   let* varSorts = a_filter isOpen sorts in
   let* hasbinders = map (fun l -> l |> list_empty |> not) (substOf (List.hd sorts)) in
@@ -831,7 +831,7 @@ let genCodeT sorts upList =
   let* types = a_map genBody def_sorts in
   let* is_rec = isRecursive sorts in
   (* GENERATE CONGRUENCE LEMMAS *)
-  let* congruences = a_map genCongruences sorts in
+  let* congruences = a_concat_map genCongruences sorts in
   (* GENERATE RENAMINGS *)
   let* isRen = hasRenamings (List.hd sorts) in
   let guard_map ?(invert=false) f input =
@@ -884,26 +884,24 @@ let genCodeT sorts upList =
     | [] -> []
     | fix_exprs -> [fixpoint_ ~is_rec fix_exprs] in
   (* generation of the actual sentences *)
-  pure { as_exprs = mk_inductive types @
-                     (List.concat congruences) @
+  pure { as_exprs = mk_inductive types @ congruences @
                      (if not hasbinders then [] else
-                        (List.concat upRen) @ guard isRen [renamings] @
-                        (List.concat ups) @ [substitutions] @ (List.concat upsNoRen) @
-                        (List.concat upId) @ mk_fixpoint idLemmas @
-                        (List.concat extUpRen) @ mk_fixpoint extRen @
-                        (List.concat extUp) @ mk_fixpoint ext @
-                        (List.concat upRenRen) @ mk_fixpoint compRenRen @
-                        (List.concat upRenSubst) @ mk_fixpoint compRenSubst @
-                        (List.concat upSubstRen) @ mk_fixpoint compSubstRen @
-                        (List.concat upSubstSubst) @ mk_fixpoint compSubstSubst @ (List.concat upSubstSubstNoRen) @
-                        (List.concat upRinstInst) @ mk_fixpoint rinstInst @
-                        (List.concat lemmaSubstRenRen) @ (List.concat lemmaSubstCompRen) @
-                        (List.concat lemmaSubstRenComp) @ (List.concat lemmaSubstComp));
-         as_fext_exprs =
-           List.concat (lemmaRenSubst_fext @
-                        lemmaInstId_fext @ lemmaRinstId_fext @
-                        lemmaVarL_fext @ lemmaVarLRen_fext @
-                        lemma_subst_ren_ren_fext @
-                        lemma_subst_comp_ren_fext @
-                        lemma_subst_ren_comp_fext @
-                        lemma_subst_comp_fext) }
+                        upRen @ guard isRen [renamings] @
+                        ups @ [substitutions] @ upsNoRen @
+                        upId @ mk_fixpoint idLemmas @
+                        extUpRen @ mk_fixpoint extRen @
+                        extUp @ mk_fixpoint ext @
+                        upRenRen @ mk_fixpoint compRenRen @
+                        upRenSubst @ mk_fixpoint compRenSubst @
+                        upSubstRen @ mk_fixpoint compSubstRen @
+                        upSubstSubst @ mk_fixpoint compSubstSubst @ upSubstSubstNoRen @
+                        upRinstInst @ mk_fixpoint rinstInst @
+                        lemmaSubstRenRen @ lemmaSubstCompRen @
+                        lemmaSubstRenComp @ lemmaSubstComp);
+         as_fext_exprs = lemmaRenSubst_fext @
+                         lemmaInstId_fext @ lemmaRinstId_fext @
+                         lemmaVarL_fext @ lemmaVarLRen_fext @
+                         lemma_subst_ren_ren_fext @
+                         lemma_subst_comp_ren_fext @
+                         lemma_subst_ren_comp_fext @
+                         lemma_subst_comp_fext }

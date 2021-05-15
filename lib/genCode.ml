@@ -8,11 +8,11 @@ module CS = CoqSyntax
 module CG = Coqgen
 module H = Hsig
 
-let unscoped_preamble = "Require Import core unscoped.\n"
+let unscoped_preamble = "Require Import core unscoped.\n\n"
 let unscoped_preamble_axioms = "Require Import core core_axioms unscoped unscoped_axioms.\n"
-let scoped_preamble = "Require Import core fintype.\n"
+let scoped_preamble = "Require Import core fintype.\n\n"
 let scoped_preamble_axioms = "Require Import core core_axioms fintype fintype_axioms.\n"
-let base_preamble = Scanf.format_from_string "Require Import %s.\n" "%s"
+let base_preamble = Scanf.format_from_string "Require Import %s.\n\n" "%s"
 
 let get_preambles outfile_basename =
   let base_preamble = Printf.sprintf base_preamble outfile_basename in
@@ -60,9 +60,8 @@ let genCode components =
   pure { as_exprs = code; as_fext_exprs = fext_code }
 
 let make_file code preamble =
-  let pps = (List.map Coqgen.pr_vernac_expr code) in
-  String.concat "\n"
-    (preamble :: List.map Pp.string_of_ppcmds pps)
+  let pp = (List.concat_map Coqgen.pr_vernac_unit code) in
+  preamble ^ (String.concat "" (List.map Pp.string_of_ppcmds pp))
 
 (** Generate the Coq file. Here we convert the Coq AST to pretty print expressions and then to strings. *)
 let genFile outfile_basename =

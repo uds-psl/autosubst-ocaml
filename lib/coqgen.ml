@@ -61,7 +61,7 @@ let inductiveBody_ iname iparams ?rtype iconstructors =
     Vernacexpr.Constructors iconstructors), [])
 
 let inductive_ inductiveBodies =
-  Vernacexpr.(VernacInductive (Inductive_kw, inductiveBodies))
+  [ Vernacexpr.(VernacInductive (Inductive_kw, inductiveBodies)) ]
 
 let definition_expr_ dbinders ?rtype dbody =
   let open Vernacexpr in
@@ -71,7 +71,7 @@ let definition_ dname dbinders ?rtype dbody =
   let open Vernacexpr in
   let dname = name_decl_ dname in
   let dexpr = definition_expr_ dbinders ?rtype dbody in
-  VernacDefinition ((NoDischarge, Decls.Definition), dname, dexpr)
+  [ VernacDefinition ((NoDischarge, Decls.Definition), dname, dexpr) ]
 
 type fixpoint_expr = Vernacexpr.fixpoint_expr
 let fixpointBody_ name binders rtype body struc =
@@ -87,7 +87,7 @@ let fixpointBody_ name binders rtype body struc =
 
 let fixpoint_ ~is_rec fexprs =
   if is_rec
-  then Vernacexpr.(VernacFixpoint (NoDischarge, fexprs))
+  then [ Vernacexpr.(VernacFixpoint (NoDischarge, fexprs)) ]
   else match fexprs with
     | [{ fname={ v=fname; _ }; binders; rtype; body_def=Some body; _}] ->
       definition_ (Names.Id.to_string fname) binders ~rtype body
@@ -126,13 +126,15 @@ let lemma_ ?(opaque=true) lname lbinders ltype lbody =
   let lbegin = VernacStartTheoremProof (Decls.Lemma, [pexpr]) in
   let lbody = VernacExactProof lbody in
   let lend = VernacEndProof (Proved ((if opaque then Opaque else Transparent), None)) in
-  [lbegin; lbody; lend]
+  [ lbegin; lbody; lend ]
 
 type vernac_expr = Vernacexpr.vernac_expr
-type autosubst_exprs = { as_exprs: vernac_expr list; as_fext_exprs: vernac_expr list }
+type vernac_unit = vernac_expr list
+type autosubst_exprs = { as_exprs: vernac_unit list; as_fext_exprs: vernac_unit list }
 
 
 let vernacend = Pp.str ".\n"
+let newline = Pp.str "\n"
 
 let pr_constr_expr cexpr =
   let env = Global.env () in
@@ -153,6 +155,9 @@ let pr_vernac_expr =
     str "Proof" ++ vernacend ++ pr_exact_expr cexpr
   | vexpr ->
     Ppvernac.pr_vernac_expr vexpr ++ vernacend
+
+let pr_vernac_unit vunit =
+  (List.map pr_vernac_expr vunit) @ [ newline ]
 
 let parse_constr_expr expr_s = Pcoq.parse_string (Pcoq.Constr.lconstr) expr_s
 
@@ -180,58 +185,58 @@ let setup_coq () =
       (Some scope) in
   ()
 
-(* disable unused warning *)
-module [@warning "-32"] GenTests = struct
-  (* Lemma congr_lam  { s0 : tm   } { t0 : tm   } (H1 : s0 = t0) : lam  s0 = lam  t0 . *)
-  let print_utlc_tm () : Pp.t =
-    let utlc = inductive_ [inductiveBody_ "tm" [] ~rtype:(ref_ "Type") [
-        constructor_ "var_tm" (arr1_ (ref_ "fin") (ref_ "tm"));
-        constructor_ "app" (arr_ [ref_ "tm"; ref_ "tm"] (ref_ "tm"));
-        constructor_ "lam" (arr1_ (ref_ "tm") (ref_ "tm"))
-      ]] in
-    pr_vernac_expr utlc
-
-  let print_utlc_fix () : Pp.t =
-    let fname = "ren_tm" in
-    let binders = [ binder1_ ~btype:(arr1_ (ref_ "fin") (ref_ "fin")) "xitm";
-                    binder1_ ~btype:(ref_ "tm") "s" ] in
-    let rtype = ref_ "tm" in
-    let body_def = match_ (ref_ "s") ~rtype:(ref_ "tm") [
-        branch_ "var_tm" ["s"] (app1_ (ref_ "var_tm") (app1_ (ref_ "xitm") (ref_ "s")));
-        branch_ "app" ["s0"; "s1"] (app_ (ref_ "app") [
-            app_ (ref_ "ren_tm") [(ref_ "xitm"); (ref_ "s0")];
-            app_ (ref_ "ren_tm") [(ref_ "xitm"); (ref_ "s1")]
-          ]);
-        branch_ "lam" ["s0"] (app1_ (ref_ "lam")
-                                (app_ (ref_ "ren_tm") [
-                                    app1_ (ref_ "upRen_tm_tm") (ref_ "xitm");
-                                    ref_ "s0"
-                                  ]))
-      ]
-    in
-    let fix = fixpoint_ ~is_rec:true [fixpointBody_ fname binders rtype body_def "s"] in
-    pr_vernac_expr fix
-
-  let print_utlc_lemma () : Pp.t =
-    let lname = "congr_lam" in
-    let tm = ref_ "tm" in
-    let lbinders = [ binder_ ~implicit:true ~btype:tm ["s0";"t0"] ;
-                     binder1_ ~btype:(eq_ (ref_ "s0") (ref_ "t0")) "H1"  ] in
-    let ltype = app_ (ref_ "eq") [
-        app1_ (ref_ "lam") (ref_ "s0");
-        app1_ (ref_ "lam") (ref_ "t0")
-      ] in
-    let lbody = ref_ "False" in
-    let lemma = definition_ lname lbinders ~rtype:ltype lbody in
-    pr_vernac_expr lemma
-
-  (* This sadly just prints cc_plugin@cc:0 (or similar) which is probably a correct internal representation of the congruence tactic but now what I was looking for. *)
-  (* let print_congruence () : Pp.t =
-   *   let env = Global.env () in
-   *   let sigma = Evd.from_env env in *)
-    (* let open Ltac_plugin.Tacexpr in
-     * let texpr = TacML (CAst.make ({ mltac_name={ mltac_plugin="cc_plugin"; mltac_tactic="cc"; }; mltac_index=0; }, [])) in
-     * Ltac_plugin.Pptactic.pr_raw_tactic env sigma texpr *)
-    (* Ltac_plugin.Pptactic.pr_glob_tactic env texpr *)
-
-end
+(* (\* disable unused warning *\)
+ * module [@warning "-32"] GenTests = struct
+ *   (\* Lemma congr_lam  { s0 : tm   } { t0 : tm   } (H1 : s0 = t0) : lam  s0 = lam  t0 . *\)
+ *   let print_utlc_tm () : Pp.t =
+ *     let utlc = inductive_ [inductiveBody_ "tm" [] ~rtype:(ref_ "Type") [
+ *         constructor_ "var_tm" (arr1_ (ref_ "fin") (ref_ "tm"));
+ *         constructor_ "app" (arr_ [ref_ "tm"; ref_ "tm"] (ref_ "tm"));
+ *         constructor_ "lam" (arr1_ (ref_ "tm") (ref_ "tm"))
+ *       ]] in
+ *     pr_vernac_unit utlc
+ *
+ *   let print_utlc_fix () : Pp.t =
+ *     let fname = "ren_tm" in
+ *     let binders = [ binder1_ ~btype:(arr1_ (ref_ "fin") (ref_ "fin")) "xitm";
+ *                     binder1_ ~btype:(ref_ "tm") "s" ] in
+ *     let rtype = ref_ "tm" in
+ *     let body_def = match_ (ref_ "s") ~rtype:(ref_ "tm") [
+ *         branch_ "var_tm" ["s"] (app1_ (ref_ "var_tm") (app1_ (ref_ "xitm") (ref_ "s")));
+ *         branch_ "app" ["s0"; "s1"] (app_ (ref_ "app") [
+ *             app_ (ref_ "ren_tm") [(ref_ "xitm"); (ref_ "s0")];
+ *             app_ (ref_ "ren_tm") [(ref_ "xitm"); (ref_ "s1")]
+ *           ]);
+ *         branch_ "lam" ["s0"] (app1_ (ref_ "lam")
+ *                                 (app_ (ref_ "ren_tm") [
+ *                                     app1_ (ref_ "upRen_tm_tm") (ref_ "xitm");
+ *                                     ref_ "s0"
+ *                                   ]))
+ *       ]
+ *     in
+ *     let fix = fixpoint_ ~is_rec:true [fixpointBody_ fname binders rtype body_def "s"] in
+ *     pr_vernac_unit fix
+ *
+ *   let print_utlc_lemma () : Pp.t =
+ *     let lname = "congr_lam" in
+ *     let tm = ref_ "tm" in
+ *     let lbinders = [ binder_ ~implicit:true ~btype:tm ["s0";"t0"] ;
+ *                      binder1_ ~btype:(eq_ (ref_ "s0") (ref_ "t0")) "H1"  ] in
+ *     let ltype = app_ (ref_ "eq") [
+ *         app1_ (ref_ "lam") (ref_ "s0");
+ *         app1_ (ref_ "lam") (ref_ "t0")
+ *       ] in
+ *     let lbody = ref_ "False" in
+ *     let lemma = definition_ lname lbinders ~rtype:ltype lbody in
+ *     pr_vernac_unit lemma
+ *
+ *   (\* This sadly just prints cc_plugin@cc:0 (or similar) which is probably a correct internal representation of the congruence tactic but now what I was looking for. *\)
+ *   (\* let print_congruence () : Pp.t =
+ *    *   let env = Global.env () in
+ *    *   let sigma = Evd.from_env env in *\)
+ *     (\* let open Ltac_plugin.Tacexpr in
+ *      * let texpr = TacML (CAst.make ({ mltac_name={ mltac_plugin="cc_plugin"; mltac_tactic="cc"; }; mltac_index=0; }, [])) in
+ *      * Ltac_plugin.Pptactic.pr_raw_tactic env sigma texpr *\)
+ *     (\* Ltac_plugin.Pptactic.pr_glob_tactic env texpr *\)
+ *
+ * end *)
