@@ -59,9 +59,6 @@ Class Ren4 (X1 X2 X3 X4 : Type) (Y Z : Type) :=
 Class Ren5 (X1 X2 X3 X4 X5 : Type) (Y Z : Type) :=
   ren5 : X1 -> X2 -> X3 -> X4 -> X5 -> Y -> Z.
 
-(* Declare Scope fscope.  *)
-(* Declare Scope subst_scope. *)
-
 Notation "s ⟨ xi1 ⟩" := (ren1 xi1 s) (at level 7, left associativity, format "s  ⟨ xi1 ⟩") : subst_scope.
 
 Notation "s ⟨ xi1 ; xi2 ⟩" := (ren2 xi1 xi2 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ⟩") : subst_scope.
