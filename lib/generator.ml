@@ -898,10 +898,11 @@ let genCodeT sorts upList =
                         upRinstInst @ mk_fixpoint rinstInst @
                         lemmaSubstRenRen @ lemmaSubstCompRen @
                         lemmaSubstRenComp @ lemmaSubstComp);
-         as_fext_exprs = lemmaRenSubst_fext @
-                         lemmaInstId_fext @ lemmaRinstId_fext @
-                         lemmaVarL_fext @ lemmaVarLRen_fext @
-                         lemma_subst_ren_ren_fext @
-                         lemma_subst_comp_ren_fext @
-                         lemma_subst_ren_comp_fext @
-                         lemma_subst_comp_fext }
+         as_fext_exprs = if not hasbinders then [] else
+             lemmaRenSubst_fext @
+             lemmaInstId_fext @ lemmaRinstId_fext @
+             lemmaVarL_fext @ lemmaVarLRen_fext @
+             lemma_subst_ren_ren_fext @
+             lemma_subst_comp_ren_fext @
+             lemma_subst_ren_comp_fext @
+             lemma_subst_comp_fext }
