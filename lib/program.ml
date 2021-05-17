@@ -58,10 +58,10 @@ let create_outdir dir =
 let main (infile, outfile, scope_type, coq_version) =
   let open ErrorM.Syntax in
   let open ErrorM in
-  let dir, outfile_basename, outfile, outfile_fext = make_filenames outfile in
   let () = Printexc.record_backtrace true in
   let () = Coqgen.setup_coq () in
   let () = Settings.scope_type := scope_type in
+  let dir, outfile_basename, outfile, outfile_fext = make_filenames outfile in
   (* setup static files *)
   let () = create_outdir dir in
   let generate_static_files = true in
