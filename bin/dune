@@ -1,7 +1,7 @@
 (executable
  (name main)
  (libraries autosubst_lib)
- (flags (:standard -rectypes))
+ (flags (:standard -rectypes -linkall))
   (modes exe))
 
 (env
