@@ -69,14 +69,14 @@ let pr_tactic_ltac name tactic =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let pp = pr_raw_tactic env sigma tactic in
-  Pp.(seq [ str "Ltac "; str name; str " := "; pp; vernacend ])
+  Pp.(seq [ str "Ltac "; str name; str " := "; pp; vernacend; newline ])
 
 let pr_tactic_notation names tactic =
   let open Ltac_plugin.Pptactic in
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let pp = pr_raw_tactic env sigma tactic in
-  Pp.(seq (str "Tactic Notation " :: (List.map (fun n -> str (n ^ " ")) names) @ [ str ":= "; pp; vernacend ]))
+  Pp.(seq (str "Tactic Notation " :: (List.map (fun n -> str (n ^ " ")) names) @ [ str ":= "; pp; vernacend; newline ]))
 
 type tactic = TacticLtac of string * tactic_expr
             | TacticNotation of string list * tactic_expr
@@ -86,6 +86,14 @@ let pr_tactic = function
   | TacticNotation (names, tac) -> pr_tactic_notation names tac
 
 type autosubst_tactics = { as_tactics : tactic list; as_fext_tactics: tactic list }
+
+type tactic_info = {
+  asimpl_rewrite_lemmas : string list;
+  asimpl_cbn_functions : string list;
+  asimpl_unfold_functions : string list;
+  substify_lemmas : string list;
+  auto_unfold_functions : string list;
+}
 
 module [@warning "-32"] GenTests = struct
   let myasimpl' =

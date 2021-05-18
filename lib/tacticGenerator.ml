@@ -3,14 +3,6 @@ open Tacgen
 open Notationgen
 open Classgen
 
-type tactic_info = {
-  asimpl_rewrite_lemmas : string list;
-  asimpl_cbn_functions : string list;
-  asimpl_unfold_functions : string list;
-  substify_lemmas : string list;
-  auto_unfold_functions : string list;
-}
-
 let gen_auto_unfold { auto_unfold_functions; _ } =
   let tac = repeat_ (unfold_ auto_unfold_functions) in
   TacticLtac ("auto_unfold", tac)
@@ -39,8 +31,8 @@ let gen_asimpl_star ({ asimpl_rewrite_lemmas; asimpl_cbn_functions; asimpl_unfol
 
 let gen_asimpl info =
   let [@warning "-8"] TacticNotation (_, auto_unfold_star) = gen_auto_unfold_star info in
-  let unfold_funcomp = calltac_ "unfold_funcomp" in
-  let tac = then_ [ repeat_ (try_ unfold_funcomp)
+  let unfold_funcomp = repeat_ (try_ (calltac_ "unfold_funcomp")) in
+  let tac = then_ [ unfold_funcomp
                   ; auto_unfold_star
                   ; calltac_ "asimpl'"
                   ; unfold_funcomp ] in

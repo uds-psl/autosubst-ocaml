@@ -6,7 +6,7 @@ open Util
 
 module CS = CoqSyntax
 module CG = Coqgen
-(* module TG = Tacgen *)
+module TG = Tacgen
 module H = Hsig
 
 let unscoped_preamble = "Require Import core unscoped.\n\n"
@@ -63,7 +63,16 @@ let genCode components =
 let genTactics () =
   let open REM.Syntax in
   let open REM in
-  let* info = failwith "tell from writer monad" in
+  let open TG in
+  let info = {
+    asimpl_rewrite_lemmas = ["instId_tm"; "compComp_tm"; "compComp'_tm"; "rinstId_tm"; "compRen_tm";
+                             "compRen'_tm"; "renComp_tm"; "renComp'_tm"; "renRen_tm"; "renRen'_tm";
+                             "varL_tm"; "varLRen_tm" ];
+    asimpl_cbn_functions = ["subst_tm"; "ren_tm"];
+    asimpl_unfold_functions = ["up_ren"; "upRen_tm_tm"; "up_tm_tm" ];
+    substify_lemmas = ["rinstInst_tm"];
+    auto_unfold_functions = ["subst1"; "subst2"; "Subst1";  "Subst2";  "ids";  "ren1"; "ren2"; "Ren1";  "Ren2";  "Subst_tm";  "Ren_tm"; "VarInstance_tm"]
+  } in
   pure (TacticGenerator.gen_tactics_T info)
 
 let make_file preamble code tactics =
@@ -77,12 +86,12 @@ let genFile outfile_basename =
   let open REM.Syntax in
   let open REM in
   let open CG in
-  (* let open TG in *)
+  let open TG in
   let* components = getComponents in
   let* { as_exprs = code; as_fext_exprs = fext_code } = genCode components in
-  (* let* { as_tactics = tactics; as_fext_tactics = fext_tactics } = genTactics () in *)
+  let* { as_tactics = tactics; as_fext_tactics = fext_tactics } = genTactics () in
   let preamble, preamble_axioms = get_preambles outfile_basename in
-  pure (make_file preamble code [], make_file preamble_axioms fext_code [])
+  pure (make_file preamble code [], make_file preamble_axioms fext_code fext_tactics)
 
 (** Run the computation constructed by genFile *)
 let run_gen_code hsig outfile = REM.run (genFile outfile) hsig

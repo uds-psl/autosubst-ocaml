@@ -30,6 +30,14 @@ val pr_tactic : tactic -> Pp.t
 
 type autosubst_tactics = { as_tactics : tactic list; as_fext_tactics: tactic list }
 
+type tactic_info = {
+  asimpl_rewrite_lemmas : string list;
+  asimpl_cbn_functions : string list;
+  asimpl_unfold_functions : string list;
+  substify_lemmas : string list;
+  auto_unfold_functions : string list;
+}
+
 module GenTests : sig
   val myasimpl' : Pp.t
   val myasimpl : Pp.t
