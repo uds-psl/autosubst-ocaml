@@ -105,8 +105,6 @@ let ident_decl_ s : Constrexpr.ident_decl  =
   (lident_ s, None)
 
 
-type vernac_expr = Vernacexpr.vernac_expr
-
 let pr_constr_expr cexpr =
   let env = Global.env () in
   let sigma = Evd.from_env env in
@@ -115,17 +113,6 @@ let pr_constr_expr cexpr =
 let pr_exact_expr cexpr =
   let open Pp in
   str "exact (" ++ pr_constr_expr cexpr ++ str ")" ++ vernacend
-
-(** I catch the VernacExactProof constructor because the way Coq normally prints it does not
- ** work well with proof general. So I explicitly add an `exact (...)` *)
-let pr_vernac_expr =
-  let open Vernacexpr in
-  let open Pp in
-  function
-  | VernacExactProof cexpr ->
-    str "Proof" ++ vernacend ++ pr_exact_expr cexpr
-  | vexpr ->
-    Ppvernac.pr_vernac_expr vexpr ++ vernacend
 
 let parse_constr_expr expr_s = Pcoq.parse_string (Pcoq.Constr.lconstr) expr_s
 

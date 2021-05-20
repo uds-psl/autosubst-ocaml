@@ -61,8 +61,8 @@ let unfold_ ?(locus_clause=default_locus_clause) lemmas =
   let unfold = Genredexpr.Unfold occ_list in
   TacAtom (CAst.make (TacReduce (unfold, locus_clause)))
 
-let notation_ cexpr =
-  TacArg (CAst.make (ConstrMayEval (Genredexpr.ConstrTerm cexpr)))
+(* let notation_ cexpr =
+ *   TacArg (CAst.make (ConstrMayEval (Genredexpr.ConstrTerm cexpr))) *)
 
 let pr_tactic_ltac name tactic =
   let open Ltac_plugin.Pptactic in
@@ -84,6 +84,8 @@ type tactic_info = {
   asimpl_unfold_functions : string list;
   substify_lemmas : string list;
   auto_unfold_functions : string list;
-  instance_infos : (ClassGen.instance_type * string * constr_expr list) list;
+  classes : (string * binder_expr list * constructor_expr list) list;
+  (* instance info probably also needs parameter information *)
+  instances : (ClassGen.instance_type * string * constr_expr list) list;
+  notations : (NotationGen.notation_type * constr_expr) list;
 }
-

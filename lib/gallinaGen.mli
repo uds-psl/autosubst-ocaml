@@ -45,10 +45,9 @@ val definition_expr_ : binder_expr list -> ?rtype:constr_expr -> constr_expr -> 
 type fixpoint_expr = Vernacexpr.fixpoint_expr
 val fixpointBody_ : identifier -> binder_expr list -> constr_expr -> constr_expr -> identifier -> fixpoint_expr
 
-type vernac_expr = Vernacexpr.vernac_expr
-
+val pr_constr_expr : constr_expr -> Pp.t
+val pr_exact_expr : constr_expr -> Pp.t
 val parse_constr_expr : string -> constr_expr
-val pr_vernac_expr : vernac_expr -> Pp.t
 
 (** Setup some state in the Coq library like a feedback printer and notations *)
 val setup_coq : unit -> unit

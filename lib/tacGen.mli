@@ -1,3 +1,5 @@
+open GallinaGen
+
 type tactic_expr
 type locus_clause_expr
 
@@ -18,7 +20,7 @@ val then_ : tactic_expr list -> tactic_expr
 val cbn_ : string list -> tactic_expr
 val intros_ : string list -> tactic_expr
 val unfold_ : ?locus_clause:locus_clause_expr -> string list -> tactic_expr
-val notation_ : Constrexpr.constr_expr -> tactic_expr
+(* val notation_ : Constrexpr.constr_expr -> tactic_expr *)
 
 val pr_tactic_ltac : string -> tactic_expr -> Pp.t
 val pr_tactic_notation : string list -> tactic_expr -> Pp.t
@@ -29,7 +31,9 @@ type tactic_info = {
   asimpl_unfold_functions : string list;
   substify_lemmas : string list;
   auto_unfold_functions : string list;
+  classes : (string * binder_expr list * constructor_expr list) list;
   (* instance info probably also needs parameter information *)
-  instance_infos : (ClassGen.instance_type * string * GallinaGen.constr_expr list) list;
+  instances : (ClassGen.instance_type * string * constr_expr list) list;
+  notations : (NotationGen.notation_type * constr_expr) list;
 }
 

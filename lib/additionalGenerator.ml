@@ -63,16 +63,32 @@ let gen_renamify { substify_lemmas; _ } =
   let tac = then_ (calltac_ "auto_unfold" :: rewrites) in
   TacticLtac ("renamify", tac)
 
-let gen_instances { instance_infos; _ } =
+let gen_classes { classes; _ } =
+  let gen_class (name, binders, ctors) =
+    class_ name binders ctors in
+  List.map gen_class classes
+
+let gen_instances { instances; _ } =
   let gen_instance (inst_type, sort, class_args) =
     let iname = instance_name sort inst_type in
-    let cname = class_name inst_type in
+    let cname = class_name sort inst_type in
     let fname = function_name sort inst_type in
     instance_ iname (app_ref cname class_args) (app_ref ~expl:true fname [])
   in
-  List.map gen_instance instance_infos
+  let instance_definitions = List.map gen_instance instances in
+  let ex_instances = List.map (fun (inst_type, sort, _) ->
+      ex_instance_ (instance_name sort inst_type)) instances in
+  instance_definitions @ ex_instances
+
+let gen_notations { notations; _ } =
+  let gen_notation (ntype, body) =
+    notation_ (notation_string ntype) (notation_modifiers ntype) ~scope:(notation_scope ntype) body in
+  List.map gen_notation notations
 
 let gen_additional info =
+  let classes = gen_classes info in
+  let instances = gen_instances info in
+  let notations = gen_notations info in
   let tactic_funs = [ gen_auto_unfold
                     ; gen_auto_unfold_star
                     ; gen_asimpl'
@@ -83,4 +99,4 @@ let gen_additional info =
                     ; gen_substify
                     ; gen_renamify ] in
   let tactics = List.map (fun f -> f info) tactic_funs in
-  { as_units = []; as_fext_units = tactics }
+  { as_units = []; as_fext_units = classes @ instances @ notations @ tactics }

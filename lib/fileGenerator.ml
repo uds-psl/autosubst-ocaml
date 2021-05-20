@@ -66,6 +66,7 @@ let genTactics () =
   let open REM.Syntax in
   let open REM in
   let open TG in
+  let open GG in
   let open Termutil in
   let info = {
     asimpl_rewrite_lemmas = ["instId_tm"; "compComp_tm"; "compComp'_tm"; "rinstId_tm"; "compRen_tm";
@@ -75,9 +76,20 @@ let genTactics () =
     asimpl_unfold_functions = ["up_ren"; "upRen_tm_tm"; "up_tm_tm" ];
     substify_lemmas = ["rinstInst_tm"];
     auto_unfold_functions = ["subst1"; "subst2"; "Subst1";  "Subst2";  "ids";  "ren1"; "ren2"; "Ren1";  "Ren2";  "Subst_tm";  "Ren_tm"; "VarInstance_tm"];
-    instance_infos = [ (Subst 1, "tm", [underscore_; underscore_; underscore_])
-                     ; (Ren 1, "tm", [underscore_; underscore_; underscore_])
-                     ; (Var, "tm", [underscore_; underscore_])]
+    classes = [ "Up_tm", [ binder_ [ "X"; "Y" ] ], [ constructor_ "up_tm" (arr1_ (ref_ "X") (ref_ "Y")) ] ];
+    instances = [ CG_Subst 1, "tm", [underscore_; underscore_; underscore_]
+                ; CG_Ren 1, "tm", [underscore_; underscore_; underscore_]
+                ; CG_Var, "tm", [underscore_; underscore_]
+                ; CG_Up, "tm", [underscore_; underscore_] ];
+    notations = [ NG_VarConstr ("x", "tm"), app_ref "var_tm" [ ref_ "x" ]
+                ; NG_VarInst ("x", "tm"), app_ref ~expl:true "ids" [ underscore_; underscore_; ref_ ClassGen.(instance_name "tm" CG_Var); ref_ "x" ]
+                ; NG_Var, ref_ "var_tm"
+                ; NG_Up "tm", ref_ "up_tm"
+                ; NG_Up "tm", ref_ "up_tm_tm"
+                ; NG_SubstApply ("s", "sigma_tm"), app_ref "subst_tm" [ ref_ "sigma_tm"; ref_ "s" ]
+                ; NG_Subst "sigma_tm", app_ref "subst_tm" [ ref_ "sigma_tm" ]
+                ; NG_RenApply ("s", "xi_tm"), app_ref "ren_tm" [ ref_ "xi_tm"; ref_ "s" ]
+                ; NG_Ren "xi_tm", app_ref "ren_tm" [ ref_ "xi_tm" ] ];
   } in
   pure (AdditionalGenerator.gen_additional info)
 

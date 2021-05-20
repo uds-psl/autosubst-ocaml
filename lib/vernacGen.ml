@@ -1,12 +1,26 @@
 open Util
 open GallinaGen
 open TacGen
+open NotationGen
+
+type vernac_expr = Vernacexpr.vernac_expr
 
 type vernac_unit = Vernac of vernac_expr list
                  | TacticLtac of string * tactic_expr
                  | TacticNotation of string list * tactic_expr
 
 type autosubst_exprs = { as_units: vernac_unit list; as_fext_units: vernac_unit list }
+
+(** I catch the VernacExactProof constructor because the way Coq normally prints it does not
+ ** work well with proof general. So I explicitly add an `exact (...)` *)
+let pr_vernac_expr =
+  let open Vernacexpr in
+  let open Pp in
+  function
+  | VernacExactProof cexpr ->
+    str "Proof" ++ vernacend ++ pr_exact_expr cexpr
+  | vexpr ->
+    Ppvernac.pr_vernac_expr vexpr ++ vernacend
 
 let pr_vernac_unit = function
   | Vernac vs ->
@@ -32,8 +46,9 @@ let lemma_ ?(opaque=true) lname lbinders ltype lbody =
   Vernac [ lbegin; lbody; lend ]
 
 let fixpoint_ ~is_rec fexprs =
+  let open Vernacexpr in
   if is_rec
-  then Vernac [ Vernacexpr.(VernacFixpoint (NoDischarge, fexprs)) ]
+  then Vernac [ VernacFixpoint (NoDischarge, fexprs) ]
   else match fexprs with
     | [{ fname={ v=fname; _ }; binders; rtype; body_def=Some body; _}] ->
       definition_ (Names.Id.to_string fname) binders ~rtype body
@@ -42,16 +57,31 @@ let fixpoint_ ~is_rec fexprs =
 
 
 let inductive_ inductiveBodies =
-  Vernac [ Vernacexpr.(VernacInductive (Inductive_kw, inductiveBodies)) ]
+  let open Vernacexpr in
+  Vernac [ VernacInductive (Inductive_kw, inductiveBodies) ]
+
+let class_ name binders fields =
+  let open Vernacexpr in
+  let body = inductiveBody_ name binders fields in
+  Vernac [ VernacInductive (Class false, [ body ]) ]
 
 let instance_ inst_name class_type body =
   definition_ inst_name [] ~rtype:class_type body
 
+(* a.d. don't call with multiple names for now b/c printing is wrong *)
 let ex_instances_ names =
-  Vernac [ Vernacexpr.VernacExistingInstance
+  let open Vernacexpr in
+  Vernac [ VernacExistingInstance
              (List.map (fun s ->
                   (qualid_ s, Typeclasses.{ hint_priority = None; hint_pattern = None }))
                  names) ]
+
+let ex_instance_ name = ex_instances_ [ name ]
+
+let notation_ notation modifiers ?scope body =
+  let open Vernacexpr in
+  Vernac [ VernacNotation (body, (CAst.make notation, modifiers), scope) ]
+
 
 (* disable unused warning *)
 module [@warning "-32"] GenTests = struct
@@ -157,4 +187,15 @@ module [@warning "-32"] GenTestsTac = struct
   let myrewritestar =
     let tac = rewrite_ ~locus_clause:star_locus_clause "foo" in
     pr_tactic_ltac "rest" tac
+end
+
+module [@warning "-32"] GenTestsNotation = struct
+  let mynotation =
+    let n = notation_ "x '__tm'" [ level_ 5; format_ "x __tm" ] ~scope:subst_scope (app1_ (ref_ "var_tm") (ref_ "x")) in
+    pr_vernac_unit n
+
+  let mynotation2 =
+    let n = notation_ "s [ sigmatm ]" [ level_ 7; assoc_ LeftA; only_print_ ] ~scope:subst_scope (app_ (ref_ "subst_tm") [ ref_ "sigmatm"; ref_ "s" ]) in
+    pr_vernac_unit n
+
 end
