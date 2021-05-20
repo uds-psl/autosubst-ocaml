@@ -71,7 +71,10 @@ let genTactics () =
     asimpl_cbn_functions = ["subst_tm"; "ren_tm"];
     asimpl_unfold_functions = ["up_ren"; "upRen_tm_tm"; "up_tm_tm" ];
     substify_lemmas = ["rinstInst_tm"];
-    auto_unfold_functions = ["subst1"; "subst2"; "Subst1";  "Subst2";  "ids";  "ren1"; "ren2"; "Ren1";  "Ren2";  "Subst_tm";  "Ren_tm"; "VarInstance_tm"]
+    auto_unfold_functions = ["subst1"; "subst2"; "Subst1";  "Subst2";  "ids";  "ren1"; "ren2"; "Ren1";  "Ren2";  "Subst_tm";  "Ren_tm"; "VarInstance_tm"];
+    instance_infos = [ (Subst 1, "tm", [underscore_; underscore_; underscore_])
+                     ; (Ren 1, "tm", [underscore_; underscore_; underscore_])
+                     ; (Var, "tm", [underscore_; underscore_])]
   } in
   pure (AdditionalGenerator.gen_additional info)
 

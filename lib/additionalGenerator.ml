@@ -61,6 +61,15 @@ let gen_renamify { substify_lemmas; _ } =
   let tac = then_ (calltac_ "auto_unfold" :: rewrites) in
   TacticLtac ("renamify", tac)
 
+let gen_instances { instance_infos; _ } =
+  let gen_instance (inst_type, sort, class_args) =
+    let iname = instance_name sort inst_type in
+    let cname = class_name inst_type in
+    let fname = function_name sort inst_type in
+    instance_ iname (app_ref cname class_args) (app_ref ~expl:true fname [])
+  in
+  List.map gen_instance instance_infos
+
 let gen_additional info =
   let tactic_funs = [ gen_auto_unfold
                     ; gen_auto_unfold_star

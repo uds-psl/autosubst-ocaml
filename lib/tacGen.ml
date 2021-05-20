@@ -93,6 +93,7 @@ type tactic_info = {
   asimpl_unfold_functions : string list;
   substify_lemmas : string list;
   auto_unfold_functions : string list;
+  instance_infos : (ClassGen.instance_type * string * constr_expr list) list;
 }
 
 module [@warning "-32"] GenTests = struct
