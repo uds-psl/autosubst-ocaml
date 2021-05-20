@@ -1,7 +1,9 @@
 (* open Coqgen *)
+open VernacGen
 open TacGen
 open NotationGen
 open ClassGen
+open Termutil
 
 let gen_auto_unfold { auto_unfold_functions; _ } =
   let tac = repeat_ (unfold_ auto_unfold_functions) in
@@ -81,4 +83,4 @@ let gen_additional info =
                     ; gen_substify
                     ; gen_renamify ] in
   let tactics = List.map (fun f -> f info) tactic_funs in
-  { as_tactics = []; as_fext_tactics = tactics }
+  { as_units = []; as_fext_units = tactics }

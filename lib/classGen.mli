@@ -1,9 +1,7 @@
 open GallinaGen
 
-val instance_ : string -> string -> constr_expr -> vernac_unit
-val ex_instances_ : string list -> vernac_expr
+type instance_type = Ren of int | Subst of int | Var
 
-module GenTests : sig
-  val my_instance : Pp.t
-  val my_ex_instances : Pp.t
-end
+val instance_name : string -> instance_type -> string
+val class_name : instance_type -> string
+val function_name : string -> instance_type -> string

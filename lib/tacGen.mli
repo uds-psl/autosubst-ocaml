@@ -20,15 +20,8 @@ val intros_ : string list -> tactic_expr
 val unfold_ : ?locus_clause:locus_clause_expr -> string list -> tactic_expr
 val notation_ : Constrexpr.constr_expr -> tactic_expr
 
-val pr_tactic : string -> tactic_expr -> Pp.t
+val pr_tactic_ltac : string -> tactic_expr -> Pp.t
 val pr_tactic_notation : string list -> tactic_expr -> Pp.t
-
-type tactic = TacticLtac of string * tactic_expr
-            | TacticNotation of string list * tactic_expr
-
-val pr_tactic : tactic -> Pp.t
-
-type autosubst_tactics = { as_tactics : tactic list; as_fext_tactics: tactic list }
 
 type tactic_info = {
   asimpl_rewrite_lemmas : string list;
@@ -40,11 +33,3 @@ type tactic_info = {
   instance_infos : (ClassGen.instance_type * string * GallinaGen.constr_expr list) list;
 }
 
-module GenTests : sig
-  val myasimpl' : Pp.t
-  val myasimpl : Pp.t
-  val myasimpl_hyp : Pp.t
-  val myauto_case : Pp.t
-  val myrenamify : Pp.t
-  val myrewritestar : Pp.t
-end

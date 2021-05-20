@@ -17,6 +17,7 @@ open CoqSyntax
 open Tactics
 open CoqNames
 open GallinaGen
+open VernacGen
 open Termutil
 
 let guard cond lst =
@@ -882,7 +883,7 @@ let gen_code sorts upList =
     | [] -> []
     | fix_exprs -> [fixpoint_ ~is_rec fix_exprs] in
   (* generation of the actual sentences *)
-  pure { as_exprs = mk_inductive types @ congruences @
+  pure { as_units = mk_inductive types @ congruences @
                      (if not hasbinders then [] else
                         upRen @ guard isRen [renamings] @
                         ups @ [substitutions] @ upsNoRen @
@@ -896,7 +897,7 @@ let gen_code sorts upList =
                         upRinstInst @ mk_fixpoint rinstInst @
                         lemmaSubstRenRen @ lemmaSubstCompRen @
                         lemmaSubstRenComp @ lemmaSubstComp);
-         as_fext_exprs = if not hasbinders then [] else
+         as_fext_units = if not hasbinders then [] else
              lemmaRenSubst_fext @
              lemmaInstId_fext @ lemmaRinstId_fext @
              lemmaVarL_fext @ lemmaVarLRen_fext @

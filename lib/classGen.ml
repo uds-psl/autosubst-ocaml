@@ -1,21 +1,22 @@
+open Util
 open Vernacexpr
 open GallinaGen
 
-let instance_ inst_name class_name body =
-    definition_ inst_name [] ~rtype:(ref_ class_name) body
+type instance_type = Ren of int | Subst of int | Var
 
-let ex_instances_ names =
-    VernacExistingInstance (List.map (fun s ->
-        (qualid_ s, Typeclasses.{ hint_priority = None; hint_pattern = None }))
-        names)
+let instance_name sort = function
+  | Ren _ -> sep "Ren" sort
+  | Subst _ -> sep "Subst" sort
+  | Var -> sep "VarInstance" sort
 
-module [@warning "-32"] GenTests = struct
-  let my_instance =
-    let inst = instance_ "fooI" "foo" (ref_ "bar") in
-    Pp.seq (pr_vernac_unit inst)
+let class_name = function
+  | Ren n -> "Ren"^(string_of_int n)
+  | Subst n -> "Subst"^(string_of_int n)
+  | Var -> "Var"
+
+let function_name sort = function
+  | Ren _ -> sep "ren" sort
+  | Subst _ -> sep "subst" sort
+  | Var -> CoqNames.var_ sort
 
 
-  let my_ex_instances =
-    pr_vernac_expr (ex_instances_ [ "fooI"; "barI" ])
-
-end

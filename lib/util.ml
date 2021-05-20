@@ -59,3 +59,7 @@ let const2 b x y = b
 let sep_ = "_"
 let sep a b = a^sep_^b
 let sepd = String.concat sep_
+
+(* Printing *)
+let newline = Pp.fnl ()
+let vernacend = Pp.((str ".") ++ newline)

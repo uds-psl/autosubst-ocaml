@@ -7,6 +7,7 @@ open Util
 module CS = CoqSyntax
 module GG = GallinaGen
 module TG = TacGen
+module VG = VernacGen
 module L = Language
 
 let unscoped_preamble = "Require Import core unscoped.\n\n"
@@ -51,19 +52,21 @@ let genCode components =
   let open REM.Syntax in
   let open REM in
   let open GG in
+  let open VG in
   let* (_, code, fext_code) = m_fold (fun (done_ups, vexprs, fext_exprs) component ->
       let* substSorts = substOf (List.hd component) in
       let new_ups = getUps substSorts in
       let ups = list_diff new_ups done_ups in
-      pure @@ (ups @ done_ups, vexprs @ as_exprs, fext_exprs @ as_fext_exprs))
-      let* { as_exprs; as_fext_exprs } = CodeGenerator.gen_code component ups in
+      let* { as_units; as_fext_units } = CodeGenerator.gen_code component ups in
+      pure @@ (ups @ done_ups, vexprs @ as_units, fext_exprs @ as_fext_units))
       ([], [], []) components in
-  pure { as_exprs = code; as_fext_exprs = fext_code }
+  pure { as_units = code; as_fext_units = fext_code }
 
 let genTactics () =
   let open REM.Syntax in
   let open REM in
   let open TG in
+  let open Termutil in
   let info = {
     asimpl_rewrite_lemmas = ["instId_tm"; "compComp_tm"; "compComp'_tm"; "rinstId_tm"; "compRen_tm";
                              "compRen'_tm"; "renComp_tm"; "renComp'_tm"; "renRen_tm"; "renRen'_tm";
@@ -79,18 +82,19 @@ let genTactics () =
   pure (AdditionalGenerator.gen_additional info)
 
 let make_file preamble code tactics =
-  let pp_code = List.concat_map GG.pr_vernac_unit code in
-  let pp_tactics = List.map TG.pr_tactic tactics in
-  let text = List.map Pp.string_of_ppcmds (pp_code @ pp_tactics) in
-  preamble ^ (String.concat "" text)
+  let pp_code = VG.pr_vernac_units code in
+  let pp_tactics = VG.pr_vernac_units tactics in
+  let text = Pp.(string_of_ppcmds (pp_code ++ pp_tactics)) in
+  preamble ^ text
 
 (** Generate the Coq file. Here we convert the Coq AST to pretty print expressions and then to strings. *)
 let genFile outfile_basename =
   let open REM.Syntax in
   let open REM in
+  let open VG in
   let* components = getComponents in
-  let* GG.{ as_exprs = code; as_fext_exprs = fext_code } = genCode components in
-  let* TG.{ as_tactics = tactics; as_fext_tactics = fext_tactics } = genTactics () in
+  let* { as_units = code; as_fext_units = fext_code } = genCode components in
+  let* { as_units = tactics; as_fext_units = fext_tactics } = genTactics () in
   let preamble, preamble_axioms = get_preambles outfile_basename in
   pure (make_file preamble code [], make_file preamble_axioms fext_code fext_tactics)
 

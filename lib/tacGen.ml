@@ -78,15 +78,6 @@ let pr_tactic_notation names tactic =
   let pp = pr_raw_tactic env sigma tactic in
   Pp.(seq (str "Tactic Notation " :: (List.map (fun n -> str (n ^ " ")) names) @ [ str ":= "; pp; vernacend; newline ]))
 
-type tactic = TacticLtac of string * tactic_expr
-            | TacticNotation of string list * tactic_expr
-
-let pr_tactic = function
-  | TacticLtac (name, tac) -> pr_tactic_ltac name tac
-  | TacticNotation (names, tac) -> pr_tactic_notation names tac
-
-type autosubst_tactics = { as_tactics : tactic list; as_fext_tactics: tactic list }
-
 type tactic_info = {
   asimpl_rewrite_lemmas : string list;
   asimpl_cbn_functions : string list;
@@ -96,40 +87,3 @@ type tactic_info = {
   instance_infos : (ClassGen.instance_type * string * constr_expr list) list;
 }
 
-module [@warning "-32"] GenTests = struct
-  let myasimpl' =
-    let lemmas = ["foo"; "bar"; "baz"] in
-    let rewrites = List.map (fun t -> progress_ (rewrite_ t)) lemmas in
-    let tac = repeat_ (first_ (rewrites @ [
-        progress_ (unfold_ ["upRen"; "upSubst"]);
-        progress_ (cbn_ ["subst_tm"; "ren_tm"]);
-        calltac_ "fsimpl" ])) in
-    pr_tactic_ltac "asimpl'" tac
-
-  let myasimpl =
-    let tac = then1_ (then1_ (repeat_ (try_ (calltac_ "unfold_funcomp")))
-                       (calltac_ "asimpl'"))
-           (repeat_ (try_ (calltac_ "unfold_funcomp"))) in
-    pr_tactic_ltac "asimpl" tac
-
-  let myasimpl_hyp =
-    let intro = intros_ [ "J" ] in
-    let tac = then1_ (then1_ (calltacArgs_ "revert" [ "J" ])
-                       (calltac_ "asimpl"))
-        intro in
-    pr_tactic_notation [ "\"asimpl\""; "\"in\""; "hyp(J)" ] tac
-
-  let myauto_case =
-    let inner_tac = then1_ (then1_ (calltac_ "asimpl") (cbn_ [])) (calltac_ "eauto") in
-    let tac = calltacTac_ "auto_case" inner_tac in
-    pr_tactic_notation [ "\"auto_case\"" ] tac
-
-  let myrenamify =
-    let tac = then1_ (calltac_ "auto_unfold")
-        (try_ (repeat_ (rewrite_ ~with_evars:true ~to_left:true ~repeat_star:false "foo"))) in
-    pr_tactic_ltac "renamify" tac
-
-  let myrewritestar =
-    let tac = rewrite_ ~locus_clause:star_locus_clause "foo" in
-    pr_tactic_ltac "rest" tac
-end
