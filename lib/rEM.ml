@@ -4,10 +4,10 @@
 open Util
 
 module M = Monadic
-module H = Hsig
+module L = Language
 module AL = AssocList
 
-module RE = M.Reader.MakeT(ErrorM)(struct type t = H.t end)
+module RE = M.Reader.MakeT(ErrorM)(struct type t = L.t end)
 
 include RE
 
@@ -28,22 +28,22 @@ open RE.Syntax
 
 (** return non-variable constructors of a sort *)
 let constructors sort =
-  let* spec = asks H.sigSpec in
+  let* spec = asks L.sigSpec in
   match AL.assoc sort spec with
   | Some cs -> pure cs
   | None -> error @@ "constructors called with unknown sort " ^ sort
 
 (** return the substitution vector for a sort *)
 let substOf sort =
-  let* substs = asks H.sigSubstOf in
+  let* substs = asks L.sigSubstOf in
   match AL.assoc sort substs with
   | Some substSorts -> pure substSorts
   | None -> error @@ "substOf called with unknown sort " ^ sort
 
 (** check whether a sort has a variable constructor *)
 let isOpen sort =
-  let* opens = asks H.sigIsOpen in
-  pure @@ H.SSet.mem sort opens
+  let* opens = asks L.sigIsOpen in
+  pure @@ L.SSet.mem sort opens
 
 (** A sort is definable if it has any constructor *)
 let definable sort =
@@ -56,20 +56,20 @@ let hasArgs sort = (fun l -> list_empty l |> not) <$> substOf sort
 
 (** return the arguments (all sorts in head positions) of a sort *)
 let getArguments sort =
-  let* args = asks H.sigArguments in
+  let* args = asks L.sigArguments in
   match AL.assoc sort args with
   | Some ts -> pure ts
   | None -> error @@ "arguments called with unknown sort" ^ sort
 
 (** return all components *)
-let getComponents = asks H.sigComponents
+let getComponents = asks L.sigComponents
 
 (** return all known sorts *)
 let getAllSorts = List.concat <$> getComponents
 
 (** get the component that a sort belongs to *)
 let getComponent s =
-  let* components = asks H.sigComponents in
+  let* components = asks L.sigComponents in
   pure @@ List.(concat @@ filter_map (fun component ->
       if mem s component
       then Some component
@@ -89,10 +89,10 @@ let boundBinders component =
   let* constructors = a_concat_map constructors component in
   let binders =
     let open Monadic.List.Make.Syntax in
-    let* H.{ cpositions; _ } = constructors in
-    let* H.{ binders; _ } = cpositions in
+    let* L.{ cpositions; _ } = constructors in
+    let* L.{ binders; _ } = cpositions in
     let* binder = binders in
-    H.getBinders binder in
+    L.getBinders binder in
   pure binders
 
 (** A sort needs renamings

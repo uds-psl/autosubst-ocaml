@@ -8,7 +8,7 @@
  ** *)
 open Util
 
-module H = Hsig
+module L = Language
 module V = Variables
 
 open REM.Syntax
@@ -16,7 +16,7 @@ open REM
 open CoqSyntax
 open Tactics
 open CoqNames
-open Coqgen
+open GallinaGen
 open Termutil
 
 let guard cond lst =
@@ -27,10 +27,10 @@ let createBinders = List.map (fun p -> binder1_ ~btype:(ref_ (snd p)) (fst p))
 let createImpBinders = List.map (fun p -> binder1_ ~implicit:true ~btype:(ref_ (snd p)) (fst p))
 
 let rec genArg sort n bs = function
-  | H.Atom y ->
+  | L.Atom y ->
     let* up_scopes = castUpSubst sort bs y n in
     pure @@ app_ref y (List.(concat (map sty_terms (filter_scope_vars [up_scopes]))))
-  | H.FunApp (f, p, xs) ->
+  | L.FunApp (f, p, xs) ->
     let* xs' = a_map (genArg sort n bs) xs in
     let p' = Option.default [] (Option.map (fun x -> [x]) p) in
     pure @@ app_ref (funname_ f) (p' @ xs')
@@ -44,9 +44,9 @@ let genVar sort ns =
     let t = [s] ==> sortType sort ns in
     pure @@ [constructor_ (var_ sort) t]
 
-let genConstr sort n H.{ cparameters; cname; cpositions } =
+let genConstr sort n L.{ cparameters; cname; cpositions } =
     let* t =
-      let* up_n_x = a_map (fun H.{ binders; head } -> genArg sort n binders head) cpositions in
+      let* up_n_x = a_map (fun L.{ binders; head } -> genArg sort n binders head) cpositions in
       pure @@ (up_n_x ==> sortType sort n) in
     pure @@ constructor_ cname (if list_empty cparameters then t else forall_ (createBinders cparameters) t)
 
@@ -62,12 +62,12 @@ let genBody sort =
  ** The pattern is that with each f_equal we swap out one s_n for one t_n
  ** and the eq_trans chain all those together
  ** e.g. C s0 s1 s2 = C t0 s1 s2 = C t0 t1 s2 = C t0 t1 t2 *)
-let genCongruence sort H.{ cparameters; cname; cpositions } =
+let genCongruence sort L.{ cparameters; cname; cpositions } =
   let* (ms, bms) = introScopeVar "m" sort in
   let ss = getPattern "s" cpositions in
   let ts = getPattern "t" cpositions in
   let hs = getPattern "H" cpositions in
-  let mkBinders xs = a_map2_exn (fun x H.{binders; head} ->
+  let mkBinders xs = a_map2_exn (fun x L.{binders; head} ->
       let* arg_type = genArg sort ms binders head in
       pure @@ binder1_ ~implicit:true ~btype:arg_type x)
       xs cpositions in
@@ -98,7 +98,7 @@ let genCongruences sort =
 let traversal
     sort scope name ?(no_args=fun s -> app1_ eq_refl_ s) ~ret
     bargs args var_case_body ?(sem=fun _ cname positions -> app_fix (congr_ cname) positions) funsem =
-  let open H in
+  let open L in
   let s = "s" in
   let* cs = constructors sort in
   let* open_x = isOpen sort in
@@ -163,16 +163,14 @@ let genRenamings sorts =
   pure @@ fixpoint_ ~is_rec fs
 
 let zero_ sort binder ms =
-  let open H in
   match binder with
-  | Single y -> app1_ (app_var_constr sort ms) var_zero_
-  | BinderList (p, y) -> app_ref "zero_p" [ref_ p] >>> app_var_constr sort ms
+  | L.Single y -> app1_ (app_var_constr sort ms) var_zero_
+  | L.BinderList (p, y) -> app_ref "zero_p" [ref_ p] >>> app_var_constr sort ms
 
 let mk_scons sort binder sigma ms =
-  let open H in
   match binder with
-  | Single y -> if sort = y then app_ cons_ [zero_ sort (Single y) ms; sigma] else sigma
-  | BinderList (p, y) -> if sort = y then app_ref "scons_p" [ref_ p; zero_ sort (BinderList (p, y)) ms; sigma] else sigma
+  | L.Single y -> if sort = y then app_ cons_ [zero_ sort (Single y) ms; sigma] else sigma
+  | L.BinderList (p, y) -> if sort = y then app_ref "scons_p" [ref_ p; zero_ sort (BinderList (p, y)) ms; sigma] else sigma
 
 let upSubstT binder sort ms sigma =
   let* pat = patternSId sort binder in
@@ -333,10 +331,10 @@ let genUpExt (binder, sort) =
   let* (eqs, beqs) = genEqs sort "Eq"
       (List.map2 (>>>) (sty_terms xis) (sty_terms zetas)) (sty_terms rhos)
       (fun x y s -> pure @@ match y with
-         | H.Single z -> if z = x
+         | L.Single z -> if z = x
            then app_ref up_ren_ren__ [underscore_; underscore_; underscore_; s]
            else s
-         | H.BinderList (_, z) -> if z = x
+         | L.BinderList (_, z) -> if z = x
            then app_ref "up_ren_ren_p" [s]
            else s) in
   let ret s = eq_
@@ -823,7 +821,7 @@ let genLemmaCompSubstSubst sort =
 
 (** This function delegates to all the different code generation functions and in the end
  ** aggregates all the returned vernacular units. *)
-let genCodeT sorts upList =
+let gen_code sorts upList =
   let* varSorts = a_filter isOpen sorts in
   let* hasbinders = map (fun l -> l |> list_empty |> not) (substOf (List.hd sorts)) in
   (* GENERATE INDUCTIVE TYPES *)

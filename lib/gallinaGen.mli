@@ -53,6 +53,7 @@ val definition_ : identifier -> binder_expr list -> ?rtype:constr_expr -> constr
 val lemma_ : ?opaque:bool -> identifier -> binder_expr list -> constr_expr -> constr_expr -> vernac_unit
 
 val vernacend : Pp.t
+val newline : Pp.t
 val parse_constr_expr : string -> constr_expr
 val pr_vernac_expr : vernac_expr -> Pp.t
 val pr_vernac_unit : vernac_unit -> Pp.t list

@@ -1,5 +1,5 @@
 open Ltac_plugin.Tacexpr
-open Coqgen
+open GallinaGen
 open Util
 
 type tactic_expr = raw_tactic_expr

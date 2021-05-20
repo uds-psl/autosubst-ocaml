@@ -2,11 +2,11 @@
  **  and build the signature that we then use during code generation. *)
 open Util
 
-module H = Hsig
+module L = Language
 module AL = AssocList
 
 module SortsOrdered = struct
-  type t = H.tId
+  type t = L.tId
   let compare = String.compare
   let hash = Hashtbl.hash
   let equal = String.equal
@@ -23,7 +23,7 @@ module SSet = Set.Make(String)
 let build_graph spec =
   let specl = AL.to_list spec in
   List.fold_left (fun g (t, cs) ->
-      let args = List.(concat (map H.getArgs cs)) in
+      let args = List.(concat (map L.getArgs cs)) in
       List.fold_left (fun g arg -> G.add_edge g t arg) g args)
     G.empty specl
 
@@ -36,11 +36,11 @@ let binder_analysis spec occurs_in =
   let analysis =
     let open Monadic.List.Make.Syntax in
     let* (t, cs) = specl in
-    let* H.{ cpositions; cname; _ } = cs in
-    let* H.{ binders; head; } = cpositions in
+    let* L.{ cpositions; cname; _ } = cs in
+    let* L.{ binders; head; } = cpositions in
     let* binder = binders in
-    let* bound_sort = H.getBinders binder in
-    let vacuous = list_none (fun arg -> bound_sort |> occurs_in arg) (H.getArgSorts head) in
+    let* bound_sort = L.getBinders binder in
+    let vacuous = list_none (fun arg -> bound_sort |> occurs_in arg) (L.getArgSorts head) in
     if vacuous then [`Vacuous (t, bound_sort, cname)]
     else [`Binder bound_sort]
   in
@@ -80,7 +80,7 @@ let build_signature (canonical_order, fs, spec) =
   let subst_of = AL.map (fun t _ -> substs t) spec in
   let components = topological_sort g canonical_order in
   let arguments = AL.map (fun t _ -> G.succ g t) spec in
-  pure @@ H.{ sigSpec=spec
+  pure @@ L.{ sigSpec=spec
             ; sigSubstOf=subst_of
             ; sigComponents=components
             ; sigIsOpen=open_sorts

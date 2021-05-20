@@ -1,12 +1,12 @@
 open Autosubst_lib
-module H = Hsig
+module L = Language
 
 let parse_arguments () =
   let infile = Sys.argv.(1) in
   let outfile = Sys.argv.(2) in
   let scope_type = match Sys.argv.(3) with
-    | "ucoq" -> H.Unscoped
-    | "coq" -> H.WellScoped
+    | "ucoq" -> L.Unscoped
+    | "coq" -> L.WellScoped
     | _ -> failwith "scope type must be either \"ucoq\" or \"coq\"" in
   (infile, outfile, scope_type)
 

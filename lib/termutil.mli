@@ -1,7 +1,7 @@
 (** This module implements utility functions for generating Coq AST used in Generator *)
-open Coqgen
+open GallinaGen
 open CoqSyntax
-module H = Hsig
+open Language
 
 val type_ : constr_expr
 val nat_ : constr_expr
@@ -26,7 +26,7 @@ val fext_ : constr_expr -> constr_expr
 
 val mk_refs : identifier list -> constr_exprs
 
-val succ_ : constr_expr -> identifier -> H.binder -> constr_expr
+val succ_ : constr_expr -> identifier -> binder -> constr_expr
 
 val (>>>) : constr_expr -> constr_expr -> constr_expr
 val (<<>>) : substTy -> substTy -> constr_expr list
@@ -53,5 +53,5 @@ val scons_p_head' : constr_expr -> constr_expr
 
 val explicit_ : binder_expr list -> binder_expr list
 
-val definitionBody : identifier -> H.binder -> (constr_expr * constr_expr)
+val definitionBody : identifier -> L.binder -> (constr_expr * constr_expr)
   -> (identifier -> identifier -> constr_expr * constr_expr) -> constr_expr

@@ -1,5 +1,5 @@
 open Vernacexpr
-open Coqgen
+open GallinaGen
 
 type g_assoc = Gramlib.Gramext.g_assoc
 

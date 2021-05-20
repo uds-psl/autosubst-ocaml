@@ -1,10 +1,10 @@
 open Util
-open Coqgen
+open GallinaGen
 open CoqNames
 open CoqSyntax
 
 module CE = Constrexpr
-module H = Hsig
+module L = Language
 
 let type_ = type_
 let nat_ = ref_ "nat"
@@ -35,8 +35,8 @@ let fext_ s = app_ref "FunctionalExtensionality.functional_extensionality"
 let mk_refs = List.map ref_
 
 let succ_ n z = function
-  | H.Single x -> if z = x then app1_ suc_ n else n
-  | H.BinderList (m, x) -> if z = x then app_ plus_ [ref_ m; n] else n
+  | L.Single x -> if z = x then app1_ suc_ n else n
+  | L.BinderList (m, x) -> if z = x then app_ plus_ [ref_ m; n] else n
 
 let (>>>) s t = app_ref "funcomp" [t; s]
 let (<<>>) ss ts = List.map2 (>>>) (sty_terms ss) (sty_terms ts)
@@ -47,29 +47,29 @@ let repRew s = List.fold_left (fun s (t, t_eq) -> eqTrans_ s (ap_ t_eq t)) eq_re
 
 let matchFin_ s f b =
   match !Settings.scope_type with
-  | H.Unscoped ->
+  | L.Unscoped ->
     match_ s [ branch_ "S" ["n'"] (f (ref_ "n'"))
              ; branch_ "O" [] b ]
-  | H.WellScoped ->
+  | L.WellScoped ->
     match_ s [ branch_ "Some" ["fin_n"] (f (ref_ "fin_n"))
              ; branch_ "None" [] b ]
 
 let app_sort cname scope =
   match !Settings.scope_type with
-  | H.Unscoped -> ref_ cname
-  | H.WellScoped -> app_ref cname (sty_terms scope)
+  | L.Unscoped -> ref_ cname
+  | L.WellScoped -> app_ref cname (sty_terms scope)
 let app_constr cname scope rest =
   let args = match !Settings.scope_type with
-    | H.Unscoped -> rest
-    | H.WellScoped -> (sty_terms scope) @ rest in
+    | L.Unscoped -> rest
+    | L.WellScoped -> (sty_terms scope) @ rest in
   if list_empty args
   then ref_ cname
   else app_ref cname args
 let app_var_constr sort scope = app_constr (var_ sort) scope []
 let filter_scope_vars = List.filter (function
   | SubstScope _ -> (match !Settings.scope_type with
-      | H.Unscoped -> false
-      | H.WellScoped -> true)
+      | L.Unscoped -> false
+      | L.WellScoped -> true)
   | _ -> true)
 let app_fix ?expl cname ?(scopes=[]) rest =
   let scope_ts = List.(scopes
@@ -79,13 +79,13 @@ let app_fix ?expl cname ?(scopes=[]) rest =
   app_ref ?expl cname (scope_ts @ rest)
 let mk_underscore_pattern scope =
   match !Settings.scope_type with
-  | H.Unscoped -> []
-  | H.WellScoped -> List.map (const "_") (sty_terms scope)
+  | L.Unscoped -> []
+  | L.WellScoped -> List.map (const "_") (sty_terms scope)
 
 let sortType x ns =
   let args = match !Settings.scope_type with
-    | H.Unscoped -> []
-    | H.WellScoped -> sty_terms ns in
+    | L.Unscoped -> []
+    | L.WellScoped -> sty_terms ns in
   app_ (ref_ x) args
 
 let (==>) s t = List.fold_right (fun s t -> arr1_ s t) s t
@@ -111,7 +111,7 @@ let explicit_ = List.map explicitS_
 (** Construct the body of a definition depending on if the given sort matches the one in the binder *)
 let definitionBody sort binder (singleMatch, singleNoMatch) f_listMatch =
   match binder with
-  | H.Single sort' -> if sort = sort' then singleMatch else singleNoMatch
-  | H.BinderList (p, sort') ->
+  | L.Single sort' -> if sort = sort' then singleMatch else singleNoMatch
+  | L.BinderList (p, sort') ->
     let (listMatch, listNoMatch) = f_listMatch p sort' in
     if sort = sort' then listMatch else listNoMatch

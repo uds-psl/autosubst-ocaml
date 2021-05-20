@@ -6,7 +6,7 @@ open CoqSyntax
 open Util
 open CoqNames
 open Termutil
-open Coqgen
+open GallinaGen
 
 (** Terminology:
  ** sort: a syntactic sort that is represented by an inductive type. In cbv SystemF ty, tm & vl
@@ -20,15 +20,15 @@ open Coqgen
  ** fin m -> fin n *)
 let renT m n =
   match !Settings.scope_type with
-  | H.Unscoped -> arr1_ nat_ nat_
-  | H.WellScoped -> arr1_ (fin_ m) (fin_ n)
+  | L.Unscoped -> arr1_ nat_ nat_
+  | L.WellScoped -> arr1_ (fin_ m) (fin_ n)
 
 (** For a given sort create a substitution type.
  ** fin m -> tm nty nvl *)
 let substT m ns sort =
   match !Settings.scope_type with
-  | H.Unscoped -> arr1_ nat_ (sortType sort ns)
-  | H.WellScoped -> arr1_ (fin_ m) (sortType sort ns)
+  | L.Unscoped -> arr1_ nat_ (sortType sort ns)
+  | L.WellScoped -> arr1_ (fin_ m) (sortType sort ns)
 
 (** Create an extensional equivalence between unary functions s & t
  ** forall x, s x = t x *)
@@ -54,8 +54,8 @@ let getPattern name positions =
 
 (** Extract the extra shifting argument from a BinderList. *)
 let binvparameters = function
-  | H.Single x -> ([], [])
-  | H.BinderList (m, _) -> ([ref_ m], [binder1_ ~implicit:true ~btype:nat_ m])
+  | L.Single x -> ([], [])
+  | L.BinderList (m, _) -> ([ref_ m], [binder1_ ~implicit:true ~btype:nat_ m])
 
 let bparameters binder =
   let (terms, binders) = binvparameters binder in
@@ -108,8 +108,8 @@ let castUpSubst sort bs y arg =
 let introScopeVarS name =
   let name = VarState.tfresh name in
   let binders = match !Settings.scope_type with
-    | H.Unscoped -> []
-    | H.WellScoped -> [binder1_ ~implicit:true ~btype:nat_ name] in
+    | L.Unscoped -> []
+    | L.WellScoped -> [binder1_ ~implicit:true ~btype:nat_ name] in
   (ref_ name, binders)
 
 
@@ -131,8 +131,8 @@ let introScopeVar name sort =
   let* substSorts = substOf sort in
   let names = List.map (sep name) substSorts in
   let binders = match !Settings.scope_type with
-    | H.Unscoped -> []
-    | H.WellScoped ->
+    | L.Unscoped -> []
+    | L.WellScoped ->
       if list_empty names then []
       else [binder_ ~implicit:true ~btype:nat_ names] in
   pure @@ (
@@ -194,8 +194,8 @@ let genEqs sort name sigmas taus f =
  ** For sort vl and ns = [nty; nvl], create fin nvl *)
 let gen_var_arg sort ns =
   match !Settings.scope_type with
-  | H.Unscoped -> pure @@ nat_
-  | H.WellScoped -> map fin_ (toVar sort ns)
+  | L.Unscoped -> pure @@ nat_
+  | L.WellScoped -> map fin_ (toVar sort ns)
 
 (** Construction of patterns, needed for lifting -- yields a fitting pattern of S and id corresponding to the base sort and the binder
  ** TODO example *)
@@ -210,8 +210,8 @@ let patternSId sort binder =
     else app_ref shift_p_ [ref_ p]
       >>> app_var_constr y (SubstScope (List.map (const underscore_) substSorts)) in
   up sort (fun y b _ -> match b with
-      | H.Single bsort -> if y = bsort then shift y else id_
-      | H.BinderList (p, bsort) -> if y = bsort then shiftp p y else id_)
+      | L.Single bsort -> if y = bsort then shift y else id_
+      | L.BinderList (p, bsort) -> if y = bsort then shiftp p y else id_)
     (mk_refs substSorts) binder
 
 let patternSIdNoRen sort binder =
@@ -219,8 +219,8 @@ let patternSIdNoRen sort binder =
   let shift = const shift_ in
   let shiftp p = const @@ app_ref shift_p_ [ ref_ p ] in
   up sort (fun y b _ -> match b with
-      | H.Single bsort -> if y = bsort then shift y else app_id_ underscore_
-      | H.BinderList (p, bsort) -> if y = bsort then shiftp p y else app_id_ underscore_)
+      | L.Single bsort -> if y = bsort then shift y else app_id_ underscore_
+      | L.BinderList (p, bsort) -> if y = bsort then shiftp p y else app_id_ underscore_)
     (mk_refs substSorts) binder
 
 (** Create an application of the var constructor for each element of the substitition vector

@@ -1,7 +1,7 @@
 (** This module implements the types for the HOAS signature that is parsed by autosubst.
  ** Also it contains the variant for which kind of syntax we generate. *)
 module AL = AssocList
-module CG = Coqgen
+module CG = GallinaGen
 
 type scopeType = WellScoped | Unscoped
 

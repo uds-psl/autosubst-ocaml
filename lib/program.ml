@@ -1,7 +1,7 @@
 (** This module is basically the entrypoint of the program.
  ** (It's in lib because the ocaml repl cannot open executables, i.e. bin/main.ml) *)
 
-module H = Hsig
+module L = Language
 
 (* before version 8.10 there was no explicit scope declaration so we use a different static file *)
 type coq_version = LT810 | GE810
@@ -25,15 +25,15 @@ let copy_static_files dir scope_type coq_version =
   let () = copy_file "data/core.v" (concat dir "core.v") in
   let () = copy_file "data/core_axioms.v" (concat dir "core_axioms.v") in
   match scope_type, coq_version with
-  | H.WellScoped, LT810 ->
+  | L.WellScoped, LT810 ->
     copy_file "data/fintype_809.v" (concat dir "fintype.v")
-  | H.Unscoped, LT810 ->
+  | L.Unscoped, LT810 ->
     copy_file "data/unscoped_809.v" (concat dir "unscoped.v")
-  | H.WellScoped, GE810 ->
+  | L.WellScoped, GE810 ->
     let () = copy_file "data/fintype.v" (concat dir "fintype.v") in
     let () = copy_file "data/fintype_axioms.v" (concat dir "fintype_axioms.v") in
     ()
-  | H.Unscoped, GE810 ->
+  | L.Unscoped, GE810 ->
     let () = copy_file "data/unscoped.v" (concat dir "unscoped.v") in
     let () = copy_file "data/unscoped_axioms.v" (concat dir "unscoped_axioms.v") in
     ()
@@ -59,7 +59,7 @@ let main (infile, outfile, scope_type, coq_version) =
   let open ErrorM.Syntax in
   let open ErrorM in
   let () = Printexc.record_backtrace true in
-  let () = Coqgen.setup_coq () in
+  let () = GallinaGen.setup_coq () in
   let () = Settings.scope_type := scope_type in
   let dir, outfile_basename, outfile, outfile_fext = make_filenames outfile in
   (* setup static files *)
@@ -73,7 +73,7 @@ let main (infile, outfile, scope_type, coq_version) =
   let* signature = SigAnalyzer.build_signature spec in
   (* generate dot graph *)
   (* generate code *)
-  let* code, fext_code = GenCode.run_gen_code signature outfile_basename in
+  let* code, fext_code = FileGenerator.run_gen_code signature outfile_basename in
   (* write file *)
   let open Filename in
   let axioms_separate = true in

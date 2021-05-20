@@ -1,4 +1,4 @@
-open Coqgen
+open GallinaGen
 
 val instance_ : string -> string -> constr_expr -> vernac_unit
 val ex_instances_ : string list -> vernac_expr

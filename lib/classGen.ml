@@ -1,5 +1,5 @@
 open Vernacexpr
-open Coqgen
+open GallinaGen
 
 let instance_ inst_name class_name body =
     definition_ inst_name [] ~rtype:(ref_ class_name) body

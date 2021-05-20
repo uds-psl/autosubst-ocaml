@@ -7,16 +7,16 @@
 open Angstrom
 open Util
 
-module H = Hsig
+module L = Language
 module AL = AssocList
-module CG = Coqgen
+module CG = GallinaGen
 
 
 (** what we parse here *)
 type parameter = string * string
-type constructorAST = H.cId * parameter list * H.position list * string
-type specAST = H.tId list * H.fId list * constructorAST list
-type parserSpec = H.tId list * H.fId list * H.spec [@@deriving show]
+type constructorAST = L.cId * parameter list * L.position list * string
+type specAST = L.tId list * L.fId list * constructorAST list
+type parserSpec = L.tId list * L.fId list * L.spec [@@deriving show]
 
 (** char tests *)
 let is_first_ident = function
@@ -98,8 +98,8 @@ let sortDecl = lift3 (fun s _ _ -> `Sort s) ident colon ttype
 let functorDecl = lift3 (fun f _ _ -> `Functor f) ident colon tfunctor
 
 (** Binders can be parsed as either a single binder or a variadic binder *)
-let singleBinder = lift (fun i -> H.Single i) ident
-let variadicBinder = angles @@ lift3 (fun n _ t -> H.BinderList (n, t)) ident comma ident
+let singleBinder = lift (fun i -> L.Single i) ident
+let variadicBinder = angles @@ lift3 (fun n _ t -> L.BinderList (n, t)) ident comma ident
 let binders = many1 ((singleBinder <|> variadicBinder) <* arrow)
 
 (** As an argument for functors I think we allow arbitrary s-expressions that only contain identifiers
@@ -124,15 +124,15 @@ let functorArg = lift4 (fun _ n pms _ ->
  ** to another argument. Here we have at last a reason to use fix *)
 let arghead =
   fix (fun arg ->
-      (lift2 (fun (x, y) args -> H.FunApp (x, y, args))
+      (lift2 (fun (x, y) args -> L.FunApp (x, y, args))
          functorArg (parens (sep_by1 comma arg)))
-      <|> (lift (fun i -> H.Atom i) ident))
+      <|> (lift (fun i -> L.Atom i) ident))
 
 (** A position is an optional arbitrary number of binders (need parentheses in that case)
  ** and a head *)
 let pos =
-  parens (lift2 (fun binders head -> H.{ binders; head; }) binders arghead)
-  <|> lift (fun head -> H.{ binders=[]; head; }) arghead
+  parens (lift2 (fun binders head -> L.{ binders; head; }) binders arghead)
+  <|> lift (fun head -> L.{ binders=[]; head; }) arghead
 
 let parameterDecl = parens @@ lift3 (fun n _ t -> (n, t)) ident colon ident
 
@@ -185,22 +185,22 @@ let checkSpec (ts, fs, cs) =
       then pure ()
       else error ("unknown functor: " ^ fid) in
     let checkBinder () = function
-      | H.Single x -> checkTId x
-      | H.BinderList (_, x) ->
-        if H.equal_scopeType !Settings.scope_type H.Unscoped
+      | L.Single x -> checkTId x
+      | L.BinderList (_, x) ->
+        if L.equal_scopeType !Settings.scope_type L.Unscoped
         then error "unscoped syntax + variadic binders are not supported"
         else checkTId x in
     let rec checkHead () = function
-      | H.Atom x -> checkTId x
-      | H.FunApp (f, _, args) ->
+      | L.Atom x -> checkTId x
+      | L.FunApp (f, _, args) ->
         checkFId f *> m_fold_ checkHead () args in
-    let checkPosition () H.{ binders; head; } =
+    let checkPosition () L.{ binders; head; } =
       m_fold_ checkBinder () binders
       *> checkHead () head in
-    let checkConstructor (cname, cparameters, cpositions, rtype) (spec : H.spec) =
+    let checkConstructor (cname, cparameters, cpositions, rtype) (spec : L.spec) =
       checkTId rtype
       *> m_fold_ checkPosition () cpositions
-      *> pure (AL.update rtype (fun cs -> H.{ cparameters; cname; cpositions; } :: cs) spec)
+      *> pure (AL.update rtype (fun cs -> L.{ cparameters; cname; cpositions; } :: cs) spec)
     in
     let empty_spec = AL.from_list @@ List.map (fun t -> (t, [])) ts in
     let* spec = m_fold_right ~f:checkConstructor ~init:empty_spec cs in

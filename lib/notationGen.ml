@@ -1,5 +1,5 @@
 open Vernacexpr
-open Coqgen
+open GallinaGen
 
 let format_ fmt = SetFormat ("text", CAst.make fmt)
 let subst_scope = "subst_scope"

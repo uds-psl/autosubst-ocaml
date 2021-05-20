@@ -1,6 +1,6 @@
 (** This module implements mini DSL to generate scope/renaming/substitution variables.
  ** Most code generation functions in Generator use this to intro their variables. *)
-open Coqgen
+open GallinaGen
 
 type scopeVar = [ `K | `L | `M | `N ]
 type scopeVars = [ `KS | `LS | `MS | `NS ]

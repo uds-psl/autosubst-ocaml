@@ -1,7 +1,7 @@
 (* open Coqgen *)
-open Tacgen
-open Notationgen
-open Classgen
+open TacGen
+open NotationGen
+open ClassGen
 
 let gen_auto_unfold { auto_unfold_functions; _ } =
   let tac = repeat_ (unfold_ auto_unfold_functions) in
@@ -61,7 +61,7 @@ let gen_renamify { substify_lemmas; _ } =
   let tac = then_ (calltac_ "auto_unfold" :: rewrites) in
   TacticLtac ("renamify", tac)
 
-let gen_tactics_T info =
+let gen_additional info =
   let tactic_funs = [ gen_auto_unfold
                     ; gen_auto_unfold_star
                     ; gen_asimpl'

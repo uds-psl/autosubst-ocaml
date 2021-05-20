@@ -1,5 +1,5 @@
 open Tactics
-open Coqgen
+open GallinaGen
 
 module AL = AssocList
 

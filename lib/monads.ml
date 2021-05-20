@@ -1,7 +1,7 @@
 (** This module contains own definitions for some monads *)
 
 module M = Monadic
-module H = Hsig
+module L = Language
 module AL = AssocList
 
 module type MONAD_READER = sig

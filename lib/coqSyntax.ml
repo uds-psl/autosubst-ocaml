@@ -3,13 +3,13 @@
  ** renamings (zeta_ty, zeta_vl), substitutions (sigma_ty, sigma_vl),
  ** and equalities (that two renamings/substitutions are extensionally equal etc.) *)
 
-module CG = Coqgen
-module H = Hsig
+module CG = GallinaGen
+module L = Language
 
 type substTy = SubstScope of CG.constr_exprs
             | SubstRen of CG.constr_exprs
             | SubstSubst of CG.constr_exprs
-            | SubstEq of CG.constr_exprs * (H.tId -> H.binder -> CG.constr_expr -> CG.constr_expr REM.t)
+            | SubstEq of CG.constr_exprs * (L.tId -> L.binder -> CG.constr_expr -> CG.constr_expr REM.t)
 
 let sty_terms = function
   | SubstScope xs -> xs

@@ -4,7 +4,7 @@
 
 open Util
 
-module H = Hsig
+module L = Language
 
 (** This uses the mutable variable var__ to build the name for variable constructors.
  ** format_from_string takes a string and format string (the "%s") and tries to cast the string
@@ -28,8 +28,8 @@ let compComp_ x = sepd ["compComp"; x]
 let compComp'_ x = sepd ["compComp'"; x]
 
 let upNameGen name = fun y -> function
-  | H.Single x -> sepd [name; x; y]
-  | H.BinderList (_, x) -> sepd [name; "list"; x; y]
+  | L.Single x -> sepd [name; x; y]
+  | L.BinderList (_, x) -> sepd [name; "list"; x; y]
 
 let up_ren_ren__ = "up_ren_ren"
 let up_ren_subst__ = "up_ren_subst"
