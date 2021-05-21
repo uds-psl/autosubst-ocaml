@@ -13,6 +13,7 @@ let reft_ t = Constrexpr_ops.mkRefC t
 let ref_ s =  reft_ (qualid_ s)
 let name_id_ s = Names.Id.of_string s
 let lident_ s = CAst.make (name_id_ s)
+let name_ s = Names.Name.mk_name (name_id_ s)
 
 let underscore_ = CAst.make Constrexpr.(CHole (None, Namegen.IntroAnonymous, None))
 let prop_ = CAst.make Constrexpr.(CSort (Glob_term.UNamed [CProp, 0]))

@@ -63,6 +63,9 @@ let gen_renamify { substify_lemmas; _ } =
   let tac = then_ (calltac_ "auto_unfold" :: rewrites) in
   TacticLtac ("renamify", tac)
 
+let gen_arguments { arguments; _ } =
+  List.map (fun (name, args) -> impl_arguments_ name args) arguments
+
 let gen_classes { classes; _ } =
   let gen_class (name, binders, ctors) =
     class_ name binders ctors in
@@ -86,6 +89,7 @@ let gen_notations { notations; _ } =
   List.map gen_notation notations
 
 let gen_additional info =
+  let arguments = gen_arguments info in
   let classes = gen_classes info in
   let instances = gen_instances info in
   let notations = gen_notations info in
@@ -99,4 +103,4 @@ let gen_additional info =
                     ; gen_substify
                     ; gen_renamify ] in
   let tactics = List.map (fun f -> f info) tactic_funs in
-  { as_units = []; as_fext_units = classes @ instances @ notations @ tactics }
+  { as_units = arguments @ classes @ instances @ notations; as_fext_units =  tactics }

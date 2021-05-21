@@ -10,6 +10,7 @@ type constr_exprs = constr_expr list
 type binder_expr = Constrexpr.local_binder_expr
 type branch_expr = Constrexpr.branch_expr
 
+val name_ : identifier -> Names.Name.t
 val qualid_ : identifier -> Libnames.qualid
 val ref_ : identifier -> constr_expr
 val name_id_ : identifier -> Names.Id.t

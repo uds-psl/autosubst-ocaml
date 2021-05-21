@@ -76,6 +76,7 @@ let genTactics () =
     asimpl_unfold_functions = ["up_ren"; "upRen_tm_tm"; "up_tm_tm" ];
     substify_lemmas = ["rinstInst_tm"];
     auto_unfold_functions = ["subst1"; "subst2"; "Subst1";  "Subst2";  "ids";  "ren1"; "ren2"; "Ren1";  "Ren2";  "Subst_tm";  "Ren_tm"; "VarInstance_tm"];
+    arguments = [];
     classes = [ "Up_tm", [ binder_ [ "X"; "Y" ] ], [ constructor_ "up_tm" (arr1_ (ref_ "X") (ref_ "Y")) ] ];
     instances = [ CG_Subst 1, "tm", [underscore_; underscore_; underscore_]
                 ; CG_Ren 1, "tm", [underscore_; underscore_; underscore_]
@@ -108,7 +109,7 @@ let genFile outfile_basename =
   let* { as_units = code; as_fext_units = fext_code } = genCode components in
   let* { as_units = tactics; as_fext_units = fext_tactics } = genTactics () in
   let preamble, preamble_axioms = get_preambles outfile_basename in
-  pure (make_file preamble code [], make_file preamble_axioms fext_code fext_tactics)
+  pure (make_file preamble code tactics, make_file preamble_axioms fext_code fext_tactics)
 
 (** Run the computation constructed by genFile *)
 let run_gen_code hsig outfile = REM.run (genFile outfile) hsig

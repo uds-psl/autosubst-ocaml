@@ -84,6 +84,7 @@ type tactic_info = {
   asimpl_unfold_functions : string list;
   substify_lemmas : string list;
   auto_unfold_functions : string list;
+  arguments : (string * string list) list;
   classes : (string * binder_expr list * constructor_expr list) list;
   (* instance info probably also needs parameter information *)
   instances : (ClassGen.instance_type * string * constr_expr list) list;

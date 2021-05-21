@@ -82,6 +82,12 @@ let notation_ notation modifiers ?scope body =
   let open Vernacexpr in
   Vernac [ VernacNotation (body, (CAst.make notation, modifiers), scope) ]
 
+let impl_arguments_ name args =
+  let qname = CAst.make (Constrexpr.AN (qualid_ name)) in
+  let impl_args = List.map (fun a ->
+      [ name_ a, Glob_term.MaxImplicit ]) args in
+  Vernac [ VernacArguments (qname, [], impl_args, []) ]
+
 
 (* disable unused warning *)
 module [@warning "-32"] GenTests = struct
