@@ -1,11 +1,11 @@
 open GallinaGen
-open TacGen
+open AutomationGen
 
 type vernac_expr = Vernacexpr.vernac_expr
 
 type vernac_unit = Vernac of vernac_expr list
-                 | TacticLtac of string * tactic_expr
-                 | TacticNotation of string list * tactic_expr
+                 | TacticLtac of string * TacGen.t
+                 | TacticNotation of string list * TacGen.t
 
 type autosubst_exprs = { as_units: vernac_unit list; as_fext_units: vernac_unit list }
 

@@ -6,7 +6,6 @@ open Util
 
 module CS = CoqSyntax
 module GG = GallinaGen
-module TG = TacGen
 module VG = VernacGen
 module L = Language
 
@@ -63,7 +62,7 @@ let genCode components =
 
 let genTactics () =
   let open REM in
-  let open TG in
+  let open AutomationGen in
   let open GG in
   let open Termutil in
   let info = {

@@ -1,13 +1,14 @@
 open Util
 open GallinaGen
-open TacGen
-open NotationGen
+open AutomationGen
+
+module TG = TacGen
 
 type vernac_expr = Vernacexpr.vernac_expr
 
 type vernac_unit = Vernac of vernac_expr list
-                 | TacticLtac of string * tactic_expr
-                 | TacticNotation of string list * tactic_expr
+                 | TacticLtac of string * TacGen.t
+                 | TacticNotation of string list * TacGen.t
 
 type autosubst_exprs = { as_units: vernac_unit list; as_fext_units: vernac_unit list }
 
@@ -25,8 +26,8 @@ let pr_vernac_expr =
 let pr_vernac_unit = function
   | Vernac vs ->
     Pp.seq ((List.map pr_vernac_expr vs) @ [ newline ])
-  | TacticLtac (name, tac) -> pr_tactic_ltac name tac
-  | TacticNotation (names, tac) -> pr_tactic_notation names tac
+  | TacticLtac (name, tac) -> TacGen.pr_tactic_ltac name tac
+  | TacticNotation (names, tac) -> TacGen.pr_tactic_notation names tac
 
 let pr_vernac_units vunits = Pp.seq (List.map pr_vernac_unit vunits)
 
@@ -157,6 +158,8 @@ module [@warning "-32"] GenTestsClass = struct
 end
 
 module [@warning "-32"] GenTestsTac = struct
+  open TacGen
+
   let myasimpl' =
     let lemmas = ["foo"; "bar"; "baz"] in
     let rewrites = List.map (fun t -> progress_ (rewrite_ t)) lemmas in
@@ -196,6 +199,8 @@ module [@warning "-32"] GenTestsTac = struct
 end
 
 module [@warning "-32"] GenTestsNotation = struct
+  open NotationGen
+
   let mynotation =
     let n = notation_ "x '__tm'" [ level_ 5; format_ "x __tm" ] ~scope:subst_scope (app1_ (ref_ "var_tm") (ref_ "x")) in
     pr_vernac_unit n

@@ -1,9 +1,10 @@
 (* open Coqgen *)
 open VernacGen
-open TacGen
-open NotationGen
-open ClassGen
 open Termutil
+open AutomationGen
+open TacGen
+open ClassGen
+open NotationGen
 
 let gen_auto_unfold { auto_unfold_functions; _ } =
   let tac = repeat_ (unfold_ auto_unfold_functions) in
