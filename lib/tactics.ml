@@ -1,7 +1,7 @@
 (** This module also implements utility functions for code generation like TermUtil
  ** but they are mostly more complex *)
-open REM.Syntax
-open REM
+open RWEM.Syntax
+open RWEM
 open CoqSyntax
 open Util
 open CoqNames

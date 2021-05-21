@@ -73,7 +73,7 @@ let main (infile, outfile, scope_type, coq_version) =
   let* signature = SigAnalyzer.build_signature spec in
   (* generate dot graph *)
   (* generate code *)
-  let* code, fext_code = FileGenerator.run_gen_code signature outfile_basename in
+  let* (code, fext_code), _ = FileGenerator.run_gen_code signature outfile_basename in
   (* write file *)
   let open Filename in
   let axioms_separate = true in

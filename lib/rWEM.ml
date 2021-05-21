@@ -5,26 +5,54 @@ open Util
 
 module M = Monadic
 module L = Language
+module AG = AutomationGen
 module AL = AssocList
 
-module RE = M.Reader.MakeT(ErrorM)(struct type t = L.t end)
+module AutomationGen_Monoid = struct
+  type t = AutomationGen.t
+  open AutomationGen
 
-include RE
+  let empty = {
+    asimpl_rewrite_lemmas = [];
+    asimpl_cbn_functions = [];
+    asimpl_unfold_functions = [];
+    substify_lemmas = [];
+    auto_unfold_functions = [];
+    arguments = [];
+    classes = [];
+    instances = [];
+    notations = [];
+  }
+
+  let append t1 t2 =
+    let { asimpl_rewrite_lemmas = arl; asimpl_cbn_functions = acf; asimpl_unfold_functions = asuf; substify_lemmas = sl; auto_unfold_functions = auf; arguments = a; classes = c; instances = i; notations = n } = t1 in
+    let { asimpl_rewrite_lemmas = arl'; asimpl_cbn_functions = acf'; asimpl_unfold_functions = asuf'; substify_lemmas = sl'; auto_unfold_functions = auf'; arguments = a'; classes = c'; instances = i'; notations = n' } = t2 in
+    { asimpl_rewrite_lemmas = arl @ arl'; asimpl_cbn_functions = acf @ acf'; asimpl_unfold_functions = asuf @ asuf'; substify_lemmas = sl @ sl'; auto_unfold_functions = auf @ auf'; arguments = a @ a'; classes = c @ c'; instances = i @ i'; notations = n @ n' }
+end
+
+module WE = M.Writer.MakeT(ErrorM)(AutomationGen_Monoid)
+module RWE = M.Reader.MakeT(WE)(struct type t = L.t end)
+
+include RWE
 
 let ask = peek
 let asks f = f <$> ask
 
-let error s = ErrorM.error s |> elevate
+let tell x = WE.tell x |> elevate
 
-include M.Monad.ApplicativeFunctionsList(RE)
-include M.Monad.MonadFunctionsList(RE)
-include Monads.ExtraFunctionsList(RE)
+let error s = ErrorM.error s |> WE.elevate |> elevate
+
+let rwe_run m r = WE.run (run m r)
+
+include M.Monad.ApplicativeFunctionsList(RWE)
+include M.Monad.MonadFunctionsList(RWE)
+include Monads.ExtraFunctionsList(RWE)
 
 (** In the following we collect the functions that are used either in
  ** code generation or signature graph generation.
  ** TODO implement signature graph generation in dot format.
  ** The ocamlgraph library seems to support it ootb *)
-open RE.Syntax
+open RWE.Syntax
 
 (** return non-variable constructors of a sort *)
 let constructors sort =

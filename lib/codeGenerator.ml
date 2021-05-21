@@ -11,8 +11,8 @@ open Util
 module L = Language
 module V = Variables
 
-open REM.Syntax
-open REM
+open RWEM.Syntax
+open RWEM
 open CoqSyntax
 open Tactics
 open CoqNames

@@ -9,7 +9,7 @@ module L = Language
 type substTy = SubstScope of CG.constr_exprs
             | SubstRen of CG.constr_exprs
             | SubstSubst of CG.constr_exprs
-            | SubstEq of CG.constr_exprs * (L.tId -> L.binder -> CG.constr_expr -> CG.constr_expr REM.t)
+            | SubstEq of CG.constr_exprs * (L.tId -> L.binder -> CG.constr_expr -> CG.constr_expr RWEM.t)
 
 let sty_terms = function
   | SubstScope xs -> xs

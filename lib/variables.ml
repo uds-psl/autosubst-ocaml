@@ -29,8 +29,8 @@ let showVar = function
  ** In general singular variables (like `K, `SIGMA) are represented as constr_expr values.
  ** And those written in plural (like `KS, `SIGMAS) are represented as substTy values. *)
 let [@warning "-8"] genVariables sort (var_declarations: vars list) =
-  let open REM.Syntax in
-  let open REM in
+  let open RWEM.Syntax in
+  let open RWEM in
   let genVariable ((simple_vars : (identifier, constr_expr) AL.t),
                    (stys : (identifier, CoqSyntax.substTy) AL.t),
                    (binders : binder_expr list)) =

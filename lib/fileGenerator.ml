@@ -48,8 +48,8 @@ let getUps component =
 
 (** Generate the fixpoints/lemmas for all the connected components *)
 let genCode components =
-  let open REM.Syntax in
-  let open REM in
+  let open RWEM.Syntax in
+  let open RWEM in
   let open VG in
   let* (_, code, fext_code) = m_fold (fun (done_ups, vexprs, fext_exprs) component ->
       let* substSorts = substOf (List.hd component) in
@@ -61,7 +61,7 @@ let genCode components =
   pure { as_units = code; as_fext_units = fext_code }
 
 let genTactics () =
-  let open REM in
+  let open RWEM in
   let open AutomationGen in
   let open GG in
   let open Termutil in
@@ -99,8 +99,8 @@ let make_file preamble code tactics =
 
 (** Generate the Coq file. Here we convert the Coq AST to pretty print expressions and then to strings. *)
 let genFile outfile_basename =
-  let open REM.Syntax in
-  let open REM in
+  let open RWEM.Syntax in
+  let open RWEM in
   let open VG in
   let* components = getComponents in
   let* { as_units = code; as_fext_units = fext_code } = genCode components in
@@ -109,4 +109,4 @@ let genFile outfile_basename =
   pure (make_file preamble code automation, make_file preamble_axioms fext_code fext_automation)
 
 (** Run the computation constructed by genFile *)
-let run_gen_code hsig outfile = REM.run (genFile outfile) hsig
+let run_gen_code hsig outfile = RWEM.rwe_run (genFile outfile) hsig
