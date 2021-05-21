@@ -1,6 +1,4 @@
 open Util
-open Vernacexpr
-open GallinaGen
 
 type instance_type = CG_Ren of int | CG_Subst of int | CG_Var
                    | CG_Up

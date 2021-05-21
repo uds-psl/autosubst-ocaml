@@ -51,7 +51,6 @@ let getUps component =
 let genCode components =
   let open REM.Syntax in
   let open REM in
-  let open GG in
   let open VG in
   let* (_, code, fext_code) = m_fold (fun (done_ups, vexprs, fext_exprs) component ->
       let* substSorts = substOf (List.hd component) in
@@ -63,7 +62,6 @@ let genCode components =
   pure { as_units = code; as_fext_units = fext_code }
 
 let genTactics () =
-  let open REM.Syntax in
   let open REM in
   let open TG in
   let open GG in
@@ -92,7 +90,7 @@ let genTactics () =
                 ; NG_RenApply ("s", "xi_tm"), app_ref "ren_tm" [ ref_ "xi_tm"; ref_ "s" ]
                 ; NG_Ren "xi_tm", app_ref "ren_tm" [ ref_ "xi_tm" ] ];
   } in
-  pure (AdditionalGenerator.gen_additional info)
+  pure (AutomationGenerator.gen_additional info)
 
 let make_file preamble code tactics =
   let pp_code = VG.pr_vernac_units code in
@@ -107,9 +105,9 @@ let genFile outfile_basename =
   let open VG in
   let* components = getComponents in
   let* { as_units = code; as_fext_units = fext_code } = genCode components in
-  let* { as_units = tactics; as_fext_units = fext_tactics } = genTactics () in
+  let* { as_units = automation; as_fext_units = fext_automation } = genTactics () in
   let preamble, preamble_axioms = get_preambles outfile_basename in
-  pure (make_file preamble code tactics, make_file preamble_axioms fext_code fext_tactics)
+  pure (make_file preamble code automation, make_file preamble_axioms fext_code fext_automation)
 
 (** Run the computation constructed by genFile *)
 let run_gen_code hsig outfile = REM.run (genFile outfile) hsig

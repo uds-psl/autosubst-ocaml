@@ -1,6 +1,5 @@
 open GallinaGen
 open TacGen
-open NotationGen
 
 type vernac_expr = Vernacexpr.vernac_expr
 

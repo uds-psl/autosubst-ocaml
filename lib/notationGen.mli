@@ -1,5 +1,4 @@
 open Vernacexpr
-open GallinaGen
 
 type g_assoc = Gramlib.Gramext.g_assoc
 type notation_type = NG_VarConstr of string * string

@@ -1,5 +1,3 @@
-open GallinaGen
-
 (* a.d. TODO probably needs sort as an argument because of Up *)
 type instance_type = CG_Ren of int
                    | CG_Subst of int
