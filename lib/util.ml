@@ -18,6 +18,10 @@ let list_empty = function
   | [] -> true
   | _ -> false
 
+let list_nempty = function
+  | [] -> false
+  | _ -> true
+
 (* let list_find_index_exn x xs =
  *   Option.get @@
  *   List.mapi (fun i y -> if x = y then Some i else None) xs *)
@@ -52,6 +56,10 @@ let showPair f g (x, y) =
 (* let nub cmp l = Set.stable_dedup_list cmp l *)
 
 let list_zip xs ys = List.combine xs ys
+
+let rec list_of_length x = function
+  | 0 -> []
+  | n -> x :: list_of_length x (n - 1)
 
 let const b x = b
 let const2 b x y = b
