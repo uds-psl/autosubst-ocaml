@@ -25,6 +25,10 @@ let app1_ f x =
   Constrexpr_ops.mkAppC (f, [x])
 let appExpl_ n xs =
   CAst.make @@ Constrexpr.CAppExpl ((None, qualid_ n, None), xs)
+let app_ref ?(expl=false) s t =
+  if expl then appExpl_ s t
+  else app_ (ref_ s) t
+
 
 let eq_ t1 t2 =
   CAst.make (Constrexpr.CNotation

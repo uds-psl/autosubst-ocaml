@@ -18,10 +18,6 @@ let var_zero_ = ref_ "var_zero"
 let underscore_ = underscore_
 let id_ = ref_ "id"
 
-let app_ref ?(expl=false) s t =
-  if expl then appExpl_ s t
-  else app_ (ref_ s) t
-
 let eq_refl_ = ref_ "eq_refl"
 let eqSym_ s = app_ref "eq_sym" [s]
 let eqTrans_ s t = app_ref "eq_trans" [s; t]

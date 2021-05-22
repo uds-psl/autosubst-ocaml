@@ -22,6 +22,7 @@ val prop_ : constr_expr
 val type_ : constr_expr
 
 val app_ : constr_expr -> constr_exprs -> constr_expr
+val app_ref : ?expl:bool -> string -> constr_exprs -> constr_expr
 val app1_ : constr_expr -> constr_expr -> constr_expr
 val appExpl_ : identifier -> constr_exprs -> constr_expr
 val forall_ : binder_expr list -> constr_expr -> constr_expr

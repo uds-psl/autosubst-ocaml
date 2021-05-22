@@ -15,7 +15,6 @@ val var_zero_ : constr_expr
 val underscore_ : constr_expr
 val id_ : constr_expr
 
-val app_ref : ?expl:bool -> string -> constr_exprs -> constr_expr
 val eq_refl_ : constr_expr
 val eqSym_ : constr_expr -> constr_expr
 val eqTrans_ : constr_expr -> constr_expr -> constr_expr
