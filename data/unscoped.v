@@ -192,9 +192,6 @@ Tactic Notation "fsimpl" "in" "*" :=
 
 (** ** Tactics for unscoped syntax *)
 
-(** Unfold of the instances in goal and context. *)
-Ltac auto_unfold := unfold subst1, ren1, subst2, ren2, ids; unfold Subst1, Ren1, Subst2, Ren2, Var.
-
 Ltac unfold_funcomp := match goal with
                        | |-  context[(?f >> ?g) ?s] => change ((f >> g) s) with (g (f s))
                        end.
