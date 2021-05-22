@@ -76,7 +76,7 @@ let fixpointBody_ name binders rtype body struc =
               binders;
               rtype;
               body_def=Some body;
-              notations=[]} in
+              notations=[] } in
   feg
 
 

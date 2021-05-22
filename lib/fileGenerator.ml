@@ -7,6 +7,7 @@ open Util
 module CS = CoqSyntax
 module GG = GallinaGen
 module VG = VernacGen
+module AG = AutomationGen
 module L = Language
 
 let unscoped_preamble = "Require Import core unscoped.\n\n"
@@ -61,26 +62,34 @@ let genCode components =
   pure { as_units = code; as_fext_units = fext_code }
 
 let genTactics () =
+  let open RWEM.Syntax in
   let open RWEM in
   let open AutomationGen in
   let open GG in
   let open Termutil in
   let info = {
+    (* XXX *)
     asimpl_rewrite_lemmas = ["instId_tm"; "compComp_tm"; "compComp'_tm"; "rinstId_tm"; "compRen_tm";
                              "compRen'_tm"; "renComp_tm"; "renComp'_tm"; "renRen_tm"; "renRen'_tm";
                              "varL_tm"; "varLRen_tm" ];
+    (* XXX *)
     asimpl_cbn_functions = ["subst_tm"; "ren_tm"];
+    (* XXX *)
     asimpl_unfold_functions = ["up_ren"; "upRen_tm_tm"; "up_tm_tm" ];
+    (* XXX *)
     substify_lemmas = ["rinstInst_tm"];
-    auto_unfold_functions = ["subst1"; "subst2"; "Subst1";  "Subst2";  "ids";  "ren1"; "ren2"; "Ren1";  "Ren2";  "Subst_tm";  "Ren_tm"; "VarInstance_tm"];
+    (* XXX *)
+    auto_unfold_functions = ["subst1"; "Subst1"; "ids"; "Var"; "ren1"; "Ren1"; "Subst_tm"; "Ren_tm"; "VarInstance_tm"];
     arguments = [];
-    classes = [ "Up_tm", [ binder_ [ "X"; "Y" ] ], [ constructor_ "up_tm" (arr1_ (ref_ "X") (ref_ "Y")) ] ];
-    instances = [ CG_Subst 1, "tm", [underscore_; underscore_; underscore_]
-                ; CG_Ren 1, "tm", [underscore_; underscore_; underscore_]
-                ; CG_Var, "tm", [underscore_; underscore_]
-                ; CG_Up, "tm", [underscore_; underscore_] ];
+    (* XXX *)
+    classes = [ Up "", "tm" ];
+    (* XXX *)
+    instances = [ Subst 1, "tm"
+                ; Ren 1, "tm"
+                ; Var, "tm"
+                ; Up "tm", "tm" ];
     notations = [ NG_VarConstr ("x", "tm"), app_ref "var_tm" [ ref_ "x" ]
-                ; NG_VarInst ("x", "tm"), app_ref ~expl:true "ids" [ underscore_; underscore_; ref_ ClassGen.(instance_name "tm" CG_Var); ref_ "x" ]
+                ; NG_VarInst ("x", "tm"), app_ref ~expl:true "ids" [ underscore_; underscore_; ref_ ClassGen.(instance_name "tm" Var); ref_ "x" ]
                 ; NG_Var, ref_ "var_tm"
                 ; NG_Up "tm", ref_ "up_tm"
                 ; NG_Up "tm", ref_ "up_tm_tm"
@@ -89,7 +98,8 @@ let genTactics () =
                 ; NG_RenApply ("s", "xi_tm"), app_ref "ren_tm" [ ref_ "xi_tm"; ref_ "s" ]
                 ; NG_Ren "xi_tm", app_ref "ren_tm" [ ref_ "xi_tm" ] ];
   } in
-  pure (AutomationGenerator.gen_additional info)
+  (* let* () = put info in *)
+  AutomationGenerator.gen_additional ()
 
 let make_file preamble code tactics =
   let pp_code = VG.pr_vernac_units code in
@@ -109,4 +119,4 @@ let genFile outfile_basename =
   pure (make_file preamble code automation, make_file preamble_axioms fext_code fext_automation)
 
 (** Run the computation constructed by genFile *)
-let run_gen_code hsig outfile = RWEM.rwe_run (genFile outfile) hsig
+let run_gen_code hsig outfile = RWEM.rwe_run (genFile outfile) hsig AG.initial

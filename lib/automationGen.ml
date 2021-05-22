@@ -151,29 +151,44 @@ module NotationGen = struct
 end
 
 module ClassGen = struct
-  type t = CG_Ren of int
-         | CG_Subst of int
-         | CG_Var
-         | CG_Up
+  type t = Ren of int
+         | Subst of int
+         | Var
+         | Up of string
 
   let instance_name sort = function
-    | CG_Ren _ -> sep "Ren" sort
-    | CG_Subst _ -> sep "Subst" sort
-    | CG_Var -> sep "VarInstance" sort
-    | CG_Up -> sepd [ "Up"; sort; sort ]
+    | Ren _ -> sep "Ren" sort
+    | Subst _ -> sep "Subst" sort
+    | Var -> sep "VarInstance" sort
+    | Up bsort -> sepd [ "Up"; bsort; sort ]
 
   let class_name sort = function
-    | CG_Ren n -> "Ren"^(string_of_int n)
-    | CG_Subst n -> "Subst"^(string_of_int n)
-    | CG_Var -> "Var"
-    | CG_Up -> sep "Up" sort
+    | Ren n -> "Ren"^(string_of_int n)
+    | Subst n -> "Subst"^(string_of_int n)
+    | Var -> "Var"
+    | Up _ -> sep "Up" sort
 
   (* a.d. TODO, maybe directly put constr_expr in the info instead of generating the function name here  *)
   let function_name sort = function
-    | CG_Ren _ -> sep "ren" sort
-    | CG_Subst _ -> sep "subst" sort
-    | CG_Var -> CoqNames.var_ sort
-    | CG_Up -> sepd ["up"; sort; sort]
+    | Ren _ -> sep "ren" sort
+    | Subst _ -> sep "subst" sort
+    | Var -> CoqNames.var_ sort
+    | Up bsort -> sepd ["up"; bsort; sort]
+
+  let class_args x =
+    let us n = list_of_length underscore_ n in
+    match x with
+    | Ren n | Subst n -> us (n + 2)
+    | Var | Up _ -> us 2
+
+  let class_field sort = function
+    | Ren n -> "ren"^(string_of_int n)
+    | Subst n -> "subst"^(string_of_int n)
+    | Var -> "ids"
+    | Up _ -> sep "up" sort
+
+  let instance_unfolds sort x =
+    [ instance_name sort x; class_name sort x; class_field sort x ]
 end
 
 type t = {
@@ -183,8 +198,30 @@ type t = {
   substify_lemmas : string list;
   auto_unfold_functions : string list;
   arguments : (string * string list) list;
-  classes : (string * binder_expr list * constructor_expr list) list;
+  classes : (ClassGen.t * string) list;
   (* instance info probably also needs parameter information *)
-  instances : (ClassGen.t * string * constr_expr list) list;
+  instances : (ClassGen.t * string) list;
   notations : (NotationGen.t * constr_expr) list;
 }
+
+let initial = {
+  asimpl_rewrite_lemmas = [];
+  asimpl_cbn_functions = [];
+  asimpl_unfold_functions = ["up_ren"];
+  substify_lemmas = [];
+  auto_unfold_functions = [];
+  arguments = [];
+  classes = [];
+  instances = [];
+  notations = [];
+}
+
+let asimpl_rewrite_lemmas info = info.asimpl_rewrite_lemmas
+let asimpl_cbn_functions info = info.asimpl_cbn_functions
+let asimpl_unfold_functions info = info.asimpl_unfold_functions
+let substify_lemmas info = info.substify_lemmas
+let auto_unfold_functions info = info.auto_unfold_functions
+let arguments info = info.arguments
+let classes info = info.classes
+let instances info = info.instances
+let notations info = info.notations

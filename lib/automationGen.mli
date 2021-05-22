@@ -55,15 +55,17 @@ module NotationGen : sig
 end
 
 module ClassGen : sig
-  (* a.d. TODO probably needs sort as an argument because of Up *)
-  type t = CG_Ren of int
-         | CG_Subst of int
-         | CG_Var
-         | CG_Up
+  type t = Ren of int
+         | Subst of int
+         | Var
+         | Up of string
 
   val instance_name : string -> t -> string
   val class_name : string -> t -> string
   val function_name : string -> t -> string
+  val class_args : t -> constr_expr list
+  val class_field : string -> t -> string
+  val instance_unfolds : string -> t -> string list
 end
 
 type t = {
@@ -73,8 +75,20 @@ type t = {
   substify_lemmas : string list;
   auto_unfold_functions : string list;
   arguments : (string * string list) list;
-  classes : (string * binder_expr list * constructor_expr list) list;
+  classes : (ClassGen.t * string) list;
   (* instance info probably also needs parameter information *)
-  instances : (ClassGen.t * string * constr_expr list) list;
+  instances : (ClassGen.t * string) list;
   notations : (NotationGen.t * constr_expr) list;
 }
+
+val initial : t
+
+val asimpl_rewrite_lemmas : t -> string list
+val asimpl_cbn_functions : t -> string list
+val asimpl_unfold_functions : t -> string list
+val substify_lemmas : t -> string list
+val auto_unfold_functions : t -> string list
+val arguments : t -> (string * string list) list
+val classes : t -> (ClassGen.t * string) list
+val instances : t -> (ClassGen.t * string) list
+val notations : t -> (NotationGen.t * constr_expr) list
