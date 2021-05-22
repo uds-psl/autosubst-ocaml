@@ -27,33 +27,6 @@ module TacGen : sig
   val pr_tactic_notation : string list -> t -> Pp.t
 end
 
-module NotationGen : sig
-  open Vernacexpr
-
-  type g_assoc = Gramlib.Gramext.g_assoc
-  type t = NG_VarConstr of string * string
-         | NG_VarInst of string * string
-         | NG_Var
-         | NG_Up of string
-         | NG_SubstApply of string * string
-         | NG_Subst of string
-         | NG_RenApply of string * string
-         | NG_Ren of string
-
-  val fscope : scope_name
-  val subst_scope : scope_name
-
-  val level_ : int -> syntax_modifier
-  val assoc_ : g_assoc -> syntax_modifier
-  val format_ : string -> syntax_modifier
-  val only_print_ : syntax_modifier
-
-
-  val notation_string : t -> string
-  val notation_modifiers : t -> syntax_modifier list
-  val notation_scope : t -> scope_name
-end
-
 module ClassGen : sig
   type t = Ren of int
          | Subst of int
@@ -68,6 +41,35 @@ module ClassGen : sig
   val instance_unfolds : string -> t -> string list
 end
 
+module NotationGen : sig
+  open Vernacexpr
+
+  type g_assoc = Gramlib.Gramext.g_assoc
+  type t = VarConstr
+         | VarInst
+         | Var
+         | Up
+         | UpInst of string
+         | SubstApply
+         | Subst
+         | RenApply
+         | Ren
+
+  val fscope : scope_name
+  val subst_scope : scope_name
+
+  val level_ : int -> syntax_modifier
+  val assoc_ : g_assoc -> syntax_modifier
+  val format_ : string -> syntax_modifier
+  val only_print_ : syntax_modifier
+
+
+  val notation_string : string -> t -> string
+  val notation_modifiers : string -> t -> syntax_modifier list
+  val notation_scope : t -> scope_name
+  val notation_body : string -> t -> constr_expr
+end
+
 type t = {
   asimpl_rewrite_lemmas : string list;
   asimpl_cbn_functions : string list;
@@ -78,7 +80,7 @@ type t = {
   classes : (ClassGen.t * string) list;
   (* instance info probably also needs parameter information *)
   instances : (ClassGen.t * string) list;
-  notations : (NotationGen.t * constr_expr) list;
+  notations : (NotationGen.t * string) list;
 }
 
 val initial : t
@@ -91,4 +93,4 @@ val auto_unfold_functions : t -> string list
 val arguments : t -> (string * string list) list
 val classes : t -> (ClassGen.t * string) list
 val instances : t -> (ClassGen.t * string) list
-val notations : t -> (NotationGen.t * constr_expr) list
+val notations : t -> (NotationGen.t * string) list

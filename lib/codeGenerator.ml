@@ -44,6 +44,9 @@ let genVar sort ns =
   else
     (* register variable constructor instance *)
     let* () = tell_instance (ClassGen.Var, sort) in
+    let* () = tell_notation (NotationGen.VarConstr, sort) in
+    let* () = tell_notation (NotationGen.VarInst, sort) in
+    let* () = tell_notation (NotationGen.Var, sort) in
     let* s = gen_var_arg sort ns in
     let t = [s] ==> sortType sort ns in
     pure @@ [constructor_ (var_ sort) t]
@@ -150,15 +153,17 @@ let genUpRen (binder, sort) =
   pure @@ lemma_ ~opaque:false (upRen_ sort binder) (bpms @ scopeBinders) (renT m' n') defBody
 
 let genRenaming sort =
+  let* substSorts = substOf sort in
+  let* () = tell_instance (ClassGen.Ren (List.length substSorts), sort) in
+  let* () = tell_cbn_function (ren_ sort) in
+  let* () = tell_notation (NotationGen.RenApply, sort) in
+  let* () = tell_notation (NotationGen.Ren, sort) in
   let* v = V.genVariables sort [ `MS; `NS; `XIS (`MS, `NS) ] in
   let [@warning "-8"] _, [ ms; ns; xis ], scopeBinders = v in
   (* DONE what is the result of toVar here?\
    * when I call it with sort=tm, xi=[xity;xivl] I get this weird error term that toVar constructs. This is then probably ignored by some similar login in the traversal. Seems brittle.
    * When I call it instead with sort=vl I get xivl. So it seems get the renaming of the sort that I'm currently inspecting *)
   (* register renaming instance & and unfolding *)
-  let* substSorts = substOf sort in
-  let* () = tell_instance (ClassGen.Ren (List.length substSorts), sort) in
-  let* () = tell_cbn_function (ren_ sort) in
   let ret _ = app_sort sort ns in
   traversal sort ms ren_ ~no_args:id ~ret scopeBinders [xis]
     (fun s ->
@@ -192,6 +197,7 @@ let upSubstT binder sort ms sigma =
 let genUpS (binder, sort) =
   (* register up instance *)
   let* () = tell_instance (ClassGen.Up (L.get_bound_sort binder), sort) in
+  let* () = tell_notation (NotationGen.UpInst (L.get_bound_sort binder), sort) in
   let* v = V.genVariables sort [ `M; `NS; `SIGMA (`M, `NS) ] in
   let [@warning "-8"] [ m; sigma ], [ ns ], scopeBinders = v in
   (* register up for unfolding *)
@@ -211,6 +217,9 @@ let genSubstitution sort =
   let* () = tell_instance (ClassGen.Subst (List.length substSorts), sort) in
   let* () = tell_cbn_function (subst_ sort) in
   let* () = tell_class (ClassGen.Up "", sort) in
+  let* () = tell_notation (NotationGen.Up, sort) in
+  let* () = tell_notation (NotationGen.SubstApply, sort) in
+  let* () = tell_notation (NotationGen.Subst, sort) in
   let* v = V.genVariables sort [ `MS; `NS; `SIGMAS (`MS, `NS) ] in
   let [@warning "-8"] [], [ ms; ns; sigmas ], scopeBinders = v in
   let ret _ = app_sort sort ns in

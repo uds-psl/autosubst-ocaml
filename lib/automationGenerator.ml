@@ -1,6 +1,6 @@
 (* open Coqgen *)
 open VernacGen
-open Termutil
+open GallinaGen
 open AutomationGen
 open TacGen
 open ClassGen
@@ -116,8 +116,8 @@ let gen_instances () =
 
 let gen_notations () =
   let* notations = gets notations in
-  let gen_notation (ntype, body) =
-    notation_ (notation_string ntype) (notation_modifiers ntype) ~scope:(notation_scope ntype) body in
+  let gen_notation (ntype, sort) =
+    notation_ (notation_string sort ntype) (notation_modifiers sort ntype) ~scope:(notation_scope ntype) (notation_body sort ntype) in
   pure @@ List.map gen_notation notations
 
 let gen_additional () =

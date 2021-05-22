@@ -88,15 +88,16 @@ let genTactics () =
                 ; Ren 1, "tm"
                 ; Var, "tm"
                 ; Up "tm", "tm" ];
-    notations = [ NG_VarConstr ("x", "tm"), app_ref "var_tm" [ ref_ "x" ]
-                ; NG_VarInst ("x", "tm"), app_ref ~expl:true "ids" [ underscore_; underscore_; ref_ ClassGen.(instance_name "tm" Var); ref_ "x" ]
-                ; NG_Var, ref_ "var_tm"
-                ; NG_Up "tm", ref_ "up_tm"
-                ; NG_Up "tm", ref_ "up_tm_tm"
-                ; NG_SubstApply ("s", "sigma_tm"), app_ref "subst_tm" [ ref_ "sigma_tm"; ref_ "s" ]
-                ; NG_Subst "sigma_tm", app_ref "subst_tm" [ ref_ "sigma_tm" ]
-                ; NG_RenApply ("s", "xi_tm"), app_ref "ren_tm" [ ref_ "xi_tm"; ref_ "s" ]
-                ; NG_Ren "xi_tm", app_ref "ren_tm" [ ref_ "xi_tm" ] ];
+    (* XXX *)
+    notations = [ VarConstr, "tm"
+                ; VarInst, "tm"
+                ; Var, "tm"
+                ; Up, "tm"
+                ; UpInst "tm", "tm"
+                ; SubstApply, "tm"
+                ; Subst, "tm"
+                ; RenApply, "tm"
+                ; Ren, "tm" ];
   } in
   (* let* () = put info in *)
   AutomationGenerator.gen_additional ()

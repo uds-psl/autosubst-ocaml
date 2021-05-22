@@ -81,75 +81,6 @@ module TacGen = struct
     Pp.(seq (str "Tactic Notation " :: (List.map (fun n -> str (n ^ " ")) names) @ [ str ":= "; pp; vernacend; newline ]))
 end
 
-module NotationGen = struct
-  open Vernacexpr
-
-  type g_assoc = Gramlib.Gramext.g_assoc = NonA | RightA | LeftA
-
-  type t = NG_VarConstr of string * string
-         | NG_VarInst of string * string
-         | NG_Var
-         | NG_Up of string
-         | NG_SubstApply of string * string
-         | NG_Subst of string
-         | NG_RenApply of string * string
-         | NG_Ren of string
-
-  let subst_scope = "subst_scope"
-  let fscope = "fscope"
-
-  let level_ l = SetLevel l
-  let assoc_ a = SetAssoc a
-  let format_ fmt = SetFormat ("text", CAst.make fmt)
-  let only_print_ = SetOnlyPrinting
-
-  let notation_string n =
-    let open Printf in
-    match n with
-    | NG_VarConstr (var, sort)
-    | NG_VarInst (var, sort) ->
-      sprintf "%s '__%s'" var sort
-    | NG_Var ->
-      "'var'"
-    | NG_Up sort ->
-      sprintf "↑__%s" sort
-    | NG_SubstApply (var, sigma) ->
-      sprintf "%s [ %s ]" var sigma
-    | NG_Subst sigma ->
-      sprintf "[ %s ]" sigma
-    | NG_RenApply (var, sigma) ->
-      sprintf "%s ⟨ %s ⟩" var sigma
-    | NG_Ren sigma ->
-      sprintf "⟨ %s ⟩" sigma
-
-  let notation_modifiers n =
-    let open Printf in
-    match n with
-    | NG_VarConstr (var, sort) ->
-      let fmt = sprintf "%s __%s" var sort in
-      [ level_ 5; format_ fmt ]
-    | NG_VarInst (var, sort) ->
-      let fmt = sprintf "%s __%s" var sort in
-      [ level_ 5; format_ fmt; only_print_ ]
-    | NG_Var ->
-      [ level_ 1; only_print_ ]
-    | NG_Up sort ->
-      [ only_print_ ]
-    | NG_SubstApply _
-    | NG_RenApply _ ->
-      [ level_ 7; assoc_ LeftA; only_print_ ]
-    | NG_Subst _
-    | NG_Ren _ ->
-      [ level_ 1; assoc_ LeftA; only_print_ ]
-
-  let notation_scope = function
-    | NG_VarConstr _ | NG_VarInst _ | NG_Var | NG_Up _
-    | NG_SubstApply _ | NG_RenApply _ ->
-      subst_scope
-    | NG_Subst _ | NG_Ren _ ->
-      fscope
-end
-
 module ClassGen = struct
   type t = Ren of int
          | Subst of int
@@ -191,6 +122,88 @@ module ClassGen = struct
     [ instance_name sort x; class_name sort x; class_field sort x ]
 end
 
+module NotationGen = struct
+  open Vernacexpr
+  open GallinaGen
+
+  type g_assoc = Gramlib.Gramext.g_assoc = NonA | RightA | LeftA
+
+  type t = VarConstr
+         | VarInst
+         | Var
+         | Up
+         | UpInst of string
+         | SubstApply
+         | Subst
+         | RenApply
+         | Ren
+
+  let subst_scope = "subst_scope"
+  let fscope = "fscope"
+
+  let level_ l = SetLevel l
+  let assoc_ a = SetAssoc a
+  let format_ fmt = SetFormat ("text", CAst.make fmt)
+  let only_print_ = SetOnlyPrinting
+
+  let notation_string sort n =
+    let open Printf in
+    match n with
+    | VarConstr | VarInst ->
+      sprintf "x '__%s'" sort
+    | Var ->
+      "'var'"
+    | Up | UpInst _ ->
+      sprintf "↑__%s" sort
+    | SubstApply ->
+      sprintf "s [ sigma_%s ]" sort
+    | Subst ->
+      sprintf "[ sigma_%s ]" sort
+    | RenApply ->
+      sprintf "s ⟨ xi_%s ⟩" sort
+    | Ren ->
+      sprintf "⟨ xi_%s ⟩" sort
+
+  let notation_modifiers sort n =
+    let open Printf in
+    match n with
+    | VarConstr ->
+      let fmt = sprintf "x __%s" sort in
+      [ level_ 5; format_ fmt ]
+    | VarInst ->
+      let fmt = sprintf "x __%s" sort in
+      [ level_ 5; format_ fmt; only_print_ ]
+    | Var ->
+      [ level_ 1; only_print_ ]
+    | Up | UpInst _ ->
+      [ only_print_ ]
+    | SubstApply | RenApply ->
+      [ level_ 7; assoc_ LeftA; only_print_ ]
+    | Subst | Ren ->
+      [ level_ 1; assoc_ LeftA; only_print_ ]
+
+  let notation_scope = function
+    | VarConstr | VarInst | Var | Up | UpInst _
+    | SubstApply | RenApply ->
+      subst_scope
+    | Subst | Ren ->
+      fscope
+
+  (* TODO hardcoded strings ersetzen durch die korrekten functionen in CoqNames *)
+  let notation_body sort = function
+    | VarConstr -> app_ref (sep "var" sort) [ ref_ "x" ]
+    | VarInst ->
+      app_ref ~expl:true "ids" [ underscore_; underscore_; ref_ (ClassGen.instance_name sort Var); ref_ "x" ]
+    | Var -> ref_ (sep "var" sort)
+    | Up -> ref_ (sep "up" sort)
+    | UpInst bsort -> ref_ (sepd ["up"; bsort; sort])
+    | SubstApply -> app_ref (sep "subst" sort) [ ref_ (sep "sigma" sort); ref_ "s" ]
+    | Subst -> app_ref (sep "subst" sort) [ ref_ (sep "sigma" sort) ]
+    | RenApply -> app_ref (sep "ren" sort) [ ref_ (sep "xi" sort); ref_ "s" ]
+    | Ren -> app_ref (sep "ren" sort) [ ref_ (sep "xi" sort) ]
+end
+
+
 type t = {
   asimpl_rewrite_lemmas : string list;
   asimpl_cbn_functions : string list;
@@ -201,7 +214,7 @@ type t = {
   classes : (ClassGen.t * string) list;
   (* instance info probably also needs parameter information *)
   instances : (ClassGen.t * string) list;
-  notations : (NotationGen.t * constr_expr) list;
+  notations : (NotationGen.t * string) list;
 }
 
 let initial = {
