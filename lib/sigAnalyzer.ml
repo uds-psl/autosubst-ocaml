@@ -39,7 +39,7 @@ let binder_analysis spec occurs_in =
     let* L.{ cpositions; cname; _ } = cs in
     let* L.{ binders; head; } = cpositions in
     let* binder = binders in
-    let* bound_sort = L.getBinders binder in
+    let bound_sort = L.get_bound_sort binder in
     let vacuous = list_none (fun arg -> bound_sort |> occurs_in arg) (L.getArgSorts head) in
     if vacuous then [`Vacuous (t, bound_sort, cname)]
     else [`Binder bound_sort]

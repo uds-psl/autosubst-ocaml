@@ -120,7 +120,7 @@ let boundBinders component =
     let* L.{ cpositions; _ } = constructors in
     let* L.{ binders; _ } = cpositions in
     let* binder = binders in
-    L.getBinders binder in
+    [ L.get_bound_sort binder ] in
   pure binders
 
 (** A sort needs renamings

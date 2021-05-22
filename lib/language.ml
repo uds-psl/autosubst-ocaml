@@ -22,9 +22,9 @@ type binder = Single of tId | BinderList of string * tId
 type argument_head = Atom of tId | FunApp of fId * (CG.constr_expr option [@opaque]) * (argument_head list)
 [@@deriving show]
 
-let getBinders = function
-  | Single x -> [x]
-  | BinderList (_, x) -> [x]
+let get_bound_sort = function
+  | Single x -> x
+  | BinderList (_, x) -> x
 let rec getArgSorts = function
   | Atom x -> [x]
   | FunApp (_, _, xs) -> List.(concat (map getArgSorts xs))
