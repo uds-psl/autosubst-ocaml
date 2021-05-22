@@ -94,10 +94,10 @@ let genTactics () =
                 ; Var, "tm"
                 ; Up, "tm"
                 ; UpInst "tm", "tm"
-                ; SubstApply, "tm"
-                ; Subst, "tm"
-                ; RenApply, "tm"
-                ; Ren, "tm" ];
+                ; SubstApply [ "tm" ], "tm"
+                ; Subst [ "tm" ], "tm"
+                ; RenApply [ "tm" ], "tm"
+                ; Ren [ "tm" ], "tm" ];
   } in
   (* let* () = put info in *)
   AutomationGenerator.gen_additional ()

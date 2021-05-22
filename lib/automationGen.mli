@@ -50,10 +50,10 @@ module NotationGen : sig
          | Var
          | Up
          | UpInst of string
-         | SubstApply
-         | Subst
-         | RenApply
-         | Ren
+         | SubstApply of string list
+         | Subst of string list
+         | RenApply of string list
+         | Ren of string list
 
   val fscope : scope_name
   val subst_scope : scope_name
