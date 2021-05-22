@@ -8,29 +8,8 @@ module L = Language
 module AG = AutomationGen
 module AL = AssocList
 
-module AutomationGen_Monoid = struct
-  type t = AutomationGen.t
-  open AutomationGen
 
-  let empty = {
-    asimpl_rewrite_lemmas = [];
-    asimpl_cbn_functions = [];
-    asimpl_unfold_functions = [];
-    substify_lemmas = [];
-    auto_unfold_functions = [];
-    arguments = [];
-    classes = [];
-    instances = [];
-    notations = [];
-  }
-
-  let append t1 t2 =
-    let { asimpl_rewrite_lemmas = arl; asimpl_cbn_functions = acf; asimpl_unfold_functions = asuf; substify_lemmas = sl; auto_unfold_functions = auf; arguments = a; classes = c; instances = i; notations = n } = t1 in
-    let { asimpl_rewrite_lemmas = arl'; asimpl_cbn_functions = acf'; asimpl_unfold_functions = asuf'; substify_lemmas = sl'; auto_unfold_functions = auf'; arguments = a'; classes = c'; instances = i'; notations = n' } = t2 in
-    { asimpl_rewrite_lemmas = arl @ arl'; asimpl_cbn_functions = acf @ acf'; asimpl_unfold_functions = asuf @ asuf'; substify_lemmas = sl @ sl'; auto_unfold_functions = auf @ auf'; arguments = a @ a'; classes = c @ c'; instances = i @ i'; notations = n @ n' }
-end
-
-module WE = M.Writer.MakeT(ErrorM)(AutomationGen_Monoid)
+module WE = M.State.MakeT(ErrorM)(struct type t = AG.t end)
 module RWE = M.Reader.MakeT(WE)(struct type t = L.t end)
 
 include RWE
@@ -38,7 +17,52 @@ include RWE
 let ask = peek
 let asks f = f <$> ask
 
-let tell x = WE.tell x |> elevate
+let put x = WE.put x |> elevate
+let get = WE.get |> elevate
+let gets f = f <$> get
+
+module Tells = struct
+  open AG
+  open Syntax
+
+  let tell_rewrite_lemma x =
+    let* info = get in
+    put { info with asimpl_rewrite_lemmas = x :: info.asimpl_rewrite_lemmas }
+
+  let tell_cbn_function x =
+    let* info = get in
+    put { info with asimpl_cbn_functions = x :: info.asimpl_cbn_functions }
+
+  let tell_unfold_function x =
+    let* info = get in
+    put { info with asimpl_unfold_functions = x :: info.asimpl_unfold_functions }
+
+  let tell_substify_lemma x =
+    let* info = get in
+    put { info with substify_lemmas = x :: info.substify_lemmas }
+
+  let tell_auto_unfold_function x =
+    let* info = get in
+    put { info with auto_unfold_functions = x :: info.auto_unfold_functions }
+
+  let tell_argument x =
+    let* info = get in
+    put { info with arguments = x :: info.arguments }
+
+  let tell_class x =
+    let* info = get in
+    put { info with classes = x :: info.classes }
+
+  let tell_instance x =
+    let* info = get in
+    put { info with instances = x :: info.instances }
+
+  let tell_notation x =
+    let* info = get in
+    put { info with notations = x :: info.notations }
+end
+
+include Tells
 
 let error s = ErrorM.error s |> WE.elevate |> elevate
 
