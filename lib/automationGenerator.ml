@@ -102,17 +102,16 @@ let gen_instances () =
     let* info = get in
     put { info with auto_unfold_functions = unfolds @ info.auto_unfold_functions }
   in
-  let gen_instance (inst_type, sort) =
+  let gen_instance inst_type sort =
     let iname = instance_name sort inst_type in
     let cname = class_name sort inst_type in
     let fname = function_name sort inst_type in
     instance_ iname (app_ref cname (class_args inst_type)) (app_ref ~expl:true fname [])
   in
+  (* TODO better way to chain actions? *)
   let* _ = sequence (List.map register_instance_unfolds instances) in
-  let instance_definitions = List.map gen_instance instances in
-  let ex_instances = List.map (fun (inst_type, sort) ->
-      ex_instance_ (instance_name sort inst_type)) instances in
-  pure @@ instance_definitions @ ex_instances
+  let instance_definitions = List.concat_map (fun (inst_type, sort) -> [ gen_instance inst_type sort; ex_instance_ (instance_name sort inst_type) ]) instances in
+  pure instance_definitions
 
 let gen_notations () =
   let* notations = gets notations in
