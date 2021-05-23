@@ -33,34 +33,39 @@ let write_file ?(force=true) outfile content =
 
 let copy_file src dst = write_file dst (read_file src)
 
-let copy_static_files dir scope_type coq_version =
+let gen_static_files dir scope_type coq_version outfile outfile_fext =
   let open Filename in
-  let () = copy_file "data/core.v" (concat dir "core.v") in
-  let () = copy_file "data/core_axioms.v" (concat dir "core_axioms.v") in
-  match scope_type, coq_version with
-  | L.WellScoped, LT810 ->
-    copy_file "data/fintype_809.v" (concat dir "fintype.v")
-  | L.Unscoped, LT810 ->
-    copy_file "data/unscoped_809.v" (concat dir "unscoped.v")
-  | L.WellScoped, GE810 ->
-    let () = copy_file "data/fintype.v" (concat dir "fintype.v") in
-    let () = copy_file "data/fintype_axioms.v" (concat dir "fintype_axioms.v") in
-    ()
-  | L.Unscoped, GE810 ->
-    let () = copy_file "data/unscoped.v" (concat dir "unscoped.v") in
-    let () = copy_file "data/unscoped_axioms.v" (concat dir "unscoped_axioms.v") in
-    ()
+  let coq_project_files = ref [outfile; outfile_fext] in
+  let copy_static_file ?out_name name =
+    let out_name = Option.default name out_name in
+    coq_project_files := out_name :: !coq_project_files;
+    copy_file (concat "data" name) (concat dir out_name)
+  in
+  let () = match scope_type, coq_version with
+    | L.WellScoped, LT810 ->
+      copy_static_file ~out_name:"fintype.v" "fintype_809.v"
+    | L.Unscoped, LT810 ->
+      copy_static_file ~out_name:"unscoped.v" "unscoped_809.v"
+    | L.WellScoped, GE810 ->
+      let () = copy_static_file "fintype_axioms.v" in
+      copy_static_file "fintype.v"
+    | L.Unscoped, GE810 ->
+      let () = copy_static_file "unscoped_axioms.v" in
+      copy_static_file "unscoped.v"
+  in
+  let () = copy_static_file "core_axioms.v" in
+  let () = copy_static_file "core.v" in
+  (* now coq_project files contains all files for the _CoqProject in the correct order. TODO do it without ref? *)
+  let coq_project = "-Q . \"\"\n\n"
+    ^ String.concat "\n" !coq_project_files in
+  write_file (concat dir "_CoqProject") coq_project
 
 let make_filenames outfile =
   let open Filename in
   let outfile_name = basename (remove_extension outfile) in
   let dir = dirname outfile in
-  (* could happen that we don't have an extension *)
-  if (outfile = outfile_name)
-  then dir, outfile, outfile, outfile ^ "_axioms"
-  else
-    let ext = extension outfile in
-    dir, outfile_name, outfile_name ^ ext, outfile_name ^ "_axioms" ^ ext
+  let ext = extension outfile in
+  dir, outfile_name, outfile_name ^ ext, outfile_name ^ "_axioms" ^ ext
 
 let create_outdir dir =
   let open Unix in
@@ -79,7 +84,7 @@ let main (infile, outfile, scope_type, coq_version) =
   let () = create_outdir dir in
   let generate_static_files = true in
   let () = if generate_static_files
-    then copy_static_files dir scope_type coq_version
+    then gen_static_files dir scope_type coq_version outfile outfile_fext
     else () in
   (* parse input HOAS *)
   let* spec = read_file infile |> SigParser.parse_signature in
@@ -96,6 +101,7 @@ let main (infile, outfile, scope_type, coq_version) =
       let () = write_file (concat dir outfile_fext) fext_code in
       ()
     else
+      (* TODO does not really work b/c of the Require in fext_code. Would have to do this in run_gen_code *)
       let () = write_file (concat dir outfile) (code ^ fext_code) in
       () in
   pure "done"
