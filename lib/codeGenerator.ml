@@ -21,9 +21,6 @@ open VernacGen
 open Termutil
 open AutomationGen
 
-let guard cond lst =
-  if cond then lst else []
-
 let createBinders = List.map (fun p -> binder1_ ~btype:(ref_ (snd p)) (fst p))
 
 let createImpBinders = List.map (fun p -> binder1_ ~implicit:true ~btype:(ref_ (snd p)) (fst p))
@@ -878,7 +875,9 @@ let gen_code sorts upList =
   (* GENERATE INDUCTIVE TYPES *)
   let* def_sorts = a_filter definable sorts in
   let* types = a_map genBody def_sorts in
-  let inductive = inductive_ types in
+  let inductive = match types with
+    | [] -> Vernac []
+    | l -> inductive_ l in
   (* GENERATE CONGRUENCE LEMMAS *)
   let* congruences = a_concat_map genCongruences sorts in
   (* a.d. TODO if one sort in a component has a non-zero substitution vector, all of them have? *)
@@ -892,13 +891,20 @@ let gen_code sorts upList =
     (* GENERATE RENAMINGS *)
     let* isRen = hasRenamings (List.hd sorts) in
     let guard_map ?(invert=false) f input =
-      m_guard (invert <> isRen) @@ a_map f input in
+      if (invert <> isRen)
+      then a_map f input
+      else pure [] in
     let guard_split_map f input =
-      let* l = a_map f input in
-      let l1, l2 = List.split l in
-      if isRen then pure (l1, l2) else pure ([], []) in
+      if isRen
+      then
+        let* l = a_map f input in
+        let l1, l2 = List.split l in
+        pure (l1, l2)
+      else pure ([], []) in
     let* upRen = guard_map genUpRen upList in
-    let* renamings = genRenamings sorts in
+    let* renamings = if isRen
+      then map (fun r -> [r]) (genRenamings sorts)
+      else pure [] in
     (* GENERATE UPs *)
     let* ups = guard_map genUpS upList in
     let* upsNoRen = guard_map ~invert:true genUpS upList in
@@ -920,6 +926,7 @@ let gen_code sorts upList =
     let* compSubstRen = guard_map genCompSubstRen sorts in
     let* upSubstSubst = guard_map genUpSubstSubst upList in
     let* compSubstSubst = a_map genCompSubstSubst sorts in
+    (* TODO should this really come after compSubstSubst? *)
     let* upSubstSubstNoRen = guard_map ~invert:true genUpSubstSubstNoRen upList in
     (* Coincidence of Instantiation *)
     let* upRinstInst = guard_map genUpRinstInst upList in
@@ -939,7 +946,7 @@ let gen_code sorts upList =
       | fix_exprs -> [fixpoint_ ~is_rec fix_exprs] in
     (* generation of the actual sentences *)
     pure { as_units = inductive :: congruences @
-                      upRen @ guard isRen [renamings] @
+                      upRen @ renamings @
                       ups @ [substitutions] @ upsNoRen @
                       upId @ mk_fixpoint idLemmas @
                       extUpRen @ mk_fixpoint extRen @
