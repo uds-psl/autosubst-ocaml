@@ -9,14 +9,27 @@ type coq_version = LT810 | GE810
 let read_file infile =
   let input = open_in_bin infile in
   let content = really_input_string input (in_channel_length input) in
-  let _ = close_in input in
+  let () = close_in input in
   content
 
-let write_file outfile content =
+let really_write_file outfile content =
   let output = open_out outfile in
-  let _ = output_string output content in
-  let _ = close_out output in
-  ()
+  let () = output_string output content in
+  close_out output
+
+let write_file ?(force=true) outfile content =
+  let open Unix in
+  if force then really_write_file outfile content
+  else
+    try
+      let _ = stat outfile in
+      let () = print_endline (outfile ^ " exists. Overwrite [y/N]:") in
+      let prompt = read_line () in
+      if prompt = "y"
+      then really_write_file outfile content
+      else ()
+    with Unix_error (ENOENT, _, _) ->
+      really_write_file outfile content
 
 let copy_file src dst = write_file dst (read_file src)
 
