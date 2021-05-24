@@ -16,11 +16,16 @@ let scoped_preamble = "Require Import core fintype.\n\n"
 let scoped_preamble_axioms = "Require Import core core_axioms fintype fintype_axioms.\n"
 let base_preamble = Scanf.format_from_string "Require Import %s.\n\n" "%s"
 
-let get_preambles outfile_basename =
+let get_preambles outfile_basename axioms_separate =
   let base_preamble = Printf.sprintf base_preamble outfile_basename in
-  match !Settings.scope_type with
-  | L.Unscoped -> (unscoped_preamble, unscoped_preamble_axioms ^ base_preamble)
-  | L.WellScoped -> (scoped_preamble, scoped_preamble_axioms ^ base_preamble)
+  if axioms_separate then
+    match !Settings.scope_type with
+    | L.Unscoped -> (unscoped_preamble, unscoped_preamble_axioms ^ base_preamble)
+    | L.WellScoped -> (scoped_preamble, scoped_preamble_axioms ^ base_preamble)
+  else
+    match !Settings.scope_type with
+    | L.Unscoped -> (unscoped_preamble_axioms, "")
+    | L.WellScoped -> (scoped_preamble_axioms, "")
 
 (** Generate all the liftings (= Up = fatarrow^y_x) for all pairs of sorts in the current component.
  ** So that we can later build the lifting functions "X_ty_ty", "X_ty_vl" etc. *)
@@ -84,10 +89,10 @@ let genTactics () =
     (* XXX *)
     classes = [ Up "", "tm" ];
     (* XXX *)
-    instances = [ Subst 1, "tm"
-                ; Ren 1, "tm"
-                ; Var, "tm"
-                ; Up "tm", "tm" ];
+    instances = [ Subst 1, "tm", []
+                ; Ren 1, "tm", []
+                ; Var, "tm", []
+                ; Up "tm", "tm", [] ];
     (* XXX *)
     notations = [ VarConstr, "tm"
                 ; VarInst, "tm"
@@ -109,15 +114,15 @@ let make_file preamble code tactics =
   preamble ^ text
 
 (** Generate the Coq file. Here we convert the Coq AST to pretty print expressions and then to strings. *)
-let genFile outfile_basename =
+let genFile outfile_basename axioms_separate =
   let open RWEM.Syntax in
   let open RWEM in
   let open VG in
   let* components = getComponents in
   let* { as_units = code; as_fext_units = fext_code } = genCode components in
   let* { as_units = automation; as_fext_units = fext_automation } = genTactics () in
-  let preamble, preamble_axioms = get_preambles outfile_basename in
+  let preamble, preamble_axioms = get_preambles outfile_basename axioms_separate in
   pure (make_file preamble code automation, make_file preamble_axioms fext_code fext_automation)
 
 (** Run the computation constructed by genFile *)
-let run_gen_code hsig outfile = RWEM.rwe_run (genFile outfile) hsig AG.initial
+let run_gen_code hsig outfile axioms_separate = RWEM.rwe_run (genFile outfile axioms_separate) hsig AG.initial

@@ -82,7 +82,7 @@ let main (infile, outfile, scope_type, coq_version) =
   let dir, outfile_basename, outfile, outfile_fext = make_filenames outfile in
   (* setup static files *)
   let () = create_outdir dir in
-  let generate_static_files = true in
+  let generate_static_files = false in
   let () = if generate_static_files
     then gen_static_files dir scope_type coq_version outfile outfile_fext
     else () in
@@ -91,10 +91,10 @@ let main (infile, outfile, scope_type, coq_version) =
   let* signature = SigAnalyzer.build_signature spec in
   (* generate dot graph *)
   (* generate code *)
-  let* (code, fext_code), _ = FileGenerator.run_gen_code signature outfile_basename in
+  let axioms_separate = false in
+  let* (code, fext_code), _ = FileGenerator.run_gen_code signature outfile_basename axioms_separate in
   (* write file *)
   let open Filename in
-  let axioms_separate = true in
   let () = if axioms_separate
     then
       let () = write_file (concat dir outfile) code in
