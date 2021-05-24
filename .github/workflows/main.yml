@@ -57,7 +57,7 @@ jobs:
           - 8.10.2
           - 8.11.2
           - 8.12.2
-          - 8.13.0
+          - 8.13.1
         include:
           # - coq-version: 8.9.1
           #   ocaml-version: 4.07.1
