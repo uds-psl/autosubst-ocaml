@@ -85,7 +85,10 @@ let gen_renamify () =
 let gen_arguments () =
   let* arguments = gets arguments in
   if Settings.is_wellscoped () then
-    pure @@ List.map (fun (name, args) -> impl_arguments_ name args) arguments
+    pure @@ List.filter_map (fun (name, args) ->
+        if list_empty args then None
+        else Some (impl_arguments_ name args))
+      arguments
   else pure []
 
 let gen_classes () =
