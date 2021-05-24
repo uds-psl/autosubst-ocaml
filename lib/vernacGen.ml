@@ -84,10 +84,16 @@ let notation_ notation modifiers ?scope body =
   Vernac [ VernacNotation (body, (CAst.make notation, modifiers), scope) ]
 
 let impl_arguments_ name args =
+  let open Vernacexpr in
   let qname = CAst.make (Constrexpr.AN (qualid_ name)) in
   let impl_args = List.map (fun a ->
-      [ name_ a, Glob_term.MaxImplicit ]) args in
-  Vernac [ VernacArguments (qname, [], impl_args, []) ]
+      RealArg {
+        name = name_ a;
+        recarg_like = false;
+        notation_scope = None;
+        implicit_status = Glob_term.MaxImplicit;
+      }) args in
+  Vernac [ VernacArguments (qname, impl_args, [], []) ]
 
 
 (* disable unused warning *)

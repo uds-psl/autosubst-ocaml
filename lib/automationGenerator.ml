@@ -1,4 +1,5 @@
 (* open Coqgen *)
+open Util
 open VernacGen
 open GallinaGen
 open AutomationGen
@@ -83,7 +84,9 @@ let gen_renamify () =
 
 let gen_arguments () =
   let* arguments = gets arguments in
-  pure @@ List.map (fun (name, args) -> impl_arguments_ name args) arguments
+  if Settings.is_wellscoped () then
+    pure @@ List.map (fun (name, args) -> impl_arguments_ name args) arguments
+  else pure []
 
 let gen_classes () =
   let* classes = gets classes in
@@ -136,4 +139,4 @@ let gen_additional () =
                     ; gen_substify
                     ; gen_renamify ] in
   let* tactics = a_map (fun f -> f ()) tactic_funs in
-  pure { as_units = arguments @ classes @ instances @ notations; as_fext_units =  tactics }
+  pure { as_units = classes @ instances @ notations; as_fext_units =  arguments @ tactics }

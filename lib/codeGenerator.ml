@@ -44,14 +44,16 @@ let genVar sort ns =
     let* () = tell_notation (NotationGen.VarConstr, sort) in
     let* () = tell_notation (NotationGen.VarInst, sort) in
     let* () = tell_notation (NotationGen.Var, sort) in
+    let* () = tell_argument (var_ sort, sty_names ns) in
     let* s = gen_var_arg sort ns in
     let t = [s] ==> sortType sort ns in
     pure @@ [constructor_ (var_ sort) t]
 
-let genConstr sort n L.{ cparameters; cname; cpositions } =
+let genConstr sort ns L.{ cparameters; cname; cpositions } =
     let* t =
-      let* up_n_x = a_map (fun L.{ binders; head } -> genArg sort n binders head) cpositions in
-      pure @@ (up_n_x ==> sortType sort n) in
+      let* up_n_x = a_map (fun L.{ binders; head } -> genArg sort ns binders head) cpositions in
+      pure @@ (up_n_x ==> sortType sort ns) in
+    let* () = tell_argument (cname, sty_names ns) in
     pure @@ constructor_ cname (if list_empty cparameters then t else forall_ (createBinders cparameters) t)
 
 
