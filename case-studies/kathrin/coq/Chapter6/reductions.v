@@ -4,7 +4,10 @@
 
 Module polyadic.
 Section polyadic.
+  Require Import fintype fintype_axioms.
+  Import ScopedNotations.
   From Chapter6 Require Export utlc_pairs.
+  
 
   Inductive step {m} : tm m -> tm m -> Prop :=
   | beta s t t' : t' = (s[t..]) -> step (app (lam s) t) t'
