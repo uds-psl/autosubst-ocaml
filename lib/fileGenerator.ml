@@ -9,6 +9,7 @@ module GG = GallinaGen
 module VG = VernacGen
 module AG = AutomationGen
 module L = Language
+module S = Settings
 
 let unscoped_preamble = "Require Import core unscoped.\n\n"
 let unscoped_preamble_axioms = "Require Import core core_axioms unscoped unscoped_axioms.\n"
@@ -20,12 +21,12 @@ let get_preambles outfile_basename axioms_separate =
   let base_preamble = Printf.sprintf base_preamble outfile_basename in
   if axioms_separate then
     match !Settings.scope_type with
-    | L.Unscoped -> (unscoped_preamble, unscoped_preamble_axioms ^ base_preamble)
-    | L.WellScoped -> (scoped_preamble, scoped_preamble_axioms ^ base_preamble)
+    | S.Unscoped -> (unscoped_preamble, unscoped_preamble_axioms ^ base_preamble)
+    | S.WellScoped -> (scoped_preamble, scoped_preamble_axioms ^ base_preamble)
   else
     match !Settings.scope_type with
-    | L.Unscoped -> (unscoped_preamble_axioms, "")
-    | L.WellScoped -> (scoped_preamble_axioms, "")
+    | S.Unscoped -> (unscoped_preamble_axioms, "")
+    | S.WellScoped -> (scoped_preamble_axioms, "")
 
 (** Generate all the liftings (= Up = fatarrow^y_x) for all pairs of sorts in the current component.
  ** So that we can later build the lifting functions "X_ty_ty", "X_ty_vl" etc. *)
@@ -36,8 +37,8 @@ let getUps component =
   let blists = map (fun (x, y) -> (L.BinderList ("p", x), y)) cart in
   let scope_type = !Settings.scope_type in
   match scope_type with
-  | L.WellScoped -> List.append singles blists
-  | L.Unscoped -> singles
+  | S.WellScoped -> List.append singles blists
+  | S.Unscoped -> singles
 
 (* deriving a comparator for a type and packing it in a module
  * from https://stackoverflow.com/a/59266326 *)

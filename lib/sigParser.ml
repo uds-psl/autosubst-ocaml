@@ -10,6 +10,7 @@ open Util
 module L = Language
 module AL = AssocList
 module CG = GallinaGen
+module S = Settings
 
 
 (** what we parse here *)
@@ -187,7 +188,7 @@ let checkSpec (ts, fs, cs) =
     let checkBinder () = function
       | L.Single x -> checkTId x
       | L.BinderList (_, x) ->
-        if L.equal_scopeType !Settings.scope_type L.Unscoped
+        if S.(equal_scopeType !scope_type Unscoped)
         then error "unscoped syntax + variadic binders are not supported"
         else checkTId x in
     let rec checkHead () = function

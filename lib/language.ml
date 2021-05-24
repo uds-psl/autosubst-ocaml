@@ -3,13 +3,6 @@
 module AL = AssocList
 module CG = GallinaGen
 
-type scopeType = WellScoped | Unscoped
-
-let equal_scopeType x y = match (x, y) with
-| WellScoped, WellScoped -> true
-| Unscoped, Unscoped -> true
-| _, _ -> false
-
 type tId = string [@@deriving show]
 type vId = string [@@deriving show]
 type fId = string [@@deriving show]

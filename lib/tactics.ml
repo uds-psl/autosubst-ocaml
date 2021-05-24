@@ -7,6 +7,7 @@ open Util
 open CoqNames
 open Termutil
 open GallinaGen
+module S = Settings
 
 (** Terminology:
  ** sort: a syntactic sort that is represented by an inductive type. In cbv SystemF ty, tm & vl
@@ -20,15 +21,15 @@ open GallinaGen
  ** fin m -> fin n *)
 let renT m n =
   match !Settings.scope_type with
-  | L.Unscoped -> arr1_ nat_ nat_
-  | L.WellScoped -> arr1_ (fin_ m) (fin_ n)
+  | S.Unscoped -> arr1_ nat_ nat_
+  | S.WellScoped -> arr1_ (fin_ m) (fin_ n)
 
 (** For a given sort create a substitution type.
  ** fin m -> tm nty nvl *)
 let substT m ns sort =
   match !Settings.scope_type with
-  | L.Unscoped -> arr1_ nat_ (sortType sort ns)
-  | L.WellScoped -> arr1_ (fin_ m) (sortType sort ns)
+  | S.Unscoped -> arr1_ nat_ (sortType sort ns)
+  | S.WellScoped -> arr1_ (fin_ m) (sortType sort ns)
 
 (** Create an extensional equivalence between unary functions s & t
  ** forall x, s x = t x *)
@@ -108,8 +109,8 @@ let castUpSubst sort bs y arg =
 let introScopeVarS name =
   let name = VarState.tfresh name in
   let binders = match !Settings.scope_type with
-    | L.Unscoped -> []
-    | L.WellScoped -> [binder1_ ~implicit:true ~btype:nat_ name] in
+    | S.Unscoped -> []
+    | S.WellScoped -> [binder1_ ~implicit:true ~btype:nat_ name] in
   (ref_ name, binders)
 
 
@@ -191,8 +192,8 @@ let genEqs sort name sigmas taus f =
  ** For sort vl and ns = [nty; nvl], create fin nvl *)
 let gen_var_arg sort ns =
   match !Settings.scope_type with
-  | L.Unscoped -> pure @@ nat_
-  | L.WellScoped -> map fin_ (toVar sort ns)
+  | S.Unscoped -> pure @@ nat_
+  | S.WellScoped -> map fin_ (toVar sort ns)
 
 (** Construction of patterns, needed for lifting -- yields a fitting pattern of S and id corresponding to the base sort and the binder
  ** TODO example *)

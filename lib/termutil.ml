@@ -5,6 +5,7 @@ open CoqSyntax
 
 module CE = Constrexpr
 module L = Language
+module S = Settings
 
 let type_ = type_
 let nat_ = ref_ "nat"
@@ -43,29 +44,29 @@ let repRew s = List.fold_left (fun s (t, t_eq) -> eqTrans_ s (ap_ t_eq t)) eq_re
 
 let matchFin_ s f b =
   match !Settings.scope_type with
-  | L.Unscoped ->
+  | S.Unscoped ->
     match_ s [ branch_ "S" ["n'"] (f (ref_ "n'"))
              ; branch_ "O" [] b ]
-  | L.WellScoped ->
+  | S.WellScoped ->
     match_ s [ branch_ "Some" ["fin_n"] (f (ref_ "fin_n"))
              ; branch_ "None" [] b ]
 
 let app_sort cname scope =
   match !Settings.scope_type with
-  | L.Unscoped -> ref_ cname
-  | L.WellScoped -> app_ref cname (sty_terms scope)
+  | S.Unscoped -> ref_ cname
+  | S.WellScoped -> app_ref cname (sty_terms scope)
 let app_constr cname scope rest =
   let args = match !Settings.scope_type with
-    | L.Unscoped -> rest
-    | L.WellScoped -> (sty_terms scope) @ rest in
+    | S.Unscoped -> rest
+    | S.WellScoped -> (sty_terms scope) @ rest in
   if list_empty args
   then ref_ cname
   else app_ref cname args
 let app_var_constr sort scope = app_constr (var_ sort) scope []
 let filter_scope_vars = List.filter (function
   | SubstScope _ -> (match !Settings.scope_type with
-      | L.Unscoped -> false
-      | L.WellScoped -> true)
+      | S.Unscoped -> false
+      | S.WellScoped -> true)
   | _ -> true)
 let app_fix ?expl cname ?(scopes=[]) rest =
   let scope_ts = List.(scopes
@@ -75,13 +76,13 @@ let app_fix ?expl cname ?(scopes=[]) rest =
   app_ref ?expl cname (scope_ts @ rest)
 let mk_underscore_pattern scope =
   match !Settings.scope_type with
-  | L.Unscoped -> []
-  | L.WellScoped -> List.map (const "_") (sty_terms scope)
+  | S.Unscoped -> []
+  | S.WellScoped -> List.map (const "_") (sty_terms scope)
 
 let sortType x ns =
   let args = match !Settings.scope_type with
-    | L.Unscoped -> []
-    | L.WellScoped -> sty_terms ns in
+    | S.Unscoped -> []
+    | S.WellScoped -> sty_terms ns in
   app_ (ref_ x) args
 
 let (==>) s t = List.fold_right (fun s t -> arr1_ s t) s t

@@ -1,10 +1,7 @@
 (** This module is basically the entrypoint of the program.
  ** (It's in lib because the ocaml repl cannot open executables, i.e. bin/main.ml) *)
 
-module L = Language
-
-(* before version 8.10 there was no explicit scope declaration so we use a different static file *)
-type coq_version = LT810 | GE810
+module S = Settings
 
 let read_file infile =
   let input = open_in_bin infile in
@@ -33,7 +30,7 @@ let write_file ?(force=true) outfile content =
 
 let copy_file src dst = write_file dst (read_file src)
 
-let gen_static_files dir scope_type coq_version outfile outfile_fext =
+let gen_static_files dir scope version outfile outfile_fext =
   let open Filename in
   let coq_project_files = ref [outfile; outfile_fext] in
   let copy_static_file ?out_name name =
@@ -41,15 +38,16 @@ let gen_static_files dir scope_type coq_version outfile outfile_fext =
     coq_project_files := out_name :: !coq_project_files;
     copy_file (concat "data" name) (concat dir out_name)
   in
-  let () = match scope_type, coq_version with
-    | L.WellScoped, LT810 ->
+  let open Settings in
+  let () = match scope, version with
+    | WellScoped, LT810 ->
       copy_static_file ~out_name:"fintype.v" "fintype_809.v"
-    | L.Unscoped, LT810 ->
+    | Unscoped, LT810 ->
       copy_static_file ~out_name:"unscoped.v" "unscoped_809.v"
-    | L.WellScoped, GE810 ->
+    | WellScoped, GE810 ->
       let () = copy_static_file "fintype_axioms.v" in
       copy_static_file "fintype.v"
-    | L.Unscoped, GE810 ->
+    | Unscoped, GE810 ->
       let () = copy_static_file "unscoped_axioms.v" in
       copy_static_file "unscoped.v"
   in
@@ -73,35 +71,31 @@ let create_outdir dir =
   with Unix_error (ENOENT, _, _) ->
     Unix.mkdir dir 0o755
 
-let main (infile, outfile, scope_type, coq_version) =
+let main S.{ infile; outfile; scope; axioms_separate; generate_static_files; version } =
   let open ErrorM.Syntax in
   let open ErrorM in
   let () = Printexc.record_backtrace true in
   let () = GallinaGen.setup_coq () in
-  let () = Settings.scope_type := scope_type in
+  let () = Settings.scope_type := scope in
   let dir, outfile_basename, outfile, outfile_fext = make_filenames outfile in
   (* setup static files *)
   let () = create_outdir dir in
-  let generate_static_files = false in
   let () = if generate_static_files
-    then gen_static_files dir scope_type coq_version outfile outfile_fext
+    then gen_static_files dir scope version outfile outfile_fext
     else () in
   (* parse input HOAS *)
   let* spec = read_file infile |> SigParser.parse_signature in
   let* signature = SigAnalyzer.build_signature spec in
   (* generate dot graph *)
   (* generate code *)
-  let axioms_separate = false in
   let* (code, fext_code), _ = FileGenerator.run_gen_code signature outfile_basename axioms_separate in
   (* write file *)
   let open Filename in
   let () = if axioms_separate
     then
       let () = write_file (concat dir outfile) code in
-      let () = write_file (concat dir outfile_fext) fext_code in
-      ()
+      write_file (concat dir outfile_fext) fext_code
     else
-      (* TODO does not really work b/c of the Require in fext_code. Would have to do this in run_gen_code *)
-      let () = write_file (concat dir outfile) (code ^ fext_code) in
-      () in
+      write_file (concat dir outfile) (code ^ fext_code)
+  in
   pure "done"
