@@ -4,10 +4,7 @@
 
 Module polyadic.
 Section polyadic.
-  Require Import core core_axioms fintype fintype_axioms.
-  Import ScopedNotations.
   From Chapter6 Require Export utlc_pairs.
-  
 
   Inductive step {m} : tm m -> tm m -> Prop :=
   | beta s t t' : t' = (s[t..]) -> step (app (lam s) t) t'
@@ -19,6 +16,17 @@ Section polyadic.
   Proof.
     induction 1; subst.
     - cbn. constructor. now asimpl.
+      (* auto_unfold. *)
+      (* rewrite ?compComp_tm. *)
+      (* unfold up_ren, upRen_tm_tm, upRen_list_tm_tm, up_tm_tm, up_list_tm_tm. *)
+      (* (* Unset Printing Notations. *) *)
+      (* fsimpl. *)
+      (* rewrite ?renComp'_tm. *)
+      (* rewrite ?instId_tm. *)
+      (* rewrite ?varL_tm. *)
+      (* cbn[subst_tm ren_tm]. *)
+      (* fsimpl. *)
+      (* Info 2 asimpl. *)
     - cbn. constructor. now asimpl.
 Qed.
 
@@ -29,8 +37,6 @@ End polyadic.
 
 Module sysf_cbv.
 Section sysf_cbv.
-  Require Import core core_axioms fintype fintype_axioms.
-  Import ScopedNotations.
   From Chapter6 Require Export sysf_cbv.
 
   Inductive step {m n} : tm m n -> tm m n -> Prop :=

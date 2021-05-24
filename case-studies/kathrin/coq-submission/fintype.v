@@ -3,7 +3,7 @@
 
 Version: December 11, 2019.
 *)
-Require Import core.
+Require Export axioms.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
@@ -28,7 +28,7 @@ Fixpoint fin (n : nat) : Type :=
 *)
 Definition ren (m n : nat) : Type := fin m -> fin n.
 
-Definition id {X} := @Datatypes.id X.
+Definition id {X} (x : X) := x.
 
 Definition idren {k: nat} : ren k k :=
   fun x => x.
@@ -72,6 +72,20 @@ Class Ren4 (X1 X2 X3 X4 : Type) (Y Z : Type) :=
 Class Ren5 (X1 X2 X3 X4 X5 : Type) (Y Z : Type) :=
   ren5 : X1 -> X2 -> X3 -> X4 -> X5 -> Y -> Z.
 
+Notation "s ⟨ xi1 ⟩" := (ren1  xi1 s) (at level 7, left associativity, format "s  ⟨ xi1 ⟩") : subst_scope.
+
+Notation "s ⟨ xi1 ; xi2 ⟩" := (ren2 xi1 xi2 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ⟩") : subst_scope.
+
+Notation "s ⟨ xi1 ; xi2 ; xi3 ⟩" := (ren3 xi1 xi2 xi3 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ; xi3 ⟩") : subst_scope.
+
+Notation "s ⟨ xi1 ; xi2 ; xi3 ; xi4 ⟩" := (ren4  xi1 xi2 xi3 xi4 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ; xi3 ; xi4 ⟩") : subst_scope.
+
+Notation "s ⟨ xi1 ; xi2 ; xi3 ; xi4 ; xi5 ⟩" := (ren5  xi1 xi2 xi3 xi4 xi5 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ; xi3 ; xi4 ; xi5 ⟩") : subst_scope.
+
+Notation "⟨ xi ⟩" := (ren1 xi) (at level 1, left associativity, format "⟨ xi ⟩") : fscope.
+
+Notation "⟨ xi1 ; xi2 ⟩" := (ren2 xi1 xi2) (at level 1, left associativity, format "⟨ xi1 ; xi2 ⟩") : fscope.
+
 
 (** *** Type Classes for Substiution *)
 
@@ -90,27 +104,27 @@ Class Subst4 (X1 X2 X3 X4: Type) (Y Z: Type) :=
 Class Subst5 (X1 X2 X3 X4 X5 : Type) (Y Z: Type) :=
   subst5 : X1 -> X2 -> X3 -> X4 -> X5  -> Y  -> Z.
 
+Notation "s [ sigma ]" := (subst1 sigma s) (at level 7, left associativity, format "s '/' [ sigma ]") : subst_scope.
+
+Notation "s [ sigma ; tau ]" := (subst2 sigma tau s) (at level 7, left associativity, format "s '/' [ sigma ; '/'  tau ]") : subst_scope.
+
 (** ** Type Class for Variables *)
 Class Var X Y :=
   ids : X -> Y.
 
 
-(** ** Internal Notation Module so that we can use them here ** **)
-Module InternalNotations.
-  Notation "f >> g" := (funcomp g f) (at level 50) : subst_scope.
-
-  Notation "x .: f" := (@scons _ _ x f) (at level 55) : subst_scope.
-
-  Open Scope subst_scope.
-End InternalNotations.
-
 (** ** Proofs for substitution primitives *)
-Import InternalNotations.
 
 (** Forward Function Composition
     Substitutions represented as functions are ubiquitious in this development and we often have to compose them, without talking about their pointwise behaviour.
     That is, we are interested in the forward compostion of functions, _f o g_, for which we introduce a convenient notation, "f >> g". The direction of the arrow serves as a reminder of the _forward_ nature of this composition, that is first apply _f_, then _g_. *)
 
+Arguments funcomp {X Y Z} (g)%fscope (f)%fscope.
+
+Notation "f >> g" := (funcomp g f) (at level 50).
+Open Scope subst_scope.
+
+Notation "x .: f" := (@scons _ _ x f) (at level 55) : subst_scope.
 
 (** Generic lifting operation for renamings *)
 Definition up_ren m n (xi : ren m n) : ren (S m) (S n) :=
@@ -121,11 +135,25 @@ Lemma up_ren_ren k l m (xi: ren k l) (zeta : ren l m) (rho: ren k m) (E: forall 
   forall x, (up_ren xi >> up_ren zeta) x = up_ren rho x.
 Proof.
   intros [x|].
-  - cbn. unfold funcomp. now rewrite <- E.
+  - simpl. unfold funcomp. now rewrite <- E.
   - reflexivity.
 Qed.
 
 Arguments up_ren_ren {k l m} xi zeta rho E.
+
+Lemma scons_eta {T} {n : nat} (f : fin (S n) -> T) :
+  f var_zero .: shift >> f = f.
+Proof. fext. intros [x|]; reflexivity.  Qed.
+
+
+Lemma scons_eta_id {n : nat} : var_zero .: shift = id :> (fin (S n) -> fin (S n)).
+Proof. fext. intros [x|]; reflexivity. Qed.
+
+Lemma scons_comp (T: Type) U {m} (s: T) (sigma: fin m -> T) (tau: T -> U ) :
+  (s .: sigma) >> tau = (tau s) .: (sigma >> tau) .
+Proof.
+  fext. intros [x|]. reflexivity. simpl. reflexivity.
+Qed.
 
 Lemma fin_eta {X} (f g : fin 0 -> X) :
   forall x, f x = g x.
@@ -170,9 +198,17 @@ Proof.
     + reflexivity.
 Qed.
 
+Lemma scons_p_head X m n (f : fin m -> X) (g : fin n -> X) :
+  (zero_p  >> scons_p f g) = f.
+Proof. fext. intros z. unfold funcomp. apply scons_p_head'. Qed.
+
 Lemma scons_p_tail' X  m n (f : fin m -> X) (g : fin n -> X) z :
   scons_p  f g (shift_p m z) = g z.
 Proof. induction m; cbn; eauto. Qed.
+
+Lemma scons_p_tail X  m n (f : fin m -> X) (g : fin n -> X) :
+  shift_p m  >> scons_p f g = g.
+Proof. fext. intros z. unfold funcomp. apply scons_p_tail'. Qed.
 
 Lemma destruct_fin {m n} (x : fin (m + n)):
   (exists x', x = zero_p  x') \/ exists x', x = shift_p m x'.
@@ -193,6 +229,10 @@ Proof.
   - now rewrite !scons_p_head'.
   - now rewrite !scons_p_tail'.
 Qed.
+
+Lemma scons_p_comp {X Y m n} {f : fin m -> X} {g : fin n -> X} {h : X -> Y} :
+  (scons_p f g) >> h = scons_p   (f >> h) (g >> h).
+Proof. fext. intros z. unfold funcomp. apply scons_p_comp'. Qed.
 
 Lemma scons_p_congr {X} {m n} (f f' : fin m -> X) (g g': fin n -> X) z:
   (forall x, f x = f' x) -> (forall x, g x = g' x) -> scons_p f g z = scons_p f' g' z.
@@ -244,33 +284,13 @@ Opaque id.
 
 (** ** Notations for Scoped Syntax *)
 
-Module ScopedNotations.
-  Include InternalNotations.
-  Notation "s ⟨ xi1 ⟩" := (ren1  xi1 s) (at level 7, left associativity, format "s  ⟨ xi1 ⟩") : subst_scope.
+Module CommaNotation.
+Notation "s , sigma" := (scons s sigma) (at level 60, format "s ,  sigma", right associativity) : subst_scope.
+End CommaNotation.
 
-  Notation "s ⟨ xi1 ; xi2 ⟩" := (ren2 xi1 xi2 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ⟩") : subst_scope.
+Notation "s '..'" := (scons s ids) (at level 1, format "s ..") : subst_scope.
 
-  Notation "s ⟨ xi1 ; xi2 ; xi3 ⟩" := (ren3 xi1 xi2 xi3 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ; xi3 ⟩") : subst_scope.
-
-  Notation "s ⟨ xi1 ; xi2 ; xi3 ; xi4 ⟩" := (ren4  xi1 xi2 xi3 xi4 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ; xi3 ; xi4 ⟩") : subst_scope.
-
-  Notation "s ⟨ xi1 ; xi2 ; xi3 ; xi4 ; xi5 ⟩" := (ren5  xi1 xi2 xi3 xi4 xi5 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ; xi3 ; xi4 ; xi5 ⟩") : subst_scope.
-
-  Notation "⟨ xi ⟩" := (ren1 xi) (at level 1, left associativity, format "⟨ xi ⟩") : fscope.
-
-  Notation "⟨ xi1 ; xi2 ⟩" := (ren2 xi1 xi2) (at level 1, left associativity, format "⟨ xi1 ; xi2 ⟩") : fscope.
-
-  Notation "s [ sigma ]" := (subst1 sigma s) (at level 7, left associativity, format "s '/' [ sigma ]") : subst_scope.
-
-  Notation "s [ sigma ; tau ]" := (subst2 sigma tau s) (at level 7, left associativity, format "s '/' [ sigma ; '/'  tau ]") : subst_scope.
-
-(* Notation "s , sigma" := (scons s sigma) (at level 60, format "s ,  sigma", right associativity) : subst_scope. *)
-
-  Notation "s '..'" := (scons s ids) (at level 1, format "s ..") : subst_scope.
-
-  Notation "↑" := (shift) : subst_scope.
-
-End ScopedNotations.
+Notation "↑" := (shift) : subst_scope.
 
 Ltac unfold_funcomp := match goal with
                            | |-  context[(?f >> ?g) ?s] => change ((f >> g) s) with (g (f s))
@@ -279,62 +299,61 @@ Ltac unfold_funcomp := match goal with
 
 (** ** Tactics for Scoped Syntax *)
 
-(* (** Generic fsimpl tactic: simplifies the above primitives in a goal. *) *)
-(* (* a.d. TODO same as in unscoped this contains fext lemmas *) *)
-(* Ltac fsimpl := *)
-(*   repeat match goal with *)
-(*          | [|- context[id >> ?f]] => change (id >> f) with f (* AsimplCompIdL *) *)
-(*          | [|- context[?f >> id]] => change (f >> id) with f (* AsimplCompIdR *) *)
-(*          | [|- context [id ?s]] => change (id s) with s *)
-(*          | [|- context[funcomp ?f ?g]] => change (funcomp f g) with (g >> f) (* AsimplCompIdL *) *)
-(*          | [|- context[(?f >> ?g) >> ?h]] => *)
-(*            change ((f >> g) >> h) with (f >> (g >> h)) (* AsimplComp *) *)
+(** Generic fsimpl tactic: simplifies the above primitives in a goal. *)
+Ltac fsimpl :=
+  repeat match goal with
+         | [|- context[id >> ?f]] => change (id >> f) with f (* AsimplCompIdL *)
+         | [|- context[?f >> id]] => change (f >> id) with f (* AsimplCompIdR *)
+         | [|- context [id ?s]] => change (id s) with s
+         | [|- context[comp ?f ?g]] => change (comp f g) with (g >> f) (* AsimplCompIdL *)
+         | [|- context[(?f >> ?g) >> ?h]] =>
+           change ((f >> g) >> h) with (f >> (g >> h)) (* AsimplComp *)
 
-(*          (* | [|- zero_p >> scons_p ?f ?g] => rewrite scons_p_head *) *)
+         | [|- zero_p >> scons_p ?f ?g] => rewrite scons_p_head
 
-(*          | [|- context[(?s.:?sigma) var_zero]] => change ((s.:sigma) var_zero) with s *)
-(*          | [|- context[(?s.:?sigma) (shift ?m)]] => change ((s.:sigma) (shift m)) with (sigma m) *)
+         | [|- context[(?s.:?sigma) var_zero]] => change ((s.:sigma) var_zero) with s
+         | [|- context[(?s.:?sigma) (shift ?m)]] => change ((s.:sigma) (shift m)) with (sigma m)
 
-(*          | [|- context[idren >> ?f]] => change (idren >> f) with f *)
-(*          | [|- context[?f >> idren]] => change (f >> idren) with f *)
-(*          | [|- context[?f >> (?x .: ?g)]] => change (f >> (x .: g)) with g *)
-(*          (* | [|- context[?x2 .: shift >> ?f]] => change x2 with (f var_zero); rewrite (@scons_eta _ _ f) *) *)
-(*          (* | [|- context[?f var_zero .: ?g]] => change g with (shift >> f); rewrite scons_eta *) *)
+         | [|- context[idren >> ?f]] => change (idren >> f) with f
+         | [|- context[?f >> idren]] => change (f >> idren) with f
+         | [|- context[?f >> (?x .: ?g)]] => change (f >> (x .: g)) with g
+         | [|- context[?x2 .: shift >> ?f]] => change x2 with (f var_zero); rewrite (@scons_eta _ _ f)
+         | [|- context[?f var_zero .: ?g]] => change g with (shift >> f); rewrite scons_eta
 
-(*          |[|- _ =  ?h (?f ?s)] => change (h (f s)) with ((f >> h) s) *)
-(*          |[|-  ?h (?f ?s) = _] => change (h (f s)) with ((f >> h) s) *)
+         |[|- _ =  ?h (?f ?s)] => change (h (f s)) with ((f >> h) s)
+         |[|-  ?h (?f ?s) = _] => change (h (f s)) with ((f >> h) s)
 
-(*          (* | _ => first [progress (rewrite scons_comp) |  progress (rewrite scons_eta_id) | progress (autorewrite with FunctorInstances)] *) *)
-(*          end. *)
+         | _ => first [progress (rewrite scons_comp) |  progress (rewrite scons_eta_id) | progress (autorewrite with FunctorInstances)]
+         end.
 
-(* (** Generic fsimpl tactic: simplifies the above primitives in the context *) *)
-(* Ltac fsimplc := *)
-(*   repeat match goal with *)
-(*          | [H: context[id >> ?f] |- _] => change (id >> f) with f in H(* AsimplCompIdL *) *)
-(*          | [H: context[?f >> id]|- _] => change (f >> id) with f in H(* AsimplCompIdR *) *)
-(*          | [H: context [id ?s]|- _] => change (id s) with s in H *)
-(*          | [H: context[funcomp ?f ?g]|- _] => change (funcomp f g) with (g >> f) in H (* AsimplCompIdL *) *)
-(*          | [H: context[(?f >> ?g) >> ?h]|- _] => *)
-(*            change ((f >> g) >> h) with (f >> (g >> h)) in H (* AsimplComp *) *)
-(*          | [H: context[(?s.:?sigma) var_zero]|- _] => change ((s.:sigma) var_zero) with s in H *)
-(*          | [H: context[(?s.:?sigma) var_zero]|- _] => change ((s.:sigma) var_zero) with s in H *)
-(*          | [H: context[(?s.:?sigma) (shift ?m)]|- _] => change ((s.:sigma) (shift m)) with (sigma m) in H *)
-(*                                                                                       |[H : context[ _ =  ?h (?f ?s)]|- _] => change (h (f s)) with ((f >> h) s) in H *)
-(*          |[H: context[?h (?f ?s) = _]|- _] => change (h (f s)) with ((f >> h) s) in H *)
-(*          | [H: context[idren >> ?f]|- _] => change (idren >> f) with f in H *)
-(*          | [H: context[?f >> idren]|- _] => change (f >> idren) with f in H *)
-(*          | [H: context[?f >> (?x .: ?g)]|- _] => *)
-(*            change (f >> (x .: g)) with g in H *)
-(*          (* | [H: context[?x2 .: shift >> ?f]|- _] => *) *)
-(*            (* change x2 with (f var_zero) in H; rewrite (@scons_eta _ _ f) in H *) *)
-(*          (* | [H: context[?f var_zero .: ?g]|- _] => *) *)
-(*            (* change g with (shift >> f) in H; rewrite scons_eta in H *) *)
-(*          (* | _ => first [progress (rewrite scons_comp in * ) | progress (rewrite scons_eta_id in * ) | progress (autorewrite with FunctorInstances in * )] *) *)
-(*          end. *)
+(** Generic fsimpl tactic: simplifies the above primitives in the context *)
+Ltac fsimplc :=
+  repeat match goal with
+         | [H: context[id >> ?f] |- _] => change (id >> f) with f in H(* AsimplCompIdL *)
+         | [H: context[?f >> id]|- _] => change (f >> id) with f in H(* AsimplCompIdR *)
+         | [H: context [id ?s]|- _] => change (id s) with s in H
+         | [H: context[comp ?f ?g]|- _] => change (comp f g) with (g >> f) in H (* AsimplCompIdL *)
+         | [H: context[(?f >> ?g) >> ?h]|- _] =>
+           change ((f >> g) >> h) with (f >> (g >> h)) in H (* AsimplComp *)
+         | [H: context[(?s.:?sigma) var_zero]|- _] => change ((s.:sigma) var_zero) with s in H
+         | [H: context[(?s.:?sigma) var_zero]|- _] => change ((s.:sigma) var_zero) with s in H
+         | [H: context[(?s.:?sigma) (shift ?m)]|- _] => change ((s.:sigma) (shift m)) with (sigma m) in H
+                                                                                      |[H : context[ _ =  ?h (?f ?s)]|- _] => change (h (f s)) with ((f >> h) s) in H
+         |[H: context[?h (?f ?s) = _]|- _] => change (h (f s)) with ((f >> h) s) in H
+         | [H: context[idren >> ?f]|- _] => change (idren >> f) with f in H
+         | [H: context[?f >> idren]|- _] => change (f >> idren) with f in H
+         | [H: context[?f >> (?x .: ?g)]|- _] =>
+           change (f >> (x .: g)) with g in H
+         | [H: context[?x2 .: shift >> ?f]|- _] =>
+           change x2 with (f var_zero) in H; rewrite (@scons_eta _ _ f) in H
+         | [H: context[?f var_zero .: ?g]|- _] =>
+           change g with (shift >> f) in H; rewrite scons_eta in H
+         | _ => first [progress (rewrite scons_comp in *) | progress (rewrite scons_eta_id in *) | progress (autorewrite with FunctorInstances in *)]
+         end.
 
-(* (** Simplification in both the goal and the context *) *)
-(* Tactic Notation "fsimpl" "in" "*" := *)
-(*   fsimpl; fsimplc. *)
+(** Simplification in both the goal and the context *)
+Tactic Notation "fsimpl" "in" "*" :=
+  fsimpl; fsimplc.
 
 Tactic Notation "auto_case" tactic(t) :=  (match goal with
                                            | [|- forall (i : fin 0), _] => intros []; t
@@ -346,6 +365,4 @@ Tactic Notation "auto_case" tactic(t) :=  (match goal with
 
 
 (** Functor instances which can be added later on. *)
-
-(* a.d. TODO this needs to be at the end, otherwise Coq does not know fscope *)
-Arguments funcomp {X Y Z} (g)%fscope (f)%fscope.
+Hint Rewrite  @scons_p_comp scons_p_head scons_p_tail @scons_p_head' @scons_p_tail': FunctorInstances.

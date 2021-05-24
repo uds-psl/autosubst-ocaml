@@ -33,7 +33,7 @@ Ltac fsimpl :=
          | [|- context[id >> ?f]] => change (id >> f) with f (* AsimplCompIdL *)
          | [|- context[?f >> id]] => change (f >> id) with f (* AsimplCompIdR *)
          | [|- context [id ?s]] => change (id s) with s
-         | [|- context[funcomp ?f ?g]] => change (funcomp f g) with (g >> f) (* AsimplCompIdL *)
+         | [|- context[comp ?f ?g]] => change (comp f g) with (g >> f) (* AsimplCompIdL *)
          | [|- context[(?f >> ?g) >> ?h]] =>
            change ((f >> g) >> h) with (f >> (g >> h)) (* AsimplComp *)
 
@@ -60,7 +60,7 @@ Ltac fsimplc :=
          | [H: context[id >> ?f] |- _] => change (id >> f) with f in H(* AsimplCompIdL *)
          | [H: context[?f >> id]|- _] => change (f >> id) with f in H(* AsimplCompIdR *)
          | [H: context [id ?s]|- _] => change (id s) with s in H
-         | [H: context[funcomp ?f ?g]|- _] => change (funcomp f g) with (g >> f) in H (* AsimplCompIdL *)
+         | [H: context[comp ?f ?g]|- _] => change (comp f g) with (g >> f) in H (* AsimplCompIdL *)
          | [H: context[(?f >> ?g) >> ?h]|- _] =>
            change ((f >> g) >> h) with (f >> (g >> h)) in H (* AsimplComp *)
          | [H: context[(?s.:?sigma) var_zero]|- _] => change ((s.:sigma) var_zero) with s in H
@@ -83,4 +83,4 @@ Ltac fsimplc :=
 Tactic Notation "fsimpl" "in" "*" :=
   fsimpl; fsimplc.
 
-Hint Rewrite @scons_p_comp scons_p_head scons_p_tail: FunctorInstances.
+Hint Rewrite @scons_p_comp scons_p_head scons_p_tail @scons_p_head' @scons_p_tail': FunctorInstances.

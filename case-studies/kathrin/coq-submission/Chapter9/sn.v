@@ -1,5 +1,3 @@
-Require Import core core_axioms fintype fintype_axioms.
-Import ScopedNotations.
 From Chapter9 Require Export wn.
 
 (** ** Schäfer's Expression Relation *)

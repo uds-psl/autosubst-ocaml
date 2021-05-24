@@ -1,8 +1,6 @@
 (** ** Reduction and Values *)
 
 Require Export ARS Coq.Program.Equality.
-Require Import core core_axioms fintype fintype_axioms.
-Import ScopedNotations.
 From Chapter9 Require Export stlc.
 Set Implicit Arguments.
 Unset Strict Implicit.

@@ -1,7 +1,5 @@
 (** ** Weak Head Normalisation *)
 
-Require Import core core_axioms fintype fintype_axioms.
-Import ScopedNotations.
 From Chapter9 Require Export preservation.
 
 Definition E_ {m} (L: tm m -> Prop)  (s : tm m) : Prop :=

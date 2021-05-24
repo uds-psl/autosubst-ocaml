@@ -1,7 +1,5 @@
 (** ** Typing, Context Morphism Lemmas, and Preservation *)
 
-Require Import core core_axioms fintype fintype_axioms.
-Import ScopedNotations.
 From Chapter9 Require Export reduction.
 
 (** A context *)
