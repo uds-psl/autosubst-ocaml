@@ -106,7 +106,7 @@ let gen_instances () =
     let iname = instance_name sort inst_type in
     let cname = class_name sort inst_type in
     let fname = function_name sort inst_type in
-    instance_ iname (app_ref cname (class_args inst_type)) (app_ref ~expl:true fname [])
+    instance_ iname cbinders (app_ref cname (class_args inst_type)) (app_ref ~expl:true fname params)
   in
   (* TODO better way to chain actions? *)
   let* _ = sequence (List.map register_instance_unfolds instances) in

@@ -66,8 +66,8 @@ let class_ name binders fields =
   let body = inductiveBody_ name binders fields in
   Vernac [ VernacInductive (Class false, [ body ]) ]
 
-let instance_ inst_name class_type body =
-  definition_ inst_name [] ~rtype:class_type body
+let instance_ inst_name cbinders class_type body =
+  definition_ inst_name cbinders ~rtype:class_type body
 
 (* a.d. don't call with multiple names for now b/c printing is wrong *)
 let ex_instances_ names =
@@ -148,7 +148,7 @@ end
 
 module [@warning "-32"] GenTestsClass = struct
   let my_instance =
-    let inst = instance_ "fooI" (ref_ "foo") (ref_ "bar") in
+    let inst = instance_ "fooI" [] (ref_ "foo") (ref_ "bar") in
     (pr_vernac_unit inst)
 
 
