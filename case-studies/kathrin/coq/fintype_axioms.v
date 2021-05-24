@@ -83,4 +83,4 @@ Ltac fsimplc :=
 Tactic Notation "fsimpl" "in" "*" :=
   fsimpl; fsimplc.
 
-Hint Rewrite @scons_p_comp scons_p_head scons_p_tail @scons_p_head' @scons_p_tail': FunctorInstances.
+Hint Rewrite @scons_p_comp scons_p_head scons_p_tail : FunctorInstances.

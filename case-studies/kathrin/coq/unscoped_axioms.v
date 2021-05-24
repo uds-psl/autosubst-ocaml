@@ -1,9 +1,6 @@
 Require Import core core_axioms unscoped.
 Import UnscopedNotations.
 
-#[ local ]
- Open Scope subst_scope.
-
 (** Eta laws. *)
 Lemma scons_eta_id {n : nat} : var_zero .: shift = id :> (nat -> nat).
 Proof. fext. intros [|x]; reflexivity. Qed.

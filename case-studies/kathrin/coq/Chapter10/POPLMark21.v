@@ -1,5 +1,7 @@
 Require Export Coq.Lists.List.
 Require Import Coq.Program.Equality.
+Require Import core core_axioms fintype fintype_axioms.
+Import ScopedNotations.
 From Chapter10 Require Export sysf_pat.
 Require Import Coq.Program.Tactics.
 
@@ -126,6 +128,8 @@ Hint Resolve unique_update natequiv_update.
 
 (** POPLMark 1B. *)
 Reserved Notation "'SUB' Delta |- A <: B" (at level 68, A at level 99, no associativity).
+
+Open Scope fscope.
 
 Inductive sub {n} (Delta : ctx n) : ty n -> ty n -> Prop :=
 | SA_top A :
@@ -258,7 +262,10 @@ Proof with asimpl;eauto.
     eapply IHB2; eauto.
     + asimpl in *. eapply sub_narrow; try eapply H0.
       * auto_case.
-        eapply sub_weak with (xi := ↑); try reflexivity; eauto. now asimpl.
+        eapply sub_weak with (xi := ↑); try reflexivity; eauto.
+        (* adrian: as of 7b3472c the goal is already solved by eauto
+         TODO find out why *)
+        (* now asimpl. *)
       * intros [x|]; try cbn; eauto. right. apply transitivity_ren. apply transitivity_ren. eauto.
     + asimpl in H1_0. auto.
   - depind H0... depind H3...

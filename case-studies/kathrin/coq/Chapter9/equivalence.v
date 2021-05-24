@@ -111,9 +111,9 @@ Proof.
   apply algeq_mut_ind; intros; subst; asimpl in *; try (now (econstructor; eauto)).
   - econstructor; [| |eauto]. all: eauto using mwhr_ren.
   - constructor. specialize (H _ _ (cont_ext_cons _ _ _ T H0)).
-    asimpl in *. auto.
+    asimpl in *. auto. admit.
   - destruct (H x l) as (?&->). now constructor.
-Qed.
+Admitted.
 
 Lemma algeq_backward_closure Gamma s t A s' t':
   algeq Gamma s t A -> mwhr s' s -> mwhr t' t -> algeq Gamma s' t' A.
@@ -271,6 +271,7 @@ Proof.
     eapply H0. omega.
   - simpl. intros. asimpl in *. asimpl in IHdecleq.
     (* adrian: had to change scons notation below to not use t, gamma *)
+    Open Scope fscope.
     specialize (IHdecleq Delta (t .: gamma >> ⟨xi⟩) (t' .: delta >> ⟨xi⟩)).
     asimpl in *.
     eapply IHdecleq.

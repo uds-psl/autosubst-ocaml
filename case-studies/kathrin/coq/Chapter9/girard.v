@@ -1,6 +1,9 @@
 (** * Appendix B: Strong Normalisation à la Girard *)
 
+Require Import core core_axioms fintype fintype_axioms.
+Import ScopedNotations.
 From Chapter9 Require Export preservation sn_raamsdonk.
+Open Scope fscope.
 
 (** ** Strong Normalisation *)
 Notation sn := (sn (@step _)).

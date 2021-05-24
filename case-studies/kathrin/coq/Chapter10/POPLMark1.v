@@ -4,9 +4,10 @@
 
 Require Export Coq.Lists.List.
 Require Import Coq.Program.Equality.
+Require Import core core_axioms fintype fintype_axioms.
+Import ScopedNotations.
 From Chapter10 Require Export sysf.
 Require Import Coq.Program.Tactics.
-Import CommaNotation.
 
 Ltac inv H := inversion H; try clear H; try subst.
 
@@ -29,6 +30,7 @@ Reserved Notation "'SUB' Delta |- A <: B"
          (at level 68, A at level 99, no associativity).
 
 (** *** Properties of Subtyping *)
+Open Scope fscope.
 
 Inductive sub {n} (Delta : ctx n) : ty n -> ty n -> Prop :=
 | SA_top A :
@@ -41,7 +43,7 @@ Inductive sub {n} (Delta : ctx n) : ty n -> ty n -> Prop :=
     SUB Delta |- B1 <: A1 -> SUB Delta |- A2 <: B2 ->
     SUB Delta |- arr A1 A2 <: arr B1 B2
 | SA_all (A1: ty n) (A2: ty (S n)) B1 B2 :
-    SUB Delta |- B1 <: A1 -> @sub (S n) ((B1, Delta) >> ⟨↑⟩) A2 B2 ->
+    SUB Delta |- B1 <: A1 -> @sub (S n) ((B1 .: Delta) >> ⟨↑⟩) A2 B2 ->
     SUB Delta |- all A1 A2 <: all B1 B2
 where "'SUB' Delta |- A <: B" := (sub Delta A B).
 
@@ -62,7 +64,7 @@ Proof.
 Qed.
 
 Lemma sub_weak1 n (Delta : ctx n) A A' B B' C :
-  SUB Delta |- A <: B ->  A' = A⟨↑⟩ ->  B' = B⟨↑⟩ -> SUB ((C, Delta) >> ⟨↑⟩) |- A' <: B'.
+  SUB Delta |- A <: B ->  A' = A⟨↑⟩ ->  B' = B⟨↑⟩ -> SUB ((C .: Delta) >> ⟨↑⟩) |- A' <: B'.
 Proof. intros. eapply sub_weak;  eauto. intros x. now asimpl. Qed.
 
 Definition transitivity_at {n} (B: ty n) := forall m Gamma (A : ty m) C  (xi: fin n -> fin m),
@@ -104,7 +106,10 @@ Proof with asimpl;eauto.
     eapply IHB2; eauto.
     + asimpl in *. eapply sub_narrow; try eapply H0.
       * auto_case. apply sub_refl.
-        eapply sub_weak with (xi := ↑); try reflexivity; eauto. now asimpl.
+        eapply sub_weak with (xi := ↑); try reflexivity; eauto.
+        (* adrian: as of 7b3472c the goal is already solved by eauto
+         TODO find out why *)
+        (* now asimpl. *)
       * intros [x|]; try cbn; eauto. right. apply transitivity_ren. apply transitivity_ren. eauto.
     + asimpl in H1_0. auto.
 Qed.
@@ -143,13 +148,13 @@ Inductive has_ty {m n} (Delta : ctx m) (Gamma : dctx  n m) : tm m n -> ty m -> P
 | T_Var  x :
     TY Delta;Gamma |- var_tm x : (Gamma x)
  | T_abs (A: ty m) B (s: tm m (S n)):
-    @has_ty m (S n) Delta (A, Gamma) s B   ->
+    @has_ty m (S n) Delta (A .: Gamma) s B   ->
     TY Delta;Gamma |- abs A s : arr A B
 | T_app A B s t:
     TY Delta;Gamma |- s : arr A B   ->   TY Delta;Gamma |- t : A   ->
     TY Delta;Gamma |- app s t : B
 | T_tabs A B s :
-    @has_ty (S m) n ((A, Delta) >> ⟨↑⟩) (Gamma >> ⟨↑⟩) s B ->
+    @has_ty (S m) n ((A .: Delta) >> ⟨↑⟩) (Gamma >> ⟨↑⟩) s B ->
     TY Delta;Gamma |- tabs A s : all A B
 | T_Tapp A B A' s B' :
     TY Delta;Gamma |- s : all A B ->
