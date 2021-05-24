@@ -78,3 +78,5 @@ Makefile.coq.conf
 
 output
 output_submission
+
+case-studies/examples/*.v
