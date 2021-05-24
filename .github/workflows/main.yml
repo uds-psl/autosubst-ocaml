@@ -32,7 +32,7 @@ jobs:
       - name: Install dependencies
         run: |
           opam repo add coq-released https://coq.inria.fr/opam/released
-          opam pin add coq 8.13.0
+          opam pin add coq 8.13.1
           opam install dune angstrom ocamlgraph ppx_deriving
       - name: Build app
         run: opam exec -- dune build     
@@ -67,7 +67,7 @@ jobs:
             ocaml-version: 4.07.1
           - coq-version: 8.12.2
             ocaml-version: 4.07.1
-          - coq-version: 8.13.0
+          - coq-version: 8.13.1
             ocaml-version: 4.11.1
     steps:
       - name: Download case-studies artifact
@@ -85,7 +85,38 @@ jobs:
           opam pin add coq ${{ matrix.coq-version }}
       - name: Compile generated files
         run: |
-          eval $(opam env)
           cd ./case-studies/examples
-          make clean
-          make
+          opam exec -- make clean
+          opam exec -- make
+  runkathrin:
+    # only run after build has been successfully completed
+    needs: build
+    runs-on: ubuntu-18.04
+
+    strategy:
+#       fail-fast: false
+      matrix:
+        coq-version:
+          - 8.9.1
+        include:
+          - coq-version: 8.9.1
+            ocaml-version: 4.07.1
+    steps:
+      - name: Download case-studies artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: case-studies
+          path: ./case-studies
+      - name: Use OCaml ${{ matrix.ocaml-version }}
+        uses: avsm/setup-ocaml@v1
+        with:
+          ocaml-version: ${{ matrix.ocaml-version }}
+      - name: Install dependencies
+        run: |
+          opam repo add coq-released https://coq.inria.fr/opam/released
+          opam pin add coq ${{ matrix.coq-version }}
+      - name: Compile generated files
+        run: |
+          cd ./case-studies/kathrin/coq
+          opam exec -- make clean
+          opam exec -- make
