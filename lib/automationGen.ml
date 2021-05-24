@@ -33,7 +33,7 @@ module TacGen = struct
     | [] -> idtac_
     | tac :: tacs ->
       List.fold_left (fun t1 t2 -> then1_ t1 t2) tac tacs
-  let cbn_ consts =
+  let cbn_ ?(locus_clause=default_locus_clause) consts =
     let consts = List.map (fun s ->
         CAst.make (Constrexpr.AN (qualid_ s))) consts in
     let delta = list_empty consts in
@@ -47,7 +47,7 @@ module TacGen = struct
       rConst = consts;
     } in
     let cbn = Genredexpr.Cbn flags in
-    TacAtom (CAst.make (TacReduce (cbn, default_locus_clause)))
+    TacAtom (CAst.make (TacReduce (cbn, locus_clause)))
 
   let intros_ names =
     let intro_pats = List.map (fun s ->

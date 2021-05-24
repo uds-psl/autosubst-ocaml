@@ -44,7 +44,7 @@ let gen_asimpl_star () =
   let tac = then1_ auto_unfold_star
       (repeat_ (first_ (rewrites @
                         [ progress_ (unfold_ ~locus_clause:star_locus_clause asimpl_unfold_functions)
-                        ; progress_ (cbn_ asimpl_cbn_functions)
+                        ; progress_ (cbn_ ~locus_clause:star_locus_clause asimpl_cbn_functions)
                         ; calltac_ "fsimpl" ]))) in
   pure @@ TacticNotation ([ "\"asimpl\""; "\"in\""; "\"*\"" ], tac)
 

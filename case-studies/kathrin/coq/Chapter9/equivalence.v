@@ -110,10 +110,11 @@ Combined Scheme algeq_mut_ind from algeq_ind_2, algeqNeu_ind_2.
 Proof.
   apply algeq_mut_ind; intros; subst; asimpl in *; try (now (econstructor; eauto)).
   - econstructor; [| |eauto]. all: eauto using mwhr_ren.
-  - constructor. specialize (H _ _ (cont_ext_cons _ _ _ T H0)).
-    asimpl in *. auto. admit.
+  - constructor.
+    specialize (H _ _ (cont_ext_cons _ _ _ T H0)).
+    asimpl in *. auto.
   - destruct (H x l) as (?&->). now constructor.
-Admitted.
+Qed.
 
 Lemma algeq_backward_closure Gamma s t A s' t':
   algeq Gamma s t A -> mwhr s' s -> mwhr t' t -> algeq Gamma s' t' A.

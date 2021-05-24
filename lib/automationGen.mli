@@ -18,7 +18,7 @@ module TacGen : sig
   val calltacTac_ : string -> t -> t
   val then1_ : t -> t -> t
   val then_ : t list -> t
-  val cbn_ : string list -> t
+  val cbn_ : ?locus_clause:locus_clause_expr -> string list -> t
   val intros_ : string list -> t
   val unfold_ : ?locus_clause:locus_clause_expr -> string list -> t
   (* val notation_ : Constrexpr.constr_expr -> t *)
