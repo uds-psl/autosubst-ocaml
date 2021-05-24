@@ -71,3 +71,6 @@ let sepd = String.concat sep_
 (* Printing *)
 let newline = Pp.fnl ()
 let vernacend = Pp.((str ".") ++ newline)
+
+let guard b l =
+  if b then l else []

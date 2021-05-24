@@ -6,13 +6,17 @@
 module CG = GallinaGen
 module L = Language
 
-type substTy = SubstScope of CG.constr_exprs
+type substTy = SubstScope of string list * CG.constr_exprs
             | SubstRen of CG.constr_exprs
             | SubstSubst of CG.constr_exprs
             | SubstEq of CG.constr_exprs * (L.tId -> L.binder -> CG.constr_expr -> CG.constr_expr RWEM.t)
 
 let sty_terms = function
-  | SubstScope xs -> xs
+  | SubstScope (_, xs) -> xs
   | SubstRen xs -> xs
   | SubstSubst xs -> xs
   | SubstEq (xs,_) -> xs
+
+let sty_names = function
+  | SubstScope (names, _) -> names
+  | _ -> []

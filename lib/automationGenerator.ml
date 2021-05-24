@@ -97,20 +97,22 @@ let gen_classes () =
 
 let gen_instances () =
   let* instances = gets instances in
-  let register_instance_unfolds (inst_type, sort) =
+  let register_instance_unfolds (inst_type, sort, _) =
     let unfolds = instance_unfolds sort inst_type in
     let* info = get in
     put { info with auto_unfold_functions = unfolds @ info.auto_unfold_functions }
   in
-  let gen_instance inst_type sort =
+  let gen_instance inst_type sort params =
     let iname = instance_name sort inst_type in
     let cname = class_name sort inst_type in
     let fname = function_name sort inst_type in
-    instance_ iname cbinders (app_ref cname (class_args inst_type)) (app_ref ~expl:true fname params)
+    let cbinders = guard (Settings.is_wellscoped ()) [ binder_ ~implicit:true ~btype:(ref_ "nat") params ] in
+    let args = guard (Settings.is_wellscoped ()) (List.map ref_ params) in
+    instance_ iname cbinders (app_ref cname (class_args inst_type)) (app_ref ~expl:true fname args)
   in
   (* TODO better way to chain actions? *)
   let* _ = sequence (List.map register_instance_unfolds instances) in
-  let instance_definitions = List.concat_map (fun (inst_type, sort) -> [ gen_instance inst_type sort; ex_instance_ (instance_name sort inst_type) ]) instances in
+  let instance_definitions = List.concat_map (fun (inst_type, sort, params) -> [ gen_instance inst_type sort params; ex_instance_ (instance_name sort inst_type) ]) instances in
   pure instance_definitions
 
 let gen_notations () =

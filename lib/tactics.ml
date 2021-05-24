@@ -80,7 +80,7 @@ let up' x f n b =
 let upEq x bs xs f = m_fold (up' x f) xs bs
 
 let upSubst x bs = function
-  | SubstScope xs -> map (fun xs -> SubstScope xs) (upScope x bs xs)
+  | SubstScope (ns, xs) -> map (fun xs -> SubstScope (ns, xs)) (upScope x bs xs)
   | SubstRen xs -> map (fun xs -> SubstRen xs) (upRen x bs xs)
   | SubstSubst xs -> map (fun xs -> SubstSubst xs) (upSubstS x bs xs)
   | SubstEq (xs, f) -> map2 (fun xs f -> SubstEq (xs, f)) (upEq x bs xs f) (pure f)
@@ -93,7 +93,7 @@ let cast x y xs =
       (list_zip arg_x xs) [])
 
 let castSubst x y = function
-  | SubstScope xs -> map (fun xs -> SubstScope xs) (cast x y xs)
+  | SubstScope (ns, xs) -> map (fun xs -> SubstScope (ns, xs)) (cast x y xs)
   | SubstRen xs -> map (fun xs -> SubstRen xs) (cast x y xs)
   | SubstSubst xs -> map (fun xs -> SubstSubst xs) (cast x y xs)
   | SubstEq (xs, f) -> map2 (fun xs f -> SubstEq (xs, f)) (cast x y xs) (pure f)
@@ -130,13 +130,10 @@ let genSubstS name (m, ns) sort =
 let introScopeVar name sort =
   let* substSorts = substOf sort in
   let names = List.map (sep name) substSorts in
-  let binders = match !Settings.scope_type with
-    | L.Unscoped -> []
-    | L.WellScoped ->
-      if list_empty names then []
-      else [binder_ ~implicit:true ~btype:nat_ names] in
+  let binders = guard (list_nempty names && Settings.is_wellscoped ())
+      [binder_ ~implicit:true ~btype:nat_ names] in
   pure @@ (
-    SubstScope (mk_refs names),
+    SubstScope (names, mk_refs names),
     (* Fix for wrong translation of sorts that don't have a substitution vector.
      * Could also filter out in translation but this seems better. *)
     binders
@@ -204,11 +201,11 @@ let patternSId sort binder =
   let* hasRen = hasRenamings sort in
   let shift y = if hasRen
     then shift_
-    else (shift_ >>> app_var_constr y (SubstScope (List.map (const underscore_) substSorts))) in
+    else (shift_ >>> app_var_constr y (SubstScope (List.map (const "_") substSorts, List.map (const underscore_) substSorts))) in
   let shiftp p y = if hasRen
     then app_ref shift_p_ [ref_ p]
     else app_ref shift_p_ [ref_ p]
-      >>> app_var_constr y (SubstScope (List.map (const underscore_) substSorts)) in
+      >>> app_var_constr y (SubstScope (List.map (const "_") substSorts, List.map (const underscore_) substSorts)) in
   up sort (fun y b _ -> match b with
       | L.Single bsort -> if y = bsort then shift y else id_
       | L.BinderList (p, bsort) -> if y = bsort then shiftp p y else id_)

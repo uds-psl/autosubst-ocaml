@@ -78,8 +78,7 @@ type t = {
   auto_unfold_functions : string list;
   arguments : (string * string list) list;
   classes : (ClassGen.t * string) list;
-  (* instance info probably also needs parameter information *)
-  instances : (ClassGen.t * string) list;
+  instances : (ClassGen.t * string * string list) list;
   notations : (NotationGen.t * string) list;
 }
 
@@ -92,5 +91,5 @@ val substify_lemmas : t -> string list
 val auto_unfold_functions : t -> string list
 val arguments : t -> (string * string list) list
 val classes : t -> (ClassGen.t * string) list
-val instances : t -> (ClassGen.t * string) list
+val instances : t -> (ClassGen.t * string * string list) list
 val notations : t -> (NotationGen.t * string) list

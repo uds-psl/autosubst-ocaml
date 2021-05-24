@@ -40,7 +40,7 @@ let genVar sort ns =
   if not is_open then pure []
   else
     (* register variable constructor instance *)
-    let* () = tell_instance (ClassGen.Var, sort) in
+    let* () = tell_instance (ClassGen.Var, sort, sty_names ns) in
     let* () = tell_notation (NotationGen.VarConstr, sort) in
     let* () = tell_notation (NotationGen.VarInst, sort) in
     let* () = tell_notation (NotationGen.Var, sort) in
@@ -150,15 +150,15 @@ let genUpRen (binder, sort) =
   pure @@ lemma_ ~opaque:false (upRen_ sort binder) (bpms @ scopeBinders) (renT m' n') defBody
 
 let genRenaming sort =
+  let* v = V.genVariables sort [ `MS; `NS; `XIS (`MS, `NS) ] in
+  let [@warning "-8"] _, [ ms; ns; xis ], scopeBinders = v in
   let* substSorts = substOf sort in
-  let* () = tell_instance (ClassGen.Ren (List.length substSorts), sort) in
+  let* () = tell_instance (ClassGen.Ren (List.length substSorts), sort, sty_names ms @ sty_names ns) in
   let* () = tell_cbn_function (ren_ sort) in
   let* () = tell_notation (NotationGen.RenApply substSorts, sort) in
   let* () = tell_notation (NotationGen.Ren substSorts, sort) in
-  let* v = V.genVariables sort [ `MS; `NS; `XIS (`MS, `NS) ] in
-  let [@warning "-8"] _, [ ms; ns; xis ], scopeBinders = v in
   (* DONE what is the result of toVar here?\
-   * when I call it with sort=tm, xi=[xity;xivl] I get this weird error term that toVar constructs. This is then probably ignored by some similar login in the traversal. Seems brittle.
+   * when I call it with sort=tm, xi=[xity;xivl] I get this weird error term that toVar constructs. This is then probably ignored by some similar logic in the traversal. Seems brittle.
    * When I call it instead with sort=vl I get xivl. So it seems get the renaming of the sort that I'm currently inspecting *)
   (* register renaming instance & and unfolding *)
   let ret _ = app_sort sort ns in
@@ -192,11 +192,17 @@ let upSubstT binder sort ms sigma =
   pure @@ mk_scons sort binder sigma' ms'
 
 let genUpS (binder, sort) =
-  (* register up instance *)
-  let* () = tell_instance (ClassGen.Up (L.get_bound_sort binder), sort) in
-  let* () = tell_notation (NotationGen.UpInst (L.get_bound_sort binder), sort) in
   let* v = V.genVariables sort [ `M; `NS; `SIGMA (`M, `NS) ] in
   let [@warning "-8"] [ m; sigma ], [ ns ], scopeBinders = v in
+  (* TODO hack so that I only tell the instance when it's a single binder *)
+  let* () = match binder with
+    | L.Single x ->
+      (* register up instance *)
+      let* () = tell_instance (ClassGen.Up x, sort, "m" :: sty_names ns) in
+      let* () = tell_notation (NotationGen.UpInst x, sort) in
+      pure ()
+    | L.BinderList _ -> pure ()
+  in
   (* register up for unfolding *)
   let* () = tell_unfold_function (up_ sort binder) in
 (* TODO what does upSubstT do here? *)
@@ -209,16 +215,16 @@ let genUpS (binder, sort) =
 (** Generate the substitution function
  ** e.g. Fixpoint subst_tm ... *)
 let genSubstitution sort =
+  let* v = V.genVariables sort [ `MS; `NS; `SIGMAS (`MS, `NS) ] in
+  let [@warning "-8"] [], [ ms; ns; sigmas ], scopeBinders = v in
   (* register subst instance & unfolding & up class *)
   let* substSorts = substOf sort in
-  let* () = tell_instance (ClassGen.Subst (List.length substSorts), sort) in
+  let* () = tell_instance (ClassGen.Subst (List.length substSorts), sort, sty_names ms @ sty_names ns) in
   let* () = tell_cbn_function (subst_ sort) in
   let* () = tell_class (ClassGen.Up "", sort) in
   let* () = tell_notation (NotationGen.Up, sort) in
   let* () = tell_notation (NotationGen.SubstApply substSorts, sort) in
   let* () = tell_notation (NotationGen.Subst substSorts, sort) in
-  let* v = V.genVariables sort [ `MS; `NS; `SIGMAS (`MS, `NS) ] in
-  let [@warning "-8"] [], [ ms; ns; sigmas ], scopeBinders = v in
   let ret _ = app_sort sort ns in
   traversal sort ms subst_ ~no_args:id ~ret scopeBinders [sigmas]
     (fun s ->

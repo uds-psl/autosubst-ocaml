@@ -215,8 +215,7 @@ type t = {
   auto_unfold_functions : string list;
   arguments : (string * string list) list;
   classes : (ClassGen.t * string) list;
-  (* instance info probably also needs parameter information *)
-  instances : (ClassGen.t * string) list;
+  instances : (ClassGen.t * string * string list) list;
   notations : (NotationGen.t * string) list;
 }
 
