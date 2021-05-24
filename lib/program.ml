@@ -32,10 +32,10 @@ let copy_file src dst = write_file dst (read_file src)
 
 let gen_static_files dir scope version outfile outfile_fext =
   let open Filename in
-  let coq_project_files = ref [outfile; outfile_fext] in
+  (* let coq_project_files = ref [outfile; outfile_fext] in *)
   let copy_static_file ?out_name name =
     let out_name = Option.default name out_name in
-    coq_project_files := out_name :: !coq_project_files;
+    (* coq_project_files := out_name :: !coq_project_files; *)
     copy_file (concat "data" name) (concat dir out_name)
   in
   let open Settings in
@@ -53,10 +53,11 @@ let gen_static_files dir scope version outfile outfile_fext =
   in
   let () = copy_static_file "core_axioms.v" in
   let () = copy_static_file "core.v" in
+  ()
   (* now coq_project files contains all files for the _CoqProject in the correct order. TODO do it without ref? *)
-  let coq_project = "-Q . \"\"\n\n"
-    ^ String.concat "\n" !coq_project_files in
-  write_file (concat dir "_CoqProject") coq_project
+  (* let coq_project = "-Q . \"\"\n\n"
+   *   ^ String.concat "\n" !coq_project_files in *)
+  (* write_file (concat dir "_CoqProject") coq_project *)
 
 let make_filenames outfile =
   let open Filename in
