@@ -6,15 +6,28 @@
 -arg -w -arg -non-reversible-notation
 COQDOCFLAGS = "--charset utf-8 -s --parse-comments --with-header ./website/resources/header.html --with-footer ./website/resources/footer.html --index indexpage"
 
+core.v
+core_axioms.v
+unscoped.v
+unscoped_axioms.v
+fintype.v
+fintype_axioms.v
+
 Chapter3/utlc_pure.v
+# Chapter3/utlc_pure_axioms.v
 Chapter3/utlc_scoped.v
+# Chapter3/utlc_scoped_axioms.v
 
 Chapter6/utlc_pairs.v
+# Chapter6/utlc_pairs_axioms.v
 Chapter6/sysf_cbv.v
+# Chapter6/sysf_cbv_axioms.v
 Chapter6/variadic_fin.v
+# Chapter6/variadic_fin_axioms.v
 Chapter6/reductions.v
 
 Chapter9/stlc.v
+# Chapter9/stlc_axioms.v
 Chapter9/reduction.v
 Chapter9/preservation.v
 Chapter9/variadic_preservation.v
@@ -23,19 +36,14 @@ Chapter9/sn.v
 Chapter9/sn_raamsdonk.v
 Chapter9/equivalence.v
 
-Chapter9/defs.v
-
 Chapter10/sysf.v
+# Chapter10/sysf_axioms.v
 Chapter10/POPLMark1.v
 Chapter10/POPLMark21.v
 Chapter10/sysf_pat.v
+# Chapter10/sysf_pat_axioms.v
 Chapter10/POPLMark22.v
 
 ARS.v
 Chapter9/girard.v
-
-axioms.v
-unscoped.v
-fintype.v
-fintype_variadic.v
 
