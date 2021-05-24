@@ -21,14 +21,16 @@ Two things are important:
 (** *** List Instance *)
 Require Import List.
 
+Notation "'list_map'" := map.
+
 Definition list_ext {A B} {f g : A -> B} :
-  (forall x, f x = g x) -> forall xs, map f xs = map g xs.
+  (forall x, f x = g x) -> forall xs, list_map f xs = list_map g xs.
   intros H. induction xs. reflexivity.
   cbn. f_equal. apply H. apply IHxs.
 Defined.
 
 Definition list_id {A}  { f : A -> A} :
-  (forall x, f x = x) -> forall xs, map f xs = xs.
+  (forall x, f x = x) -> forall xs, list_map f xs = xs.
 Proof.
   intros H. induction xs. reflexivity.
   cbn. rewrite H. rewrite IHxs; eauto.
@@ -69,6 +71,8 @@ Proof.
 Defined.
 
 (* a.d. TODO hints outside of sections without explicit locality are deprecated. Is this even used in the first place?  *)
+(* but with 8.13.1 the attribute is forbidden. So what's the correct way to use this? *)
+(* #[ global ] *)
 Hint Rewrite in_map_iff : FunctorInstances.
 
 (* Declaring the scopes that all our notations will live in *)

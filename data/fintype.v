@@ -30,8 +30,7 @@ Definition ren (m n : nat) : Type := fin m -> fin n.
 
 Definition id {X} := @Datatypes.id X.
 
-Definition idren {k: nat} : ren k k :=
-  fun x => x.
+Definition idren {k: nat} : ren k k := @Datatypes.id (fin k).
 
 (** We give a special name, to the newest element in a non-empty finite type, as it usually corresponds to a freshly bound variable. *)
 Definition var_zero {n : nat} : fin (S n) := None.
@@ -40,6 +39,8 @@ Definition null {T} (i : fin 0) : T := match i with end.
 
 Definition shift {n : nat} : ren n (S n) :=
   Some.
+
+Definition comp := @funcomp.
 
 (** Extension of Finite Mappings
     Assume we are given a mapping _f_ from _I^n_ to some type _X_, then we can _extend_ this mapping with a new value from _x : X_ to a mapping from _I^n+1_ to _X_. We denote this operation by _x . f_ and define it as follows:
@@ -70,6 +71,21 @@ Class Ren4 (X1 X2 X3 X4 : Type) (Y Z : Type) :=
 Class Ren5 (X1 X2 X3 X4 X5 : Type) (Y Z : Type) :=
   ren5 : X1 -> X2 -> X3 -> X4 -> X5 -> Y -> Z.
 
+Module RenNotations.
+  Notation "s ⟨ xi1 ⟩" := (ren1  xi1 s) (at level 7, left associativity, format "s  ⟨ xi1 ⟩") : subst_scope.
+
+  Notation "s ⟨ xi1 ; xi2 ⟩" := (ren2 xi1 xi2 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ⟩") : subst_scope.
+
+  Notation "s ⟨ xi1 ; xi2 ; xi3 ⟩" := (ren3 xi1 xi2 xi3 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ; xi3 ⟩") : subst_scope.
+
+  Notation "s ⟨ xi1 ; xi2 ; xi3 ; xi4 ⟩" := (ren4  xi1 xi2 xi3 xi4 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ; xi3 ; xi4 ⟩") : subst_scope.
+
+  Notation "s ⟨ xi1 ; xi2 ; xi3 ; xi4 ; xi5 ⟩" := (ren5  xi1 xi2 xi3 xi4 xi5 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ; xi3 ; xi4 ; xi5 ⟩") : subst_scope.
+
+  Notation "⟨ xi ⟩" := (ren1 xi) (at level 1, left associativity, format "⟨ xi ⟩") : fscope.
+
+  Notation "⟨ xi1 ; xi2 ⟩" := (ren2 xi1 xi2) (at level 1, left associativity, format "⟨ xi1 ; xi2 ⟩") : fscope.
+End RenNotations.
 
 (** *** Type Classes for Substiution *)
 
@@ -88,28 +104,37 @@ Class Subst4 (X1 X2 X3 X4: Type) (Y Z: Type) :=
 Class Subst5 (X1 X2 X3 X4 X5 : Type) (Y Z: Type) :=
   subst5 : X1 -> X2 -> X3 -> X4 -> X5  -> Y  -> Z.
 
+Module SubstNotations.
+  Notation "s [ sigma ]" := (subst1 sigma s) (at level 7, left associativity, format "s '/' [ sigma ]") : subst_scope.
+
+  Notation "s [ sigma ; tau ]" := (subst2 sigma tau s) (at level 7, left associativity, format "s '/' [ sigma ; '/'  tau ]") : subst_scope.
+End SubstNotations.
+
 (** ** Type Class for Variables *)
 Class Var X Y :=
   ids : X -> Y.
 
 
-(** ** Internal Notation Module so that we can use them here ** **)
-Module InternalNotations.
-  Notation "f >> g" := (funcomp g f) (at level 50) : subst_scope.
-
-  Notation "x .: f" := (@scons _ _ x f) (at level 55) : subst_scope.
-
-  Open Scope subst_scope.
-End InternalNotations.
-
 (** ** Proofs for substitution primitives *)
-Import InternalNotations.
 
 (** Forward Function Composition
     Substitutions represented as functions are ubiquitious in this development and we often have to compose them, without talking about their pointwise behaviour.
     That is, we are interested in the forward compostion of functions, _f o g_, for which we introduce a convenient notation, "f >> g". The direction of the arrow serves as a reminder of the _forward_ nature of this composition, that is first apply _f_, then _g_. *)
 
 Arguments funcomp {X Y Z} (g)%fscope (f)%fscope.
+
+Module CombineNotations.
+  Notation "f >> g" := (funcomp g f) (at level 50) : fscope.
+
+  Notation "s .: sigma" := (scons s sigma) (at level 55, sigma at next level, right associativity) : subst_scope.
+
+  #[ global ]
+  Open Scope fscope.
+  #[ global ]
+  Open Scope subst_scope.
+End CombineNotations.
+
+Import CombineNotations.
 
 (** Generic lifting operation for renamings *)
 Definition up_ren m n (xi : ren m n) : ren (S m) (S n) :=
@@ -236,6 +261,7 @@ Opaque shift.
 Opaque up_ren.
 Opaque var_zero.
 Opaque idren.
+Opaque comp.
 Opaque funcomp.
 Opaque id.
 
@@ -243,24 +269,9 @@ Opaque id.
 (** ** Notations for Scoped Syntax *)
 
 Module ScopedNotations.
-  Include InternalNotations.
-  Notation "s ⟨ xi1 ⟩" := (ren1  xi1 s) (at level 7, left associativity, format "s  ⟨ xi1 ⟩") : subst_scope.
-
-  Notation "s ⟨ xi1 ; xi2 ⟩" := (ren2 xi1 xi2 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ⟩") : subst_scope.
-
-  Notation "s ⟨ xi1 ; xi2 ; xi3 ⟩" := (ren3 xi1 xi2 xi3 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ; xi3 ⟩") : subst_scope.
-
-  Notation "s ⟨ xi1 ; xi2 ; xi3 ; xi4 ⟩" := (ren4  xi1 xi2 xi3 xi4 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ; xi3 ; xi4 ⟩") : subst_scope.
-
-  Notation "s ⟨ xi1 ; xi2 ; xi3 ; xi4 ; xi5 ⟩" := (ren5  xi1 xi2 xi3 xi4 xi5 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ; xi3 ; xi4 ; xi5 ⟩") : subst_scope.
-
-  Notation "⟨ xi ⟩" := (ren1 xi) (at level 1, left associativity, format "⟨ xi ⟩") : fscope.
-
-  Notation "⟨ xi1 ; xi2 ⟩" := (ren2 xi1 xi2) (at level 1, left associativity, format "⟨ xi1 ; xi2 ⟩") : fscope.
-
-  Notation "s [ sigma ]" := (subst1 sigma s) (at level 7, left associativity, format "s '/' [ sigma ]") : subst_scope.
-
-  Notation "s [ sigma ; tau ]" := (subst2 sigma tau s) (at level 7, left associativity, format "s '/' [ sigma ; '/'  tau ]") : subst_scope.
+  Include RenNotations.
+  Include SubstNotations.
+  Include CombineNotations.
 
 (* Notation "s , sigma" := (scons s sigma) (at level 60, format "s ,  sigma", right associativity) : subst_scope. *)
 
@@ -268,6 +279,10 @@ Module ScopedNotations.
 
   Notation "↑" := (shift) : subst_scope.
 
+  #[ global ]
+  Open Scope fscope.
+  #[ global ]
+  Open Scope subst_scope.
 End ScopedNotations.
 
 Ltac unfold_funcomp := match goal with
@@ -276,63 +291,6 @@ Ltac unfold_funcomp := match goal with
 
 
 (** ** Tactics for Scoped Syntax *)
-
-(** Generic fsimpl tactic: simplifies the above primitives in a goal. *)
-(* a.d. TODO same as in unscoped this contains fext lemmas *)
-Ltac fsimpl :=
-  repeat match goal with
-         | [|- context[id >> ?f]] => change (id >> f) with f (* AsimplCompIdL *)
-         | [|- context[?f >> id]] => change (f >> id) with f (* AsimplCompIdR *)
-         | [|- context [id ?s]] => change (id s) with s
-         | [|- context[funcomp ?f ?g]] => change (funcomp f g) with (g >> f) (* AsimplCompIdL *)
-         | [|- context[(?f >> ?g) >> ?h]] =>
-           change ((f >> g) >> h) with (f >> (g >> h)) (* AsimplComp *)
-
-         (* | [|- zero_p >> scons_p ?f ?g] => rewrite scons_p_head *)
-
-         | [|- context[(?s.:?sigma) var_zero]] => change ((s.:sigma) var_zero) with s
-         | [|- context[(?s.:?sigma) (shift ?m)]] => change ((s.:sigma) (shift m)) with (sigma m)
-
-         | [|- context[idren >> ?f]] => change (idren >> f) with f
-         | [|- context[?f >> idren]] => change (f >> idren) with f
-         | [|- context[?f >> (?x .: ?g)]] => change (f >> (x .: g)) with g
-         (* | [|- context[?x2 .: shift >> ?f]] => change x2 with (f var_zero); rewrite (@scons_eta _ _ f) *)
-         (* | [|- context[?f var_zero .: ?g]] => change g with (shift >> f); rewrite scons_eta *)
-
-         |[|- _ =  ?h (?f ?s)] => change (h (f s)) with ((f >> h) s)
-         |[|-  ?h (?f ?s) = _] => change (h (f s)) with ((f >> h) s)
-
-         (* | _ => first [progress (rewrite scons_comp) |  progress (rewrite scons_eta_id) | progress (autorewrite with FunctorInstances)] *)
-         end.
-
-(** Generic fsimpl tactic: simplifies the above primitives in the context *)
-Ltac fsimplc :=
-  repeat match goal with
-         | [H: context[id >> ?f] |- _] => change (id >> f) with f in H(* AsimplCompIdL *)
-         | [H: context[?f >> id]|- _] => change (f >> id) with f in H(* AsimplCompIdR *)
-         | [H: context [id ?s]|- _] => change (id s) with s in H
-         | [H: context[funcomp ?f ?g]|- _] => change (funcomp f g) with (g >> f) in H (* AsimplCompIdL *)
-         | [H: context[(?f >> ?g) >> ?h]|- _] =>
-           change ((f >> g) >> h) with (f >> (g >> h)) in H (* AsimplComp *)
-         | [H: context[(?s.:?sigma) var_zero]|- _] => change ((s.:sigma) var_zero) with s in H
-         | [H: context[(?s.:?sigma) var_zero]|- _] => change ((s.:sigma) var_zero) with s in H
-         | [H: context[(?s.:?sigma) (shift ?m)]|- _] => change ((s.:sigma) (shift m)) with (sigma m) in H
-                                                                                      |[H : context[ _ =  ?h (?f ?s)]|- _] => change (h (f s)) with ((f >> h) s) in H
-         |[H: context[?h (?f ?s) = _]|- _] => change (h (f s)) with ((f >> h) s) in H
-         | [H: context[idren >> ?f]|- _] => change (idren >> f) with f in H
-         | [H: context[?f >> idren]|- _] => change (f >> idren) with f in H
-         | [H: context[?f >> (?x .: ?g)]|- _] =>
-           change (f >> (x .: g)) with g in H
-         (* | [H: context[?x2 .: shift >> ?f]|- _] => *)
-           (* change x2 with (f var_zero) in H; rewrite (@scons_eta _ _ f) in H *)
-         (* | [H: context[?f var_zero .: ?g]|- _] => *)
-           (* change g with (shift >> f) in H; rewrite scons_eta in H *)
-         (* | _ => first [progress (rewrite scons_comp in * ) | progress (rewrite scons_eta_id in * ) | progress (autorewrite with FunctorInstances in * )] *)
-         end.
-
-(** Simplification in both the goal and the context *)
-Tactic Notation "fsimpl" "in" "*" :=
-  fsimpl; fsimplc.
 
 Tactic Notation "auto_case" tactic(t) :=  (match goal with
                                            | [|- forall (i : fin 0), _] => intros []; t
@@ -344,4 +302,4 @@ Tactic Notation "auto_case" tactic(t) :=  (match goal with
 
 
 (** Functor instances which can be added later on. *)
-Hint Rewrite  @scons_p_head' @scons_p_tail': FunctorInstances.
+Hint Rewrite @scons_p_head' @scons_p_tail' : FunctorInstances.
