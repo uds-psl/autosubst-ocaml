@@ -14,10 +14,6 @@ Chapter6/sysf_cbv.v
 Chapter6/variadic_fin.v
 Chapter6/reductions.v
 
-header_extensible.v
-tactics.v
-Chapter7/expressions.v
-
 Chapter9/stlc.v
 Chapter9/reduction.v
 Chapter9/preservation.v
