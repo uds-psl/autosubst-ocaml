@@ -38,23 +38,40 @@ Qed.
 (** *** Substitutivity *)
 Require Import Setoid Morphisms.
 
+Goal forall m (s: tm (S m)), (ren_tm (var_zero .: shift) s) = s.
+Proof.
+  intros m s.
+  asimpl.
+  reflexivity.
+  Restart.
+  intros m s.
+  substify.
+  asimpl.
+  reflexivity.
+Qed.
+
 Lemma step_inst {m n} (f : fin m -> tm n) (s t : tm m) :
   step s t -> step s[f] t[f].
 Proof.
    intros st. revert n f.  induction st as  [m b s t |m A b1 b2 _ ih|m s1 s2 t _ ih|m s t1 t2 _ ih]; intros n f; cbn.
    - apply step_beta'.
-     now asimpl.
-(*      auto_unfold. *)
-(*      setoid_rewrite compComp_tm. *)
-(*      unfold up_list_tm_tm, up_tm_tm, upRen_list_tm_tm, *)
-(*      upRen_tm_tm, up_ren. *)
-(*      unfold funcomp. *)
-(*      setoid_rewrite scons_comp'. *)
-(*      cbn [subst_tm ren_tm]. *)
-(*      fsimpl. *)
-(*      unfold funcomp. *)
-(*      cbn [subst_tm ren_tm]. *)
-(*      unfold funcomp. *)
+     asimpl.
+     (* now asimpl. *)
+     (* auto_unfold. *)
+     (* setoid_rewrite compComp_tm. *)
+     (* unfold up_list_tm_tm, up_tm_tm, upRen_list_tm_tm, *)
+     (* upRen_tm_tm, up_ren. *)
+     (* repeat match goal with *)
+     (*        | [|- context[funcomp ?tau (scons ?t ?f)]] => *)
+     (*          change (funcomp tau (scons t f)) with (fun x => tau (scons t f x)) *)
+     (*        end. *)
+     (* setoid_rewrite scons_comp'. *)
+     (* (* eta_reduce. *) *)
+     (* cbn [subst_tm ren_tm]. *)
+     (* fsimpl. *)
+     (* unfold funcomp. *)
+     (* (* TODO minimal working example where the rewrite does not work *) *)
+     (* setoid_rewrite renComp_tm. *)
 (*      (* simple apply subst_morphism; [|reflexivity]. *) *)
 (*      (* simple apply scons_morphism. *) *)
      
