@@ -55,7 +55,42 @@ Lemma step_inst {m n} (f : fin m -> tm n) (s t : tm m) :
 Proof.
    intros st. revert n f.  induction st as  [m b s t |m A b1 b2 _ ih|m s1 s2 t _ ih|m s t1 t2 _ ih]; intros n f; cbn.
    - apply step_beta'.
-     asimpl.
+     now asimpl.
+(*      auto_unfold. *)
+(*      setoid_rewrite compComp_tm. *)
+(*      unfold up_list_tm_tm, up_tm_tm, upRen_list_tm_tm, *)
+(*      upRen_tm_tm, up_ren. *)
+(*      fsimpl. *)
+(*      eta_expand_varL; setoid_rewrite varL_tm''. *)
+(*      eta_expand_ren_comp. *)
+(*      Set Typeclasses Debug. *)
+(*      try setoid_rewrite renComp_tm. *)
+(*      simple apply subst_morphism; [|reflexivity]. *)
+(*      simple apply scons_morphism. *)
+(*      change (fun x => (f >> id) x) with (f >> id). *)
+
+(*      simple apply funcomp_morphism1. *)
+
+(* compComp *)
+(* unfold *)
+(* scons_comp *)
+(* scons_comp *)
+(* fsimpl *)
+(* varL *)
+(* fsimpl *)
+(* cbn *)
+(* fsimpl *)
+     
+(*      (* unfold funcomp. *) *)
+(*      (* setoid_rewrite renComp_tm. *) *)
+(*      eta_expand_ren_comp. *)
+(*      (* Set Typeclasses Debug. *) *)
+(*      (* Unset Printing Notations. *) *)
+(*      (* Set Printing Implicit. *) *)
+(*      (* try setoid_rewrite renComp_tm. *) *)
+(*      simple apply subst_morphism; [|reflexivity]. *)
+(*      simple apply scons_morphism. *)
+(*      simple apply funcomp_morphism. *)
      (* now asimpl. *)
      (* auto_unfold. *)
      (* setoid_rewrite compComp_tm. *)

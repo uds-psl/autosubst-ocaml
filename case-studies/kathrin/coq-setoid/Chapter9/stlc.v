@@ -536,14 +536,15 @@ Qed.
 (* exact (eq_trans (rinstInst_tm (id _)) instId_tm). *)
 (* Qed. *)
 
-Lemma varL_tm' {m_tm n_tm:nat} (sigma_tm : fin m_tm -> tm n_tm) (s: tm m_tm) :
-  subst_tm (fun x => subst_tm sigma_tm (var_tm _ x)) s = subst_tm sigma_tm s.
+Lemma varL_tm' {m_tm n_tm:nat} (sigma_tm : fin m_tm -> tm n_tm) (x: fin m_tm) :
+  subst_tm sigma_tm (var_tm _ x) = sigma_tm x.
 Proof.
-  apply ext_tm. intros x. reflexivity.
+  reflexivity.
 Qed.
 
+(* TODO keep the id on the right side so that the funcomp morphism triggers *)
 (* Lemma varL_tm'' {m_tm n_tm:nat} (sigma_tm : fin m_tm -> tm n_tm) (x: fin m_tm) : *)
-(*   (funcomp (subst_tm sigma_tm) (var_tm _)) x = subst_tm sigma_tm (var_tm _ x). *)
+(*   (funcomp (subst_tm sigma_tm) (var_tm _)) x = (funcomp id sigma_tm) x. *)
 (* Proof. *)
 (*   unfold funcomp. reflexivity. *)
 (* Qed. *)
@@ -555,10 +556,10 @@ Qed.
 (*          (fun x => eq_refl)). *)
 (* Qed. *)
 
-Lemma varLRen_tm' {m_tm n_tm: nat} (xi_tm : fin m_tm -> fin n_tm) (s : tm m_tm) :
-  subst_tm (fun x => ren_tm xi_tm (var_tm _ x)) s = subst_tm (fun x => var_tm _ (xi_tm x)) s.
+Lemma varLRen_tm' {m_tm n_tm: nat} (xi_tm : fin m_tm -> fin n_tm) (x : fin m_tm) :
+  ren_tm xi_tm (var_tm _ x) = var_tm _ (xi_tm x).
 Proof.
-  apply ext_tm. intros x. reflexivity.
+  reflexivity.
 Qed.
 
 (* Lemma varLRen_tm'' {m_tm n_tm: nat} (xi_tm : fin m_tm -> fin n_tm) (x: fin m_tm) : *)
@@ -655,20 +656,11 @@ Proof.
   reflexivity.
 Qed.
 
-Instance eta_morphism {X Y} :
-  Proper (pointwise_relation _ eq ==> pointwise_relation _ eq) (fun g : X -> Y => fun x => g x).
-Proof.
-  intros g g' Hg x. apply Hg.
-Qed.
-
-Instance funcomp_morphism {X Y Z} (g: Y -> Z) (f: X -> Y) :
-  Proper (@pointwise_relation Y Z eq ==> @pointwise_relation X Y eq ==> @pointwise_relation X Z eq) funcomp.
-Proof.
-  cbv - [funcomp].
-  intros g0 g1 Hg f0 f1 Hf x.
-  unfold funcomp. rewrite Hf, Hg.
-  reflexivity.
-Qed.
+(* Instance eta_morphism {X Y} : *)
+(*   Proper (pointwise_relation _ eq ==> pointwise_relation _ eq) (fun g : X -> Y => fun x => g x). *)
+(* Proof. *)
+(*   intros g g' Hg x. apply Hg. *)
+(* Qed. *)
 
 (* Instance funcomp_morphism2 {X Y Z} (g: Y -> Z) (f: X -> Y) : *)
 (*   Proper (eq ==> @pointwise_relation X Y eq ==> @pointwise_relation X Z eq) funcomp. *)
@@ -679,43 +671,54 @@ Qed.
 (*   reflexivity. *)
 (* Qed. *)
 
-Instance funcomp_morphism2 {X Y Z} {g: Y -> Z} :
-  Proper (pointwise_relation _ eq ==> pointwise_relation _ eq) (@funcomp X Y Z g).
-Proof.
-  cbv - [funcomp].
-  intros f0 f1 Hf x.
-  unfold funcomp. rewrite Hf.
-  reflexivity.
-Qed.
-
-Instance funcomp_morphism1 {X Y Z} {f: X -> Y} :
-  Proper (pointwise_relation _ eq ==> pointwise_relation _ eq) (Basics.flip (@funcomp X Y Z) f).
-Proof.
-  cbv - [funcomp].
-  intros g0 g1 Hg x.
-  unfold funcomp. rewrite Hg.
-  reflexivity.
-Qed.
-
-(* Goal forall X Y Z (f f': Y -> Z) (g:X -> Y) (H: forall x, f x = f' x) (si: X -> Z) x, *)
-(*   IdC (funcomp (fun x => f x) g x) = IdC (si x). *)
+(* Instance funcomp_morphism2 {X Y Z} {g: Y -> Z} : *)
+(*   Proper (pointwise_relation _ eq ==> pointwise_relation _ eq) (@funcomp X Y Z g). *)
 (* Proof. *)
-(*   intros * H si x. *)
-(*   (* simple apply funcomp_morphism2. *) *)
-(*   (* intros x'. rewrite H. *) *)
-(*   Set Typeclasses Debug. *)
-(*   try setoid_rewrite H. *)
+(*   cbv - [funcomp]. *)
+(*   intros f0 f1 Hf x. *)
+(*   unfold funcomp. rewrite Hf. *)
+(*   reflexivity. *)
+(* Qed. *)
+
+(* Instance funcomp_morphism1 {X Y Z} {f: X -> Y} : *)
+(*   Proper (pointwise_relation _ eq ==> pointwise_relation _ eq) (Basics.flip (@funcomp X Y Z) f). *)
+(* Proof. *)
+(*   cbv - [funcomp]. *)
+(*   intros g0 g1 Hg x. *)
+(*   unfold funcomp. rewrite Hg. *)
+(*   reflexivity. *)
+(* Qed. *)
+
+Instance funcomp_morphism {X Y Z} :
+  Proper (@pointwise_relation Y Z eq ==> @pointwise_relation X Y eq ==> @pointwise_relation X Z eq) (@funcomp X Y Z).
+Proof.
+  cbv - [funcomp].
+  intros g0 g1 Hg f0 f1 Hf x.
+  unfold funcomp. rewrite Hf, Hg.
+  reflexivity.
+Qed.
+
+Goal forall {m} (f f': fin m -> tm m) (g: fin m -> fin m) (H: forall x, f x = f' x) (si: fin m -> tm m) (s: tm m),
+  subst_tm (funcomp (fun x => f x) g) s = subst_tm (funcomp (fun x => f' x) g) s.
+Proof.
+  intros * H si x.
+  (* intros x'. rewrite H. *)
+  Set Typeclasses Debug.
+  (* simple apply subst_morphism; [|reflexivity]. *)
+  (* simple apply funcomp_morphism. *)
+
+  try setoid_rewrite H.
   
 (* Lemma scons_comp' {m_tm n_tm k_tm:nat} {s: tm n_tm} (sigma: fin m_tm -> tm n_tm) (tau: tm n_tm -> tm k_tm) : forall n : fin (S m_tm), (funcomp tau (scons s sigma)) n = (scons (tau s) (funcomp tau sigma)) n. *)
 (* Proof. *)
 (*   intros [n|]. reflexivity. simpl. reflexivity. *)
 (* Qed. *)
 
-Ltac eta_expand_scons_comp :=
-     repeat match goal with  
-            | [|- context[funcomp ?tau (scons ?t ?f)]] =>
-              change (funcomp tau (scons t f)) with (fun x => tau (scons t f x))
-            end.
+(* Ltac eta_expand_scons_comp := *)
+(*      repeat match goal with   *)
+(*             | [|- context[funcomp ?tau (scons ?t ?f)]] => *)
+(*               change (funcomp tau (scons t f)) with (fun x => tau (scons t f x)) *)
+(*             end. *)
      (* repeat match goal with   *)
      (* | [|- context[subst_tm ?f]] => *)
      (*   lazymatch f with *)
@@ -724,27 +727,33 @@ Ltac eta_expand_scons_comp :=
      (*   end *)
      (* end. *)
 
-Ltac eta_expand_ren_comp :=
-  match goal with
-  | [|- context[funcomp (subst_tm ?sigma) (ren_tm ?xi)]] =>
-    change (funcomp (subst_tm sigma) (ren_tm xi)) with (fun s => subst_tm sigma (ren_tm xi s))
-  end.
+(* Ltac eta_expand_ren_comp := *)
+(*   match goal with *)
+(*   | [|- context[funcomp (subst_tm ?sigma) (ren_tm ?xi)]] => *)
+(*     change (funcomp (subst_tm sigma) (ren_tm xi)) with (fun s => subst_tm sigma (ren_tm xi s)) *)
+(*   end. *)
+
+(* Ltac eta_expand_varL := *)
+(*   match goal with *)
+(*   | [|- context[funcomp (subst_tm ?sigma) (@var_tm ?n)]] => *)
+(*     change (funcomp (subst_tm sigma) (@var_tm n)) with (fun x => funcomp (subst_tm sigma) (@var_tm n) x) *)
+(*   end. *)
 
 Ltac setoidasimpl' := repeat (first
                         [
                         (* progress rewrite ?compComp'_tm *)
                  progress setoid_rewrite compComp_tm; idtac "compComp"
                  (* | progress rewrite ?renComp'_tm *)
-                 | progress eta_expand_ren_comp; setoid_rewrite renComp_tm; idtac "renComp"; eta_reduce
+                 | progress setoid_rewrite renComp_tm; idtac "renComp"
                  (* | progress rewrite ?compRen'_tm *)
                  | progress setoid_rewrite compRen_tm; idtac "compRen"
                  (* | progress rewrite ?renRen'_tm *)
                  | progress setoid_rewrite renRen_tm; idtac "renRen"
                  (* | progress setoid_rewrite scons_comp'; idtac "scons_comp" *)
                  (* | progress rewrite ?varLRen_tm *)
-                 (* | progress setoid_rewrite varLRen_tm'; idtac "varLRen" *)
+                 | progress setoid_rewrite varLRen_tm'; idtac "varLRen"
                  (* | progress rewrite ?varL_tm *)
-                 (* | progress setoid_rewrite varL_tm'; idtac "varL" *)
+                 | progress setoid_rewrite varL_tm'; idtac "varL"
                  (* | progress rewrite ?rinstId_tm *)
                  | progress setoid_rewrite rinstId_tm'; idtac "rinstId"
                  (* | progress rewrite ?instId_tm *)
@@ -754,7 +763,7 @@ Ltac setoidasimpl' := repeat (first
                      upRen_tm_tm, up_ren; idtac "unfold"
                  | progress cbn[subst_tm ren_tm]; idtac "cbn"
                  | progress fsimpl; idtac "fsimpl"
-                 (* | repeat unfold funcomp; idtac "funcomp" *)
+                 | repeat unfold funcomp; idtac "funcomp"
                        ]).
 
 (* Ltac asimpl' := repeat (first *)
@@ -782,7 +791,7 @@ Ltac asimpl := repeat try unfold_funcomp;
                 repeat
                  unfold VarInstance_tm, Var, ids, Ren_tm, Ren1, ren1,
                   Up_tm_tm, Up_tm, up_tm, Subst_tm, Subst1, subst1 in *;
-                setoidasimpl'; repeat try unfold_funcomp.
+                setoidasimpl'; repeat try unfold_funcomp; eta_reduce.
 
 (* Ltac oldasimpl := repeat try unfold_funcomp; *)
 (*                 repeat *)
