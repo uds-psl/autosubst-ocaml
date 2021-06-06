@@ -688,26 +688,6 @@ Qed.
 (*   unfold funcomp. rewrite Hg. *)
 (*   reflexivity. *)
 (* Qed. *)
-
-Instance funcomp_morphism {X Y Z} :
-  Proper (@pointwise_relation Y Z eq ==> @pointwise_relation X Y eq ==> @pointwise_relation X Z eq) (@funcomp X Y Z).
-Proof.
-  cbv - [funcomp].
-  intros g0 g1 Hg f0 f1 Hf x.
-  unfold funcomp. rewrite Hf, Hg.
-  reflexivity.
-Qed.
-
-Goal forall {m} (f f': fin m -> tm m) (g: fin m -> fin m) (H: forall x, f x = f' x) (si: fin m -> tm m) (s: tm m),
-  subst_tm (funcomp (fun x => f x) g) s = subst_tm (funcomp (fun x => f' x) g) s.
-Proof.
-  intros * H si x.
-  (* intros x'. rewrite H. *)
-  Set Typeclasses Debug.
-  (* simple apply subst_morphism; [|reflexivity]. *)
-  (* simple apply funcomp_morphism. *)
-
-  try setoid_rewrite H.
   
 (* Lemma scons_comp' {m_tm n_tm k_tm:nat} {s: tm n_tm} (sigma: fin m_tm -> tm n_tm) (tau: tm n_tm -> tm k_tm) : forall n : fin (S m_tm), (funcomp tau (scons s sigma)) n = (scons (tau s) (funcomp tau sigma)) n. *)
 (* Proof. *)

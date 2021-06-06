@@ -36,12 +36,12 @@ Chapter9/sn.v
 Chapter9/sn_raamsdonk.v
 Chapter9/equivalence.v
 
-# Chapter10/sysf.v
+Chapter10/sysf.v
 # # Chapter10/sysf_axioms.v
-# Chapter10/POPLMark1.v
+Chapter10/POPLMark1.v
 # Chapter10/POPLMark21.v
 # Chapter10/sysf_pat.v
-# # Chapter10/sysf_pat_axioms.v
+# Chapter10/sysf_pat_axioms.v
 # Chapter10/POPLMark22.v
 
 ARS.v

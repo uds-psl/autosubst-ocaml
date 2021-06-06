@@ -1626,155 +1626,219 @@ Notation "x '__ty'" := (@ids _ _ VarInstance_ty x)
 Notation "x '__ty'" := (var_ty x) ( at level 5, format "x __ty") :
   subst_scope.
 
-Lemma rinstInst_ty {m_ty : nat} {n_ty : nat} (xi_ty : fin m_ty -> fin n_ty) :
-  ren_ty xi_ty = subst_ty (funcomp (var_ty n_ty) xi_ty).
+Lemma rinstInst_ty' {m_ty : nat} {n_ty : nat} (xi_ty : fin m_ty -> fin n_ty) :
+  forall s, ren_ty xi_ty s = subst_ty (funcomp (var_ty n_ty) xi_ty) s.
 Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun x => rinst_inst_ty xi_ty _ (fun n => eq_refl) x)).
+  apply rinst_inst_ty. intros s. reflexivity.
 Qed.
 
-Lemma instId_ty {m_ty : nat} : subst_ty (var_ty m_ty) = id.
+Lemma instId_ty' {m_ty : nat} : forall s, subst_ty (var_ty m_ty) s = s.
 Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun x => idSubst_ty (var_ty m_ty) (fun n => eq_refl) (id x))).
+  apply idSubst_ty. intros x. reflexivity.
 Qed.
 
-Lemma rinstId_ty {m_ty : nat} : @ren_ty m_ty m_ty id = id.
+Lemma rinstId_ty' {m_ty : nat} : forall (s: ty m_ty), ren_ty id s = s.
 Proof.
-exact (eq_trans (rinstInst_ty (id _)) instId_ty).
+  intros s. erewrite rinst_inst_ty. apply instId_ty'.
+  intros x. reflexivity.
 Qed.
 
-Lemma varL_ty {m_ty : nat} {n_ty : nat} (sigma_ty : fin m_ty -> ty n_ty) :
-  funcomp (subst_ty sigma_ty) (var_ty m_ty) = sigma_ty.
+(* Lemma rinstInst_ty {m_ty : nat} {n_ty : nat} (xi_ty : fin m_ty -> fin n_ty) : *)
+(*   ren_ty xi_ty = subst_ty (funcomp (var_ty n_ty) xi_ty). *)
+(* Proof. *)
+(* exact (FunctionalExtensionality.functional_extensionality _ _ *)
+(*          (fun x => rinst_inst_ty xi_ty _ (fun n => eq_refl) x)). *)
+(* Qed. *)
+
+(* Lemma instId_ty {m_ty : nat} : subst_ty (var_ty m_ty) = id. *)
+(* Proof. *)
+(* exact (FunctionalExtensionality.functional_extensionality _ _ *)
+(*          (fun x => idSubst_ty (var_ty m_ty) (fun n => eq_refl) (id x))). *)
+(* Qed. *)
+
+(* Lemma rinstId_ty {m_ty : nat} : @ren_ty m_ty m_ty id = id. *)
+(* Proof. *)
+(* exact (eq_trans (rinstInst_ty (id _)) instId_ty). *)
+(* Qed. *)
+
+Lemma varL_ty' {m_ty : nat} {n_ty : nat} (sigma_ty : fin m_ty -> ty n_ty) x :
+  subst_ty sigma_ty (var_ty m_ty x) = sigma_ty x.
 Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun x => eq_refl)).
+  reflexivity.
 Qed.
 
-Lemma varLRen_ty {m_ty : nat} {n_ty : nat} (xi_ty : fin m_ty -> fin n_ty) :
-  funcomp (ren_ty xi_ty) (var_ty m_ty) = funcomp (var_ty n_ty) xi_ty.
+Lemma varLRen_ty' {m_ty : nat} {n_ty : nat} (xi_ty : fin m_ty -> fin n_ty) x :
+  ren_ty xi_ty (var_ty m_ty x) = var_ty n_ty (xi_ty x).
 Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun x => eq_refl)).
+  reflexivity.
 Qed.
 
-Lemma renRen'_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
-  (xi_ty : fin m_ty -> fin k_ty) (zeta_ty : fin k_ty -> fin l_ty) :
-  funcomp (ren_ty zeta_ty) (ren_ty xi_ty) = ren_ty (funcomp zeta_ty xi_ty).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun n => renRen_ty xi_ty zeta_ty n)).
-Qed.
+(* Lemma varL_ty {m_ty : nat} {n_ty : nat} (sigma_ty : fin m_ty -> ty n_ty) : *)
+(*   funcomp (subst_ty sigma_ty) (var_ty m_ty) = sigma_ty. *)
+(* Proof. *)
+(* exact (FunctionalExtensionality.functional_extensionality _ _ *)
+(*          (fun x => eq_refl)). *)
+(* Qed. *)
 
-Lemma compRen'_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
-  (sigma_ty : fin m_ty -> ty k_ty) (zeta_ty : fin k_ty -> fin l_ty) :
-  funcomp (ren_ty zeta_ty) (subst_ty sigma_ty) =
-  subst_ty (funcomp (ren_ty zeta_ty) sigma_ty).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun n => compRen_ty sigma_ty zeta_ty n)).
-Qed.
+(* Lemma varLRen_ty {m_ty : nat} {n_ty : nat} (xi_ty : fin m_ty -> fin n_ty) : *)
+(*   funcomp (ren_ty xi_ty) (var_ty m_ty) = funcomp (var_ty n_ty) xi_ty. *)
+(* Proof. *)
+(* exact (FunctionalExtensionality.functional_extensionality _ _ *)
+(*          (fun x => eq_refl)). *)
+(* Qed. *)
 
-Lemma renComp'_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
-  (xi_ty : fin m_ty -> fin k_ty) (tau_ty : fin k_ty -> ty l_ty) :
-  funcomp (subst_ty tau_ty) (ren_ty xi_ty) = subst_ty (funcomp tau_ty xi_ty).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun n => renComp_ty xi_ty tau_ty n)).
-Qed.
+(* Lemma renRen'_ty {k_ty : nat} {l_ty : nat} {m_ty : nat} *)
+(*   (xi_ty : fin m_ty -> fin k_ty) (zeta_ty : fin k_ty -> fin l_ty) : *)
+(*   funcomp (ren_ty zeta_ty) (ren_ty xi_ty) = ren_ty (funcomp zeta_ty xi_ty). *)
+(* Proof. *)
+(* exact (FunctionalExtensionality.functional_extensionality _ _ *)
+(*          (fun n => renRen_ty xi_ty zeta_ty n)). *)
+(* Qed. *)
 
-Lemma compComp'_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
-  (sigma_ty : fin m_ty -> ty k_ty) (tau_ty : fin k_ty -> ty l_ty) :
-  funcomp (subst_ty tau_ty) (subst_ty sigma_ty) =
-  subst_ty (funcomp (subst_ty tau_ty) sigma_ty).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun n => compComp_ty sigma_ty tau_ty n)).
-Qed.
+(* Lemma compRen'_ty {k_ty : nat} {l_ty : nat} {m_ty : nat} *)
+(*   (sigma_ty : fin m_ty -> ty k_ty) (zeta_ty : fin k_ty -> fin l_ty) : *)
+(*   funcomp (ren_ty zeta_ty) (subst_ty sigma_ty) = *)
+(*   subst_ty (funcomp (ren_ty zeta_ty) sigma_ty). *)
+(* Proof. *)
+(* exact (FunctionalExtensionality.functional_extensionality _ _ *)
+(*          (fun n => compRen_ty sigma_ty zeta_ty n)). *)
+(* Qed. *)
 
-Lemma rinstInst_tm {m_ty m_tm : nat} {n_ty n_tm : nat}
+(* Lemma renComp'_ty {k_ty : nat} {l_ty : nat} {m_ty : nat} *)
+(*   (xi_ty : fin m_ty -> fin k_ty) (tau_ty : fin k_ty -> ty l_ty) : *)
+(*   funcomp (subst_ty tau_ty) (ren_ty xi_ty) = subst_ty (funcomp tau_ty xi_ty). *)
+(* Proof. *)
+(* exact (FunctionalExtensionality.functional_extensionality _ _ *)
+(*          (fun n => renComp_ty xi_ty tau_ty n)). *)
+(* Qed. *)
+
+(* Lemma compComp'_ty {k_ty : nat} {l_ty : nat} {m_ty : nat} *)
+(*   (sigma_ty : fin m_ty -> ty k_ty) (tau_ty : fin k_ty -> ty l_ty) : *)
+(*   funcomp (subst_ty tau_ty) (subst_ty sigma_ty) = *)
+(*   subst_ty (funcomp (subst_ty tau_ty) sigma_ty). *)
+(* Proof. *)
+(* exact (FunctionalExtensionality.functional_extensionality _ _ *)
+(*          (fun n => compComp_ty sigma_ty tau_ty n)). *)
+(* Qed. *)
+
+Lemma rinstInst_tm' {m_ty m_tm : nat} {n_ty n_tm : nat}
   (xi_ty : fin m_ty -> fin n_ty) (xi_tm : fin m_tm -> fin n_tm) :
-  ren_tm xi_ty xi_tm =
-  subst_tm (funcomp (var_ty n_ty) xi_ty) (funcomp (var_tm n_ty n_tm) xi_tm).
+  forall s, ren_tm xi_ty xi_tm s =
+  subst_tm (funcomp (var_ty n_ty) xi_ty) (funcomp (var_tm n_ty n_tm) xi_tm) s.
 Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun x =>
-          rinst_inst_tm xi_ty xi_tm _ _ (fun n => eq_refl) (fun n => eq_refl)
-            x)).
+  apply rinst_inst_tm; intros x; reflexivity.
 Qed.
 
-Lemma instId_tm {m_ty m_tm : nat} :
-  subst_tm (var_ty m_ty) (var_tm m_ty m_tm) = id.
+Lemma instId_tm' {m_ty m_tm : nat} :
+  forall s, subst_tm (var_ty m_ty) (var_tm m_ty m_tm) s = s.
 Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun x =>
-          idSubst_tm (var_ty m_ty) (var_tm m_ty m_tm) (fun n => eq_refl)
-            (fun n => eq_refl) (id x))).
+  exact (fun x => idSubst_tm (var_ty _) (var_tm _ _) (fun n => eq_refl) (fun n => eq_refl) x).
 Qed.
 
-Lemma rinstId_tm {m_ty m_tm : nat} : @ren_tm m_ty m_tm m_ty m_tm id id = id.
+Lemma rinstId_tm' {m_ty m_tm : nat} : forall (s: tm m_ty m_tm), ren_tm id id s = s.
 Proof.
-exact (eq_trans (rinstInst_tm (id _) (id _)) instId_tm).
+  intros s. erewrite rinst_inst_tm. apply instId_tm'.
+  all: intros x; reflexivity.
 Qed.
 
-Lemma varL_tm {m_ty m_tm : nat} {n_ty n_tm : nat}
-  (sigma_ty : fin m_ty -> ty n_ty) (sigma_tm : fin m_tm -> tm n_ty n_tm) :
-  funcomp (subst_tm sigma_ty sigma_tm) (var_tm m_ty m_tm) = sigma_tm.
+(* Lemma rinstInst_tm {m_ty m_tm : nat} {n_ty n_tm : nat} *)
+(*   (xi_ty : fin m_ty -> fin n_ty) (xi_tm : fin m_tm -> fin n_tm) : *)
+(*   ren_tm xi_ty xi_tm = *)
+(*   subst_tm (funcomp (var_ty n_ty) xi_ty) (funcomp (var_tm n_ty n_tm) xi_tm). *)
+(* Proof. *)
+(* exact (FunctionalExtensionality.functional_extensionality _ _ *)
+(*          (fun x => *)
+(*           rinst_inst_tm xi_ty xi_tm _ _ (fun n => eq_refl) (fun n => eq_refl) *)
+(*             x)). *)
+(* Qed. *)
+
+(* Lemma instId_tm {m_ty m_tm : nat} : *)
+(*   subst_tm (var_ty m_ty) (var_tm m_ty m_tm) = id. *)
+(* Proof. *)
+(* exact (FunctionalExtensionality.functional_extensionality _ _ *)
+(*          (fun x => *)
+(*           idSubst_tm (var_ty m_ty) (var_tm m_ty m_tm) (fun n => eq_refl) *)
+(*             (fun n => eq_refl) (id x))). *)
+(* Qed. *)
+
+(* Lemma rinstId_tm {m_ty m_tm : nat} : @ren_tm m_ty m_tm m_ty m_tm id id = id. *)
+(* Proof. *)
+(* exact (eq_trans (rinstInst_tm (id _) (id _)) instId_tm). *)
+(* Qed. *)
+
+Lemma varL_tm' {m_ty m_tm : nat} {n_ty n_tm : nat}
+  (sigma_ty : fin m_ty -> ty n_ty) (sigma_tm : fin m_tm -> tm n_ty n_tm) x :
+  subst_tm sigma_ty sigma_tm (var_tm m_ty m_tm x) = sigma_tm x.
 Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun x => eq_refl)).
+  reflexivity.
 Qed.
 
-Lemma varLRen_tm {m_ty m_tm : nat} {n_ty n_tm : nat}
-  (xi_ty : fin m_ty -> fin n_ty) (xi_tm : fin m_tm -> fin n_tm) :
-  funcomp (ren_tm xi_ty xi_tm) (var_tm m_ty m_tm) =
-  funcomp (var_tm n_ty n_tm) xi_tm.
+Lemma varLRen_tm' {m_ty m_tm : nat} {n_ty n_tm : nat}
+  (xi_ty : fin m_ty -> fin n_ty) (xi_tm : fin m_tm -> fin n_tm) x:
+  ren_tm xi_ty xi_tm (var_tm m_ty m_tm x) =
+  var_tm n_ty n_tm (xi_tm x).
 Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun x => eq_refl)).
+  reflexivity.
 Qed.
 
-Lemma renRen'_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
-  (xi_ty : fin m_ty -> fin k_ty) (xi_tm : fin m_tm -> fin k_tm)
-  (zeta_ty : fin k_ty -> fin l_ty) (zeta_tm : fin k_tm -> fin l_tm) :
-  funcomp (ren_tm zeta_ty zeta_tm) (ren_tm xi_ty xi_tm) =
-  ren_tm (funcomp zeta_ty xi_ty) (funcomp zeta_tm xi_tm).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun n => renRen_tm xi_ty xi_tm zeta_ty zeta_tm n)).
-Qed.
+(* Lemma varL_tm {m_ty m_tm : nat} {n_ty n_tm : nat} *)
+(*   (sigma_ty : fin m_ty -> ty n_ty) (sigma_tm : fin m_tm -> tm n_ty n_tm) : *)
+(*   funcomp (subst_tm sigma_ty sigma_tm) (var_tm m_ty m_tm) = sigma_tm. *)
+(* Proof. *)
+(* exact (FunctionalExtensionality.functional_extensionality _ _ *)
+(*          (fun x => eq_refl)). *)
+(* Qed. *)
 
-Lemma compRen'_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
-  (sigma_ty : fin m_ty -> ty k_ty) (sigma_tm : fin m_tm -> tm k_ty k_tm)
-  (zeta_ty : fin k_ty -> fin l_ty) (zeta_tm : fin k_tm -> fin l_tm) :
-  funcomp (ren_tm zeta_ty zeta_tm) (subst_tm sigma_ty sigma_tm) =
-  subst_tm (funcomp (ren_ty zeta_ty) sigma_ty)
-    (funcomp (ren_tm zeta_ty zeta_tm) sigma_tm).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun n => compRen_tm sigma_ty sigma_tm zeta_ty zeta_tm n)).
-Qed.
+(* Lemma varLRen_tm {m_ty m_tm : nat} {n_ty n_tm : nat} *)
+(*   (xi_ty : fin m_ty -> fin n_ty) (xi_tm : fin m_tm -> fin n_tm) : *)
+(*   funcomp (ren_tm xi_ty xi_tm) (var_tm m_ty m_tm) = *)
+(*   funcomp (var_tm n_ty n_tm) xi_tm. *)
+(* Proof. *)
+(* exact (FunctionalExtensionality.functional_extensionality _ _ *)
+(*          (fun x => eq_refl)). *)
+(* Qed. *)
 
-Lemma renComp'_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
-  (xi_ty : fin m_ty -> fin k_ty) (xi_tm : fin m_tm -> fin k_tm)
-  (tau_ty : fin k_ty -> ty l_ty) (tau_tm : fin k_tm -> tm l_ty l_tm) :
-  funcomp (subst_tm tau_ty tau_tm) (ren_tm xi_ty xi_tm) =
-  subst_tm (funcomp tau_ty xi_ty) (funcomp tau_tm xi_tm).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun n => renComp_tm xi_ty xi_tm tau_ty tau_tm n)).
-Qed.
+(* Lemma renRen'_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat} *)
+(*   (xi_ty : fin m_ty -> fin k_ty) (xi_tm : fin m_tm -> fin k_tm) *)
+(*   (zeta_ty : fin k_ty -> fin l_ty) (zeta_tm : fin k_tm -> fin l_tm) : *)
+(*   funcomp (ren_tm zeta_ty zeta_tm) (ren_tm xi_ty xi_tm) = *)
+(*   ren_tm (funcomp zeta_ty xi_ty) (funcomp zeta_tm xi_tm). *)
+(* Proof. *)
+(* exact (FunctionalExtensionality.functional_extensionality _ _ *)
+(*          (fun n => renRen_tm xi_ty xi_tm zeta_ty zeta_tm n)). *)
+(* Qed. *)
 
-Lemma compComp'_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
-  (sigma_ty : fin m_ty -> ty k_ty) (sigma_tm : fin m_tm -> tm k_ty k_tm)
-  (tau_ty : fin k_ty -> ty l_ty) (tau_tm : fin k_tm -> tm l_ty l_tm) :
-  funcomp (subst_tm tau_ty tau_tm) (subst_tm sigma_ty sigma_tm) =
-  subst_tm (funcomp (subst_ty tau_ty) sigma_ty)
-    (funcomp (subst_tm tau_ty tau_tm) sigma_tm).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun n => compComp_tm sigma_ty sigma_tm tau_ty tau_tm n)).
-Qed.
+(* Lemma compRen'_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat} *)
+(*   (sigma_ty : fin m_ty -> ty k_ty) (sigma_tm : fin m_tm -> tm k_ty k_tm) *)
+(*   (zeta_ty : fin k_ty -> fin l_ty) (zeta_tm : fin k_tm -> fin l_tm) : *)
+(*   funcomp (ren_tm zeta_ty zeta_tm) (subst_tm sigma_ty sigma_tm) = *)
+(*   subst_tm (funcomp (ren_ty zeta_ty) sigma_ty) *)
+(*     (funcomp (ren_tm zeta_ty zeta_tm) sigma_tm). *)
+(* Proof. *)
+(* exact (FunctionalExtensionality.functional_extensionality _ _ *)
+(*          (fun n => compRen_tm sigma_ty sigma_tm zeta_ty zeta_tm n)). *)
+(* Qed. *)
+
+(* Lemma renComp'_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat} *)
+(*   (xi_ty : fin m_ty -> fin k_ty) (xi_tm : fin m_tm -> fin k_tm) *)
+(*   (tau_ty : fin k_ty -> ty l_ty) (tau_tm : fin k_tm -> tm l_ty l_tm) : *)
+(*   funcomp (subst_tm tau_ty tau_tm) (ren_tm xi_ty xi_tm) = *)
+(*   subst_tm (funcomp tau_ty xi_ty) (funcomp tau_tm xi_tm). *)
+(* Proof. *)
+(* exact (FunctionalExtensionality.functional_extensionality _ _ *)
+(*          (fun n => renComp_tm xi_ty xi_tm tau_ty tau_tm n)). *)
+(* Qed. *)
+
+(* Lemma compComp'_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat} *)
+(*   (sigma_ty : fin m_ty -> ty k_ty) (sigma_tm : fin m_tm -> tm k_ty k_tm) *)
+(*   (tau_ty : fin k_ty -> ty l_ty) (tau_tm : fin k_tm -> tm l_ty l_tm) : *)
+(*   funcomp (subst_tm tau_ty tau_tm) (subst_tm sigma_ty sigma_tm) = *)
+(*   subst_tm (funcomp (subst_ty tau_ty) sigma_ty) *)
+(*     (funcomp (subst_tm tau_ty tau_tm) sigma_tm). *)
+(* Proof. *)
+(* exact (FunctionalExtensionality.functional_extensionality _ _ *)
+(*          (fun n => compComp_tm sigma_ty sigma_tm tau_ty tau_tm n)). *)
+(* Qed. *)
 
 Arguments tabs {n_ty n_tm}.
 
@@ -1817,6 +1881,20 @@ Tactic Notation "auto_unfold" "in" "*" := repeat
 Require Import Setoid Morphisms.
 Require Import Relation_Definitions.
 
+Instance ren_tm_morphism {m_ty n_ty m_tm n_tm:nat}:
+  Proper (pointwise_relation _ eq ==> pointwise_relation _ eq ==> eq ==> eq) (@ren_tm m_ty m_tm n_ty n_tm).
+Proof.
+  intros f f' Hf g g' Hg s s' ->.
+  apply extRen_tm. apply Hf. apply Hg.
+Qed.
+
+Instance ren_ty_morphism {m_ty n_ty:nat} :
+  Proper (pointwise_relation _ eq ==> eq ==> eq) (@ren_ty m_ty n_ty).
+Proof.
+  intros f f' Hf s s' ->.
+  apply extRen_ty. apply Hf.
+Qed.
+
 Instance subst_tm_morphism {m_ty n_ty m_tm n_tm:nat}:
   Proper (pointwise_relation _ eq ==> pointwise_relation _ eq ==> eq ==> eq) (@subst_tm m_ty m_tm n_ty n_tm).
 Proof.
@@ -1838,48 +1916,22 @@ Proof.
   cbn. apply Hf. cbn. reflexivity.
 Qed.
 
-Instance funcomp_morphism2 {X Y Z} (f: X -> Y) :
-  Proper (pointwise_relation _ eq ==> pointwise_relation _ eq) (fun g : Y -> Z => funcomp g f).
-Proof.
-  cbv - [funcomp].
-  intros g h H. setoid_rewrite H.
-  intros ?; reflexivity.
-Qed.
+(* Instance funcomp_morphism2 {X Y Z} (f: X -> Y) : *)
+(*   Proper (pointwise_relation _ eq ==> pointwise_relation _ eq) (fun g : Y -> Z => funcomp g f). *)
+(* Proof. *)
+(*   cbv - [funcomp]. *)
+(*   intros g h H. setoid_rewrite H. *)
+(*   intros ?; reflexivity. *)
+(* Qed. *)
   
-Instance funcomp_morphism1 {X Y Z} (f: Y -> Z) :
-  Proper (pointwise_relation _ eq ==> pointwise_relation _ eq) (fun g : X -> Y => funcomp f g).
-Proof.
-  cbv - [funcomp].
-  intros g h H. intros ?.
-  unfold funcomp. rewrite H. reflexivity.
-Qed.
+(* Instance funcomp_morphism1 {X Y Z} (f: Y -> Z) : *)
+(*   Proper (pointwise_relation _ eq ==> pointwise_relation _ eq) (fun g : X -> Y => funcomp f g). *)
+(* Proof. *)
+(*   cbv - [funcomp]. *)
+(*   intros g h H. intros ?. *)
+(*   unfold funcomp. rewrite H. reflexivity. *)
+(* Qed. *)
 
-Lemma instId_tm' {m_ty m_tm:nat} : forall (s: tm m_ty m_tm), subst_tm var_ty var_tm s = s.
-Proof.
-  exact (fun x => idSubst_tm var_ty var_tm (fun n => eq_refl) (fun n => eq_refl) x).
-Qed.
-
-Lemma rinstId_tm' {m_ty m_tm:nat}: forall (s: tm m_ty m_tm), ren_tm id id s = s.
-Proof.
-  intros s.
-  erewrite rinst_inst_tm.
-  eapply instId_tm'.
-  intros x. reflexivity.
-  intros x. reflexivity.
-Qed.
-
-Lemma instId_ty' {m_ty :nat} : forall (s: ty m_ty), subst_ty var_ty s = s.
-Proof.
-  exact (fun x => idSubst_ty var_ty (fun n => eq_refl) x).
-Qed.
-
-Lemma rinstId_ty' {m_ty :nat}: forall (s: ty m_ty), ren_ty id s = s.
-Proof.
-  intros s.
-  erewrite rinst_inst_ty.
-  eapply instId_ty'.
-  intros x. reflexivity.
-Qed.
 
 Ltac setoidasimpl' := repeat (first
                  (* [ progress setoid_rewrite ?compComp'_tm *)
@@ -1896,6 +1948,8 @@ Ltac setoidasimpl' := repeat (first
                  | progress rewrite ?renRen_tm
                  (* | progress setoid_rewrite varLRen_tm *)
                  (* | progress setoid_rewrite varL_tm *)
+                 | progress setoid_rewrite varLRen_tm'
+                 | progress setoid_rewrite varL_tm'
                  | progress setoid_rewrite rinstId_tm'
                  | progress setoid_rewrite instId_tm'
                  (* | progress setoid_rewrite compComp'_ty *)
@@ -1912,6 +1966,8 @@ Ltac setoidasimpl' := repeat (first
                  | progress rewrite ?renRen_ty
                  (* | progress setoid_rewrite varLRen_ty *)
                  (* | progress setoid_rewrite varL_ty *)
+                 | progress setoid_rewrite varLRen_ty'
+                 | progress setoid_rewrite varL_ty'
                  | progress setoid_rewrite rinstId_ty'
                  | progress setoid_rewrite instId_ty'
                  | progress
@@ -1925,39 +1981,45 @@ Ltac setoidasimpl' := repeat (first
                  | repeat unfold funcomp; idtac "funcomp"
                                                 ]).
 
-Ltac asimpl' := repeat (first
-                 [ progress rewrite ?compComp'_tm
-                 | progress rewrite ?compComp_tm
-                 | progress rewrite ?renComp'_tm
-                 | progress rewrite ?renComp_tm
-                 | progress rewrite ?compRen'_tm
-                 | progress rewrite ?compRen_tm
-                 | progress rewrite ?renRen'_tm
-                 | progress rewrite ?renRen_tm
-                 | progress rewrite ?varLRen_tm
-                 | progress rewrite ?varL_tm
-                 | progress rewrite ?rinstId_tm
-                 | progress rewrite ?instId_tm
-                 | progress rewrite ?compComp'_ty
-                 | progress rewrite ?compComp_ty
-                 | progress rewrite ?renComp'_ty
-                 | progress rewrite ?renComp_ty
-                 | progress rewrite ?compRen'_ty
-                 | progress rewrite ?compRen_ty
-                 | progress rewrite ?renRen'_ty
-                 | progress rewrite ?renRen_ty
-                 | progress rewrite ?varLRen_ty
-                 | progress rewrite ?varL_ty
-                 | progress rewrite ?rinstId_ty
-                 | progress rewrite ?instId_ty
-                 | progress
-                    unfold up_list_tm_tm, up_list_tm_ty, up_list_ty_tm,
-                     up_tm_tm, up_tm_ty, up_ty_tm, upRen_list_tm_tm,
-                     upRen_list_tm_ty, upRen_list_ty_tm, upRen_tm_tm,
-                     upRen_tm_ty, upRen_ty_tm, up_list_ty_ty, up_ty_ty,
-                     upRen_list_ty_ty, upRen_ty_ty, up_ren
-                 | progress cbn[subst_tm ren_tm subst_ty ren_ty]
-                 | fsimpl ]).
+(* Ltac asimpl' := repeat (first *)
+(*                  [ progress rewrite ?compComp'_tm *)
+(*                  | progress rewrite ?compComp_tm *)
+(*                  | progress rewrite ?renComp'_tm *)
+(*                  | progress rewrite ?renComp_tm *)
+(*                  | progress rewrite ?compRen'_tm *)
+(*                  | progress rewrite ?compRen_tm *)
+(*                  | progress rewrite ?renRen'_tm *)
+(*                  | progress rewrite ?renRen_tm *)
+(*                  | progress rewrite ?varLRen_tm *)
+(*                  | progress rewrite ?varL_tm *)
+(*                  | progress rewrite ?rinstId_tm *)
+(*                  | progress rewrite ?instId_tm *)
+(*                  | progress rewrite ?compComp'_ty *)
+(*                  | progress rewrite ?compComp_ty *)
+(*                  | progress rewrite ?renComp'_ty *)
+(*                  | progress rewrite ?renComp_ty *)
+(*                  | progress rewrite ?compRen'_ty *)
+(*                  | progress rewrite ?compRen_ty *)
+(*                  | progress rewrite ?renRen'_ty *)
+(*                  | progress rewrite ?renRen_ty *)
+(*                  | progress rewrite ?varLRen_ty *)
+(*                  | progress rewrite ?varL_ty *)
+(*                  | progress rewrite ?rinstId_ty *)
+(*                  | progress rewrite ?instId_ty *)
+(*                  | progress *)
+(*                     unfold up_list_tm_tm, up_list_tm_ty, up_list_ty_tm, *)
+(*                      up_tm_tm, up_tm_ty, up_ty_tm, upRen_list_tm_tm, *)
+(*                      upRen_list_tm_ty, upRen_list_ty_tm, upRen_tm_tm, *)
+(*                      upRen_tm_ty, upRen_ty_tm, up_list_ty_ty, up_ty_ty, *)
+(*                      upRen_list_ty_ty, upRen_ty_ty, up_ren *)
+(*                  | progress cbn[subst_tm ren_tm subst_ty ren_ty] *)
+(*                  | fsimpl ]). *)
+
+Ltac minimize :=
+  repeat match goal with
+         | [|- context[fun x => ?f x]] => change (fun x => f x) with f
+         | [|- context[fun x => ?g (?f x)]] => change (fun x => g (f x)) with (funcomp g f)
+         end.
 
 Ltac asimpl := repeat try unfold_funcomp;
                 repeat
@@ -1966,65 +2028,65 @@ Ltac asimpl := repeat try unfold_funcomp;
                   VarInstance_tm, Var, ids, Ren_tm, Ren2, ren2, Up_ty_tm,
                   Up_tm, up_tm, Up_tm_ty, Up_ty, up_ty, Up_tm_tm, Up_tm,
                   up_tm, Subst_tm, Subst2, subst2 in *; setoidasimpl';
-                repeat try unfold_funcomp.
+                repeat try unfold_funcomp; minimize.
 
 Tactic Notation "asimpl" "in" hyp(J) := revert J; asimpl; intros J.
 
 Tactic Notation "auto_case" := auto_case ltac:(asimpl; cbn; eauto).
 
-Tactic Notation "asimpl" "in" "*" := repeat
-                                      unfold VarInstance_ty, Var, ids,
-                                       Ren_ty, Ren1, ren1, Up_ty_ty, Up_ty,
-                                       up_ty, Subst_ty, Subst1, subst1,
-                                       VarInstance_tm, Var, ids, Ren_tm,
-                                       Ren2, ren2, Up_ty_tm, Up_tm, up_tm,
-                                       Up_tm_ty, Up_ty, up_ty, Up_tm_tm,
-                                       Up_tm, up_tm, Subst_tm, Subst2, subst2
-                                       in *;
-                                      repeat (first
-                                       [ progress rewrite ?compComp'_tm in *
-                                       | progress rewrite ?compComp_tm in *
-                                       | progress rewrite ?renComp'_tm in *
-                                       | progress rewrite ?renComp_tm in *
-                                       | progress rewrite ?compRen'_tm in *
-                                       | progress rewrite ?compRen_tm in *
-                                       | progress rewrite ?renRen'_tm in *
-                                       | progress rewrite ?renRen_tm in *
-                                       | progress rewrite ?varLRen_tm in *
-                                       | progress rewrite ?varL_tm in *
-                                       | progress rewrite ?rinstId_tm in *
-                                       | progress rewrite ?instId_tm in *
-                                       | progress rewrite ?compComp'_ty in *
-                                       | progress rewrite ?compComp_ty in *
-                                       | progress rewrite ?renComp'_ty in *
-                                       | progress rewrite ?renComp_ty in *
-                                       | progress rewrite ?compRen'_ty in *
-                                       | progress rewrite ?compRen_ty in *
-                                       | progress rewrite ?renRen'_ty in *
-                                       | progress rewrite ?renRen_ty in *
-                                       | progress rewrite ?varLRen_ty in *
-                                       | progress rewrite ?varL_ty in *
-                                       | progress rewrite ?rinstId_ty in *
-                                       | progress rewrite ?instId_ty in *
-                                       | progress
-                                          unfold up_list_tm_tm,
-                                           up_list_tm_ty, up_list_ty_tm,
-                                           up_tm_tm, up_tm_ty, up_ty_tm,
-                                           upRen_list_tm_tm,
-                                           upRen_list_tm_ty,
-                                           upRen_list_ty_tm, upRen_tm_tm,
-                                           upRen_tm_ty, upRen_ty_tm,
-                                           up_list_ty_ty, up_ty_ty,
-                                           upRen_list_ty_ty, upRen_ty_ty,
-                                           up_ren in *
-                                       | progress
-                                          cbn[subst_tm ren_tm subst_ty
-                                             ren_ty] in *
-                                       | fsimpl ]).
+(* Tactic Notation "asimpl" "in" "*" := repeat *)
+(*                                       unfold VarInstance_ty, Var, ids, *)
+(*                                        Ren_ty, Ren1, ren1, Up_ty_ty, Up_ty, *)
+(*                                        up_ty, Subst_ty, Subst1, subst1, *)
+(*                                        VarInstance_tm, Var, ids, Ren_tm, *)
+(*                                        Ren2, ren2, Up_ty_tm, Up_tm, up_tm, *)
+(*                                        Up_tm_ty, Up_ty, up_ty, Up_tm_tm, *)
+(*                                        Up_tm, up_tm, Subst_tm, Subst2, subst2 *)
+(*                                        in *; *)
+(*                                       repeat (first *)
+(*                                        [ progress rewrite ?compComp'_tm in * *)
+(*                                        | progress rewrite ?compComp_tm in * *)
+(*                                        | progress rewrite ?renComp'_tm in * *)
+(*                                        | progress rewrite ?renComp_tm in * *)
+(*                                        | progress rewrite ?compRen'_tm in * *)
+(*                                        | progress rewrite ?compRen_tm in * *)
+(*                                        | progress rewrite ?renRen'_tm in * *)
+(*                                        | progress rewrite ?renRen_tm in * *)
+(*                                        | progress rewrite ?varLRen_tm in * *)
+(*                                        | progress rewrite ?varL_tm in * *)
+(*                                        | progress rewrite ?rinstId_tm in * *)
+(*                                        | progress rewrite ?instId_tm in * *)
+(*                                        | progress rewrite ?compComp'_ty in * *)
+(*                                        | progress rewrite ?compComp_ty in * *)
+(*                                        | progress rewrite ?renComp'_ty in * *)
+(*                                        | progress rewrite ?renComp_ty in * *)
+(*                                        | progress rewrite ?compRen'_ty in * *)
+(*                                        | progress rewrite ?compRen_ty in * *)
+(*                                        | progress rewrite ?renRen'_ty in * *)
+(*                                        | progress rewrite ?renRen_ty in * *)
+(*                                        | progress rewrite ?varLRen_ty in * *)
+(*                                        | progress rewrite ?varL_ty in * *)
+(*                                        | progress rewrite ?rinstId_ty in * *)
+(*                                        | progress rewrite ?instId_ty in * *)
+(*                                        | progress *)
+(*                                           unfold up_list_tm_tm, *)
+(*                                            up_list_tm_ty, up_list_ty_tm, *)
+(*                                            up_tm_tm, up_tm_ty, up_ty_tm, *)
+(*                                            upRen_list_tm_tm, *)
+(*                                            upRen_list_tm_ty, *)
+(*                                            upRen_list_ty_tm, upRen_tm_tm, *)
+(*                                            upRen_tm_ty, upRen_ty_tm, *)
+(*                                            up_list_ty_ty, up_ty_ty, *)
+(*                                            upRen_list_ty_ty, upRen_ty_ty, *)
+(*                                            up_ren in * *)
+(*                                        | progress *)
+(*                                           cbn[subst_tm ren_tm subst_ty *)
+(*                                              ren_ty] in * *)
+(*                                        | fsimpl ]). *)
 
-Ltac substify := auto_unfold; try repeat erewrite ?rinstInst_tm;
-                  try repeat erewrite ?rinstInst_ty.
+Ltac substify := auto_unfold; try repeat erewrite ?rinstInst_tm';
+                  try repeat erewrite ?rinstInst_ty'.
 
-Ltac renamify := auto_unfold; try repeat erewrite <- ?rinstInst_tm;
-                  try repeat erewrite <- ?rinstInst_ty.
+Ltac renamify := auto_unfold; try repeat erewrite <- ?rinstInst_tm';
+                  try repeat erewrite <- ?rinstInst_ty'.
 

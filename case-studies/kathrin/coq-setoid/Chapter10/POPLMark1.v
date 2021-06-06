@@ -49,6 +49,25 @@ where "'SUB' Delta |- A <: B" := (sub Delta A B).
 
 Hint Constructors sub.
 
+Require Import Setoid Morphisms.
+Instance sub_morphism {n}:
+  Proper (pointwise_relation _ eq ==> eq ==> eq ==> Basics.impl) (@sub n).
+Proof.
+  intros Gamma Gamma' HGamma T T' -> t t' ->.
+  intros H. induction H in Gamma', HGamma |- *.
+  - constructor.
+  - constructor.
+  - constructor. rewrite <- HGamma. apply IHsub. apply HGamma.
+  - constructor.
+    apply IHsub1, HGamma.
+    apply IHsub2, HGamma.
+  - constructor.
+    apply IHsub1, HGamma.
+    apply IHsub2.
+    intros [|]. cbn. rewrite HGamma. reflexivity.
+    cbn. reflexivity.
+Qed.
+
 Lemma sub_refl n (Delta: ctx n) A : SUB Delta |- A <: A.
 Proof. revert Delta. induction A; intuition; constructor; eauto. Qed.
 
@@ -76,16 +95,6 @@ Definition transitivity_at {n} (B: ty n) := forall m Gamma (A : ty m) C  (xi: fi
 Proof. intros H. specialize (H n Gamma A C id). now asimpl in H. Qed.
 Hint Resolve transitivity_proj.
 
-(* Require Import Setoid Morphisms. *)
-(* Require Import Relation_Definitions. *)
-
-(* Instance sub_morphism {n:nat} {Gamma: ctx n} : *)
-(*   Proper (eq ==> eq ==> eq) (@sub n Gamma). *)
-(* Proof. *)
-(*   intros A A' -> B B' ->. *)
-(*   reflexivity. *)
-(* Qed. *)
-
 Lemma transitivity_ren m n B (xi: fin m -> fin n) : transitivity_at B -> transitivity_at B⟨xi⟩.
 Proof. unfold transitivity_at. intros.
        eapply H; asimpl in H0; asimpl in H1; eauto.
@@ -101,7 +110,8 @@ Proof with asimpl;eauto.
   - constructor; eauto.
     eapply IHHH2.
     + auto_case; try apply sub_refl.
-      eapply sub_weak; try reflexivity. eapply H. now asimpl.
+      eapply sub_weak; try reflexivity. eapply H.
+      now asimpl.
     + auto_case. destruct (H' f);  eauto using transitivity_ren.
       rewrite H0. now left.
 Qed.
@@ -116,7 +126,10 @@ Proof with asimpl;eauto.
   - depind H... depind H1...
     econstructor... clear IHsub0 IHsub3 IHsub1 IHsub2.
     eapply IHB2; eauto.
-    + asimpl in *. eapply sub_narrow; try eapply H0.
+    + (* asimpl in * does not exist in setoid *)
+       (* asimpl in *. *)
+       asimpl.
+      eapply sub_narrow; try eapply H0.
       * auto_case. apply sub_refl.
         eapply sub_weak with (xi := ↑); try reflexivity; eauto.
         (* adrian: as of 7b3472c the goal is already solved by eauto
@@ -138,6 +151,7 @@ Proof.
   - intros. asimpl. eapply sub_refl.
   - intros. asimpl. eauto. cbn in *. eauto using sub_trans.
   - intros. asimpl. econstructor; eauto.
+    (* TODO here I needed the typeclass instance or otherwise it differed from the original behavior since it did not simplify the context *)
     asimpl. eapply IHsub2.
     auto_case; asimpl; cbn; eauto using sub_refl.
     eapply sub_weak; try reflexivity. eapply eq.
@@ -179,6 +193,28 @@ where "'TY' Delta ; Gamma |- s : A" := (has_ty Delta Gamma s A).
 
 Hint Constructors has_ty.
 
+Instance has_ty_morphism {m n} :
+  Proper (pointwise_relation _ eq ==> pointwise_relation _ eq ==> eq ==> eq ==> Basics.impl) (@has_ty m n).
+Proof.
+  intros Delta Delta' HDelta Gamma Gamma' HGamma T T' -> t t' -> H.
+  induction H in Delta', Gamma', HDelta, HGamma |- *.
+  - rewrite HGamma. constructor.
+  - constructor.
+    apply IHhas_ty. assumption.
+    intros [|]; cbn. apply HGamma. reflexivity.
+  - econstructor. apply IHhas_ty1; assumption.
+    apply IHhas_ty2; assumption.
+  - constructor. apply IHhas_ty.
+    intros [|]; cbn. rewrite HDelta. 1, 2: reflexivity.
+    intros x. unfold funcomp. rewrite HGamma. reflexivity.
+  - econstructor. apply IHhas_ty; assumption.
+    (* TODO here we actually need th eother morphism *)
+    setoid_rewrite <- HDelta. assumption.
+    assumption.
+  - econstructor. 2: setoid_rewrite <- HDelta; apply H0.
+    apply IHhas_ty; assumption.
+Qed.
+
 Reserved Notation "'EV' s => t"
   (at level 68, s at level 80, no associativity, format "'EV'   s  =>  t").
 Inductive eval {m n} : tm m n -> tm m n -> Prop :=
@@ -195,6 +231,11 @@ Inductive eval {m n} : tm m n -> tm m n -> Prop :=
      EV tapp s A => tapp s' A
 where "'EV' s => t" := (eval s t).
 
+Instance eval_morphism {m n}:
+  Proper (eq ==> eq ==> Basics.impl) (@eval m n).
+Proof.
+  intros s s' -> t t' ->. unfold Basics.impl. trivial.
+Qed.
 
 (** **** Progress *)
 
@@ -241,8 +282,8 @@ Lemma context_renaming_lemma m m' n n' (Delta: ctx m') (Gamma: dctx n' m')      
   TY Delta'; Gamma' |- s : A -> TY Delta; Gamma |- s⟨sigma;tau⟩ : A⟨sigma⟩.
 Proof.
   intros H H' ty. autorevert ty.
-  induction ty; intros; asimpl in *; subst; try now (econstructor; eauto).
-  - rewrite H'. constructor.
+  induction ty; asimpl; intros; subst; try now (econstructor; eauto).
+  - rewrite H0. constructor.
   - constructor. apply IHty; eauto. auto_case.
   - econstructor. apply IHty; eauto.
     + auto_case; try now asimpl. rewrite <- H. now asimpl.
@@ -279,7 +320,7 @@ Proof.
     + intros x. asimpl.
       
       assert ((Gamma x) [sigma >> ⟨↑⟩] = (Gamma x)[sigma]⟨↑⟩) by (now asimpl).
-      auto_unfold in *. unfold funcomp in H. rewrite H.
+      auto_unfold in *. rewrite H.
       eapply context_renaming_lemma; eauto.
       * intros. now asimpl.
       * intros. now asimpl.
@@ -358,7 +399,7 @@ Proof.
            (* ++ now asimpl. *)
         -- intros x. asimpl. constructor.
       * pose proof (ty_inv_tabs _ H_ty H) as (?&?&?&?).
-        eapply T_Sub; eauto. asimpl in *.
+        eapply T_Sub; eauto. asimpl.
         eapply context_morphism_lemma; eauto.
         -- auto_case; asimpl; eauto. asimpl. constructor. apply sub_refl.
         -- intros z. unfold funcomp. asimpl. constructor.
