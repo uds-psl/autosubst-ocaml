@@ -1,0 +1,68 @@
+#+Title Removing Functional Extensionality
+
+This memo is concerned with removing the dependency on the functional extensionality axiom from the asimpl tactic provided by Autosubst.
+It lists different appraoches and problems although they may not always be up to date to the state of the source code.
+
+* Functional Extensionality (funext)
+#+begin_src coq
+Axiom funext : forall X Y (f g : X -> Y), (forall x, f x = g x) -> f = g.
+#+end_src
+Two functions are equal provided they are extensionally equal. It's consistent as an axiom in Coq (afaik the reasoning is there are no models of Coq's type theory that invalidate it).
+However, some people don't want their development to contain these kinds of axioms. They should still be able to use automation tactics like asimpl to do the boilerplate proofs of subtitution equations.
+* Where is it used?
+We use funext for easier rewriting in the automation tactics. There are a number of lemmas stating the extensional equality of certain functions like
+#+begin_src coq
+Lemma scons_comp (t: tm) (f: nat -> tm) (g: tm -> tm) :
+  forall n, ((t .: f) >> g) x = (t[g] .: f >> g) x.
+#+end_src
+that are part of the equational theory of the deBruijn algebra at hand. Using funext we can then easily rewrite the function on the left-hand side to the function on the right-hand side as in the following instantiation.
+#+begin_src coq
+s[(t .: var_tm) >> f] ~~> s[t[f] .: var_tm >> f]
+#+end_src
+However, funext does not give us more power in this case because we can also prove a lemma stating that instantiations with extensionally equal functions are equal. Intuitively is makes sense because a subsitution replaces all free variables in a term, i.e. if all free variables are replaced by the same terms respectively, the instantiations have the same result.
+#+begin_src coq
+Lemma ext_tm (s: tm) (f g : nat -> tm) :
+  (forall n, f n = g n) -> s[f] = s[g]
+#+end_src
+But it certainly is more convenient using funext because we can use the normal rewriting facilities to swap out one function for another, whereas with this lemma we need to explicitly apply it and then argue why the substitutions are extensionally equal (and the function we want to replace might be a subterm of the whole subsitution so we first need to find it).
+* Replace with Setoid Rewriting
+As already explained, a disadvantage of using the ext_tm lemma manually is that it talks about the whole subsitution whereas we might only want to replace a subterm (substitutions can generally be composed of opaque functions `f`, scons `.:` and function composition `>>`).
+One approach is to use setoid rewriting to automatically derive a rewriting strategy that replaces that one subterm while leaving everyting else in place.
+With setoid rewriting we can specify the ext_tm lemma (and similar lemmas) as so-called morphisms which are then automatically used to staisfy constraints for the rewriting.
+E.g. if we want to replace the function f with g in the following instantiation
+#+begin_src coq
+s[t .: f >> h] ~~> s[t .: g >> h]
+#+end_src
+We first need a morphism allowing us to rewrite the substitution with an extensionally equal one resulting in an equal instantiation and then morphisms for .: and >> that allow us to replace a subterm of a substitution with an extensionally equal one resulting in an extensionally equal subsitution.
+For the user it essentially suffices to write `setoid_rewrite H` where H as type (forall x, f x = g x) and the subterm is replaced. There is one problem though, it appears we need a syntactic match for the rewrite to happen, which often necessitates unfolding function composition so that functions are applied to an argument.
+E.g. in the below term we have `f x` so that we can rewrite with above H.
+#+begin_src coq
+s[t .: (fun x => h (f x))]
+#+end_src
+** What is needed to change?
+*** Lemmas
+For stlc we need 5 new lemmas, or rather new versions of 5 lemmas that stated an equality between functions.
+- varL_tm : var >> [sigma] == sigma >> id
+- varLRen_tm : bla
+- rinstInst_tm
+- rinstId_tm
+- instId_tm
+It should be 5 lemmas per sort that has variables. All of them have very short and mechanical proof scripts so it should be easy to generate.
+*** Proper Instances
+The morphisms are instances of the Proper typeclass. In the ocaml implementation I don't generate instances directly but use the `Existing Instance` command.
+They also have very simple and mechanical proof terms. There is one instance per renaming/subsitution function. The morphisms for scons and function composition are general enough to be in the static files.
+**** TODO check if Existing Instance works for setoid rewriting. It should.
+*** Tactic
+We can use an ltac script that is very similar to the original asimpl. This is because whenever we could write `rewrite X` to replace a function in the original asimpl we can write `setoid_rewrite X'` with X' being an extensional version of X.
+Except that we completely unfold function composition (so we don't even need that morphism)
+** Problems with function composition
+[essentially it's because to rewrite with lemmas stating an extensional equality we need a syntactic match, i.e. `f x`, even though the morphisms would give us that]
+[also because setoid rewriting sometimes does not work under multiple function compositions]
+** Problem with eta-expanded functions
+A description is in the [[file:~/programming/bachelor/autosubst3/case-studies/kathrin/coq-setoid/Chapter9/testbench.v][source code]] in the MWE module. The heuristics used by setoid rewriting apparently don't lile rewriting under eta-expanded functions.
+This is however not a problem since we can eta-reduce these functions to be able to proceed with rewriting.
+*** TODO morphism for eta-expanded functions?
+I think I already tried that but check again.
+
+* Replace with Guided Applications of ext_tm
+Since setoid rewriting is pretty slow we can also try to manually apply ext_tm guided by some heuristics. This would then be faster since we only apply ext_tm once at the beginning and then bit-by-bit prove the extensional equality of the two substitutions using othe rewriting lemmas instead of using it once every time we rewrite anything inside a substitution.
