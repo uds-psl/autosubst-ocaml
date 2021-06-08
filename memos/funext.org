@@ -56,10 +56,10 @@ They also have very simple and mechanical proof terms. There is one instance per
 We can use an ltac script that is very similar to the original asimpl. This is because whenever we could write `rewrite X` to replace a function in the original asimpl we can write `setoid_rewrite X'` with X' being an extensional version of X.
 Except that we completely unfold function composition (so we don't even need that morphism)
 ** Problems with function composition
-[essentially it's because to rewrite with lemmas stating an extensional equality we need a syntactic match, i.e. `f x`, even though the morphisms would give us that]
+[essentially it's because to rewrite with lemmas stating an extensional equality we need a syntactic match, i.e. `f x`, even though the morphisms would give us that ]
 [also because setoid rewriting sometimes does not work under multiple function compositions]
 ** Problem with eta-expanded functions
-A description is in the [[file:~/programming/bachelor/autosubst3/case-studies/kathrin/coq-setoid/Chapter9/testbench.v][source code]] in the MWE module. The heuristics used by setoid rewriting apparently don't lile rewriting under eta-expanded functions.
+A description is in the [[file:../case-studies/kathrin/coq-setoid/Chapter9/testbench.v][source code]] in the MWE module. The heuristics used by setoid rewriting apparently don't lile rewriting under eta-expanded functions.
 This is however not a problem since we can eta-reduce these functions to be able to proceed with rewriting.
 *** TODO morphism for eta-expanded functions?
 I think I already tried that but check again.
