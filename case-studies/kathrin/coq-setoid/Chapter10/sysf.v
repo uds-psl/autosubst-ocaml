@@ -2015,11 +2015,6 @@ Ltac setoidasimpl' := repeat (first
 (*                  | progress cbn[subst_tm ren_tm subst_ty ren_ty] *)
 (*                  | fsimpl ]). *)
 
-Ltac minimize :=
-  repeat match goal with
-         | [|- context[fun x => ?f x]] => change (fun x => f x) with f
-         | [|- context[fun x => ?g (?f x)]] => change (fun x => g (f x)) with (funcomp g f)
-         end.
 
 Ltac asimpl := repeat try unfold_funcomp;
                 repeat

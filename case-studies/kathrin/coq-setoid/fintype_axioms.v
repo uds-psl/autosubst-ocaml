@@ -1,4 +1,6 @@
-Require Import core core_axioms fintype.
+(* Require Import core core_axioms fintype. *)
+(* core_axioms can now be removed *)
+Require Import core fintype.
 Import ScopedNotations.
 
 (* Lemma scons_eta {T} {n : nat} (f : fin (S n) -> T) : *)
@@ -25,9 +27,9 @@ Require Import Setoid.
 (*   intros [x|]. reflexivity. simpl. reflexivity. *)
 (* Qed. *)
 
-Lemma scons_comp' {T:Type} {U} {m} {s: T} (sigma: fin m -> T) (tau: T -> U) : forall t, tau ((s .: sigma) t) = ((tau s) .: (sigma >> tau)) t.
+Lemma scons_comp' {T:Type} {U} {m} {s: T} (sigma: fin m -> T) (tau: T -> U) : forall t, tau ((s .: sigma) t) = ((tau s) .: (fun x => tau (sigma x))) t.
 Proof.
-  intros [x|]. reflexivity. simpl. reflexivity.
+  intros [t|]; reflexivity.
 Qed.
 
 (* Lemma scons_comp (T: Type) U {m} (s: T) (sigma: fin m -> T) (tau: T -> U ) : *)
@@ -48,12 +50,6 @@ Qed.
 (*   (scons_p m f g) >> h = scons_p m (f >> h) (g >> h). *)
 (* Proof. fext. intros z. unfold funcomp. apply scons_p_comp'. Qed. *)
 
-(* Ltac eta_expand_scons_eta := *)
-(*      match goal with   *)
-(*      | [|- context[scons ?s ?f]] => *)
-(*        change (scons s f) with (fun x => scons s f x) *)
-(*      end. *)
-
 Ltac eta_reduce :=
      repeat match goal with
             | [|- context[(fun x => ?b x)]] => change (fun x => b x) with b
@@ -65,7 +61,8 @@ Ltac fsimpl :=
          | [|- context[id >> ?f]] => change (id >> f) with f (* AsimplCompIdL *)
          | [|- context[?f >> id]] => change (f >> id) with f (* AsimplCompIdR *)
          | [|- context [id ?s]] => change (id s) with s
-         | [|- context[comp ?f ?g]] => change (comp f g) with (g >> f) (* AsimplCompIdL *)
+         (* we don't use this additional comp *)
+         (* | [|- context[comp ?f ?g]] => change (comp f g) with (g >> f) (* AsimplCompIdL *) *)
          | [|- context[(?f >> ?g) >> ?h]] =>
            change ((f >> g) >> h) with (f >> (g >> h)) (* AsimplComp *)
 
@@ -79,12 +76,11 @@ Ltac fsimpl :=
          | [|- context[?f >> (?x .: ?g)]] => change (f >> (x .: g)) with g (* f should evaluate to shift *)
          | [|- context[?x2 .: (fun x => ?f (shift x))]] => change (scons x2 (fun x => f (shift x))) with (fun x => (scons (f var_zero) (fun x => f (shift x))) x); setoid_rewrite (@scons_eta' _ _ f); idtac "scons_eta"; eta_reduce
          | [|- context[?f var_zero .: ?g]] => change (scons (f var_zero) g) with (fun x => (scons (f var_zero) (fun x => f (shift x))) x); setoid_rewrite scons_eta'; idtac "scons_eta"; eta_reduce
+         (* we completely unfold funcomp *)
          (* |[|- _ =  ?h (?f ?s)] => change (h (f s)) with ((f >> h) s) *)
          (* |[|-  ?h (?f ?s) = _] => change (h (f s)) with ((f >> h) s) *)
-         (* | _ => first [progress (rewrite scons_comp) |  progress (rewrite scons_eta_id) | progress (autorewrite with FunctorInstances)] *)
          | [|- context[fun x => ?tau (scons ?s ?sigma x)]] => setoid_rewrite scons_comp'; idtac "scons_comp"; eta_reduce
          | [|- context[scons (@var_zero ?n) shift]] => change (scons (@var_zero n) shift) with (fun x => (scons (@var_zero n) shift) x); setoid_rewrite scons_eta_id'; idtac "scons_eta_id"; eta_reduce
-         (* | _ => first [progress setoid_rewrite scons_comp'; idtac "scons_comp" | progress eta_expand_scons_eta; setoid_rewrite scons_eta_id'; idtac "scons_eta_id" | progress autorewrite with FunctorInstances; idtac "autorewrite" ] *)
          | _ => progress autorewrite with FunctorInstances; idtac "autorewrite"
          end.
 

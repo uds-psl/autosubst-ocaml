@@ -300,6 +300,11 @@ Tactic Notation "auto_case" tactic(t) :=  (match goal with
                                            | [|- forall (i : fin (S _)), _] =>  intros [?|]; t
                                            end).
 
+Ltac minimize :=
+  repeat match goal with
+         | [|- context[fun x => ?f x]] => change (fun x => f x) with f
+         | [|- context[fun x => ?g (?f x)]] => change (fun x => g (f x)) with (funcomp g f)
+         end.
 
 (** Functor instances which can be added later on. *)
 Hint Rewrite @scons_p_head' @scons_p_tail' : FunctorInstances.

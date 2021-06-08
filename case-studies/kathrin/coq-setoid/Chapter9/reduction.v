@@ -36,19 +36,6 @@ Proof with eauto.
 Qed.
 
 (** *** Substitutivity *)
-Require Import Setoid Morphisms.
-
-Goal forall m (s: tm (S m)), (ren_tm (var_zero .: shift) s) = s.
-Proof.
-  intros m s.
-  asimpl.
-  reflexivity.
-  Restart.
-  intros m s.
-  substify.
-  asimpl.
-  reflexivity.
-Qed.
 
 Lemma step_inst {m n} (f : fin m -> tm n) (s t : tm m) :
   step s t -> step s[f] t[f].
@@ -56,6 +43,94 @@ Proof.
    intros st. revert n f.  induction st as  [m b s t |m A b1 b2 _ ih|m s1 s2 t _ ih|m s t1 t2 _ ih]; intros n f; cbn.
    - apply step_beta'.
      now asimpl.
+     (* TODO except for the weirdness with the two lambdas the setoid rewriting works in H *)
+     (* assert (H: s[t..][f] = s[t..][f]) by reflexivity. *)
+     (* auto_unfold in *. *)
+     (* setoid_rewrite compComp_tm in H. *)
+     (* unfold funcomp in H. *)
+     (* setoid_rewrite scons_comp' in H. *)
+     (* (* unfold funcomp in H. *) *)
+     (* setoid_rewrite varL_tm' in H. *)
+
+(* TODO check why setoid_rewrite fails with two lambdas and how does asimpl not fail? *)
+     (* asimpl. *)
+(*      auto_unfold. *)
+(*      setoid_rewrite compComp_tm. *)
+(*      unfold up_list_tm_tm, up_tm_tm, upRen_list_tm_tm, upRen_tm_tm, up_ren. *)
+(*      unfold funcomp. *)
+(*      fsimpl. *)
+
+
+     
+(* simple refine ?Goal2;setoid_rewrite true *)
+(* compComp_tm;(* compComp *)unfold up_list_tm_tm, up_tm_tm, *)
+(*                            upRen_list_tm_tm, upRen_tm_tm, up_ren;(*  *)
+(* unfold *)unfold funcomp;(* funcomp *)fsimpl ;(*  *)
+(* fsimpl *)setoid_rewrite true varL_tm';(* varL *)fsimpl *)
+(* ;(* fsimpl *)unfold funcomp;(* funcomp *)setoid_rewrite true *)
+(* renComp_tm;(* renComp *)setoid_rewrite true *)
+(* varL_tm';(* varL *)setoid_rewrite true instId_tm';(*  *)
+(* instId *)<change> *)
+(*      auto_unfold. *)
+(*      setoid_rewrite compComp_tm. *)
+(*      unfold up_list_tm_tm, up_tm_tm, upRen_list_tm_tm, upRen_tm_tm, up_ren. *)
+(*      unfold funcomp. *)
+(*      setoid_rewrite scons_comp'. *)
+(*      (* If I don't do this eta_reduction the rewrite for renComp and the second varL_tm' fails *) *)
+(*      (* eta_reduce. *) *)
+(*      (* Info 2 fsimpl. *) *)
+(*      setoid_rewrite varL_tm'. *)
+(*      fsimpl. *)
+(*      unfold funcomp. *)
+(*      (* minimize. *) *)
+(*      setoid_rewrite renComp_tm. *)
+(*      setoid_rewrite varL_tm'. *)
+(*      setoid_rewrite instId_tm'. *)
+(*      minimize. *)
+(* compComp *)
+(* unfold *)
+(* funcomp *)
+(* scons_comp *)
+(* fsimpl *)
+(* varL *)
+(* fsimpl *)
+(* funcomp *)
+(* renComp *)
+(* varL *)
+(* instId *)
+(* funcomp *)
+     
+(*      normalize (s[t..][f]). *)
+(*      (*   Set Typeclasses Debug. *) *)
+(*      (* TODO here the rewrite with scons_comp fails b/c setoid rewrite behaves differently when there is an evar *) *)
+(*        assert ((subst_tm f (subst_tm (scons t var_tm) s)) = _) *)
+(*          by (auto_unfold; setoid_rewrite compComp_tm; unfold funcomp; setoid_rewrite scons_comp'; reflexivity). *)
+     (* { *)
+     (*   revert H. *)
+     (*   unfold funcomp. *)
+     (*   setoid_rewrite scons_comp'. *)
+     (*   unfold funcomp. *)
+     (*   (* minimize. *) *)
+     (*   (* unfold funcomp. *) *)
+     (*   Set Typeclasses Debug. *)
+     (*   try setoid_rewrite varL_tm'. *)
+     (*   minimize. *)
+     (* } *)
+     (* this does not work well with setoid rewriting because apparently it behaves differently but below is a tactic script which should be produced by the non-setoid version of asimpl. *)
+(*      assert (s[t..][f] = _) by *)
+(*      ( auto_unfold; *)
+(*        rewrite compComp_tm; *)
+(*        erewrite ext_tm; [reflexivity|]; *)
+(*        intros x; *)
+(*        rewrite scons_comp''; *)
+(*        apply scons_morphism; *)
+(*        intros y; *)
+(*        rewrite varL_tm''; *)
+(*        change (f >> id) with f; *)
+(*        eta_reduce; *)
+(*        reflexivity *)
+(*      ). *)
+(* now asimpl. *)
 (*      auto_unfold. *)
 (*      setoid_rewrite compComp_tm. *)
 (*      unfold up_list_tm_tm, up_tm_tm, upRen_list_tm_tm, *)

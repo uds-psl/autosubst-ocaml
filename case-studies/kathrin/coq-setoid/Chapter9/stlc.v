@@ -771,7 +771,7 @@ Ltac asimpl := repeat try unfold_funcomp;
                 repeat
                  unfold VarInstance_tm, Var, ids, Ren_tm, Ren1, ren1,
                   Up_tm_tm, Up_tm, up_tm, Subst_tm, Subst1, subst1 in *;
-                setoidasimpl'; repeat try unfold_funcomp; eta_reduce.
+                setoidasimpl'; repeat try unfold_funcomp; minimize.
 
 (* Ltac oldasimpl := repeat try unfold_funcomp; *)
 (*                 repeat *)
