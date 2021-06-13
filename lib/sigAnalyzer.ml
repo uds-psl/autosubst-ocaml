@@ -49,9 +49,9 @@ let binder_analysis spec occurs_in =
    * How would I define a specialized StringSet module so I don't have to pass the
    * first order module every time I want to create an empty map? *)
   List.fold_left (fun bs -> function
-        | `Vacuous (t, b, cname) ->
-          error ("Vacuous binding in sort "^t^" of bound variable "^b^" in constructor "^cname)
-        | `Binder b -> bs >>= fun bs' -> SSet.add b bs' |> pure)
+      | `Vacuous (t, b, cname) ->
+        error ("Vacuous binding in sort "^t^" of bound variable "^b^" in constructor "^cname)
+      | `Binder b -> bs >>= fun bs' -> SSet.add b bs' |> pure)
     (pure (SSet.empty)) analysis
 
 (** Return the sublist of the canonical order which correspond to the substitution vector

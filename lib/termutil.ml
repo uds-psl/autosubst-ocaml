@@ -64,10 +64,10 @@ let app_constr cname scope rest =
   else app_ref cname args
 let app_var_constr sort scope = app_constr (var_ sort) scope []
 let filter_scope_vars = List.filter (function
-  | SubstScope _ -> (match !Settings.scope_type with
-      | S.Unscoped -> false
-      | S.WellScoped -> true)
-  | _ -> true)
+    | SubstScope _ -> (match !Settings.scope_type with
+        | S.Unscoped -> false
+        | S.WellScoped -> true)
+    | _ -> true)
 (* TODO document. seems to build an application that uses the scope variabes from scoped. But in most uses in the code this seem sunecessary *)
 let app_fix ?expl cname ?(scopes=[]) rest =
   let scope_ts = List.(scopes

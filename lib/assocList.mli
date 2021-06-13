@@ -1,7 +1,7 @@
 (** This module implements a Map from 'a to 'b by as association list of pairs 'a * 'b *)
 
 type ('a, 'b) t [@@deriving show]
-    
+
 val assoc_exn : 'a -> ('a, 'b) t -> 'b
 val assoc : 'a -> ('a, 'b) t -> 'b option
 

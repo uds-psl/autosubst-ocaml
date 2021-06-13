@@ -35,7 +35,7 @@ let [@warning "-8"] genVariables sort (var_declarations: vars list) =
                    (stys : (identifier, CoqSyntax.substTy) AL.t),
                    (binders : binder_expr list)) =
     function
-    (`K | `L | `M | `N as s) ->
+      (`K | `L | `M | `N as s) ->
       let sn = showVar s in
       let (m, bm) = introScopeVarS sn in
       (* let () = print_endline ("putting in (" ^ sn ^ "->" ^ (show_term m) ^ ")") in *)

@@ -145,10 +145,10 @@ module [@warning "-32"] GenTests = struct
   (* let print_congruence () : Pp.t =
    *   let env = Global.env () in
    *   let sigma = Evd.from_env env in *)
-    (* let open Ltac_plugin.Tacexpr in
-     * let texpr = TacML (CAst.make ({ mltac_name={ mltac_plugin="cc_plugin"; mltac_tactic="cc"; }; mltac_index=0; }, [])) in
-     * Ltac_plugin.Pptactic.pr_raw_tactic env sigma texpr *)
-    (* Ltac_plugin.Pptactic.pr_glob_tactic env texpr *)
+  (* let open Ltac_plugin.Tacexpr in
+   * let texpr = TacML (CAst.make ({ mltac_name={ mltac_plugin="cc_plugin"; mltac_tactic="cc"; }; mltac_index=0; }, [])) in
+   * Ltac_plugin.Pptactic.pr_raw_tactic env sigma texpr *)
+  (* Ltac_plugin.Pptactic.pr_glob_tactic env texpr *)
 
 end
 
@@ -178,14 +178,14 @@ module [@warning "-32"] GenTestsTac = struct
 
   let myasimpl =
     let tac = then1_ (then1_ (repeat_ (try_ (calltac_ "unfold_funcomp")))
-                       (calltac_ "asimpl'"))
-           (repeat_ (try_ (calltac_ "unfold_funcomp"))) in
+                        (calltac_ "asimpl'"))
+        (repeat_ (try_ (calltac_ "unfold_funcomp"))) in
     pr_tactic_ltac "asimpl" tac
 
   let myasimpl_hyp =
     let intro = intros_ [ "J" ] in
     let tac = then1_ (then1_ (calltacArgs_ "revert" [ "J" ])
-                       (calltac_ "asimpl"))
+                        (calltac_ "asimpl"))
         intro in
     pr_tactic_notation [ "\"asimpl\""; "\"in\""; "hyp(J)" ] tac
 

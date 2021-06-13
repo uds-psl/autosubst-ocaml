@@ -123,10 +123,8 @@ let getAllSorts = List.concat <$> getComponents
 let getComponent s =
   let* components = asks L.sigComponents in
   pure @@ List.(concat @@ filter_map (fun component ->
-      if mem s component
-      then Some component
-      else None)
-    components)
+      if mem s component then Some component else None)
+      components)
 
 (** Check if the arguments of the first sort of a components and the component itself overlaps
  ** We can only check the first element of the component because they all have the same

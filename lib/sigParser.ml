@@ -47,12 +47,12 @@ let reservedIds =
    (* Additional reserved identifiers *)
    "lazymatch"; "multimatch"; "Definition"; "Fixpoint"; "CoFixpoint";
    "Axiom"; "Inductive"; "CoInductive"; "Theorem"; "Class";
-  (* Identifiers used by Autosubst *)
-  "fin"; "shift"; "None"; "Some"; "scons"; "var_zero"; "fun_comp"; "ap_ren";
-  "ap"; "apc"; "up_ren_ren"; "id"; "scons_eta"; "scons_comp"; "scons_eta_id";
-  "up_ren"; "size_ind"; "lift";
-  "get_In"; "some_none_explosion"; "Some_inj"
-   ]
+   (* Identifiers used by Autosubst *)
+   "fin"; "shift"; "None"; "Some"; "scons"; "var_zero"; "fun_comp"; "ap_ren";
+   "ap"; "apc"; "up_ren_ren"; "id"; "scons_eta"; "scons_comp"; "scons_eta_id";
+   "up_ren"; "size_ind"; "lift";
+   "get_In"; "some_none_explosion"; "Some_inj"
+  ]
 let filterReserved i =
   if List.mem i reservedIds
   then hardFail @@ "reserved identifier: " ^ i
@@ -66,7 +66,7 @@ let checkWellFormed (c, s) =
 let raw_ident = lex @@ take_while1 is_ident
 let ident = lift3 (fun c s _ -> (c, s))
     (satisfy is_first_ident) (take_while is_ident) spaces
-    >>= checkWellFormed >>= filterReserved
+  >>= checkWellFormed >>= filterReserved
 let arrow = lex @@ string "->"
 let colon = lex @@ char ':'
 let ttype = lex @@ string "Type"

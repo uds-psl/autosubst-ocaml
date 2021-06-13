@@ -68,42 +68,42 @@ type t = signature
 module [@warning "-32"] Hsig_example = struct
 
   let mySigSpec : spec = AL.from_list [
-    ("tm", [ {
-         cparameters = [];
-         cname = "app";
-         cpositions = [ { binders = []; head = Atom "tm" };
-                       { binders = []; head = Atom "tm" } ];
-       }; {
+      ("tm", [ {
            cparameters = [];
-           cname = "tapp";
+           cname = "app";
            cpositions = [ { binders = []; head = Atom "tm" };
-                         { binders = []; head = Atom "ty" } ];
+                          { binders = []; head = Atom "tm" } ];
          }; {
+             cparameters = [];
+             cname = "tapp";
+             cpositions = [ { binders = []; head = Atom "tm" };
+                            { binders = []; head = Atom "ty" } ];
+           }; {
+             cparameters = [];
+             cname = "vt";
+             cpositions = [ { binders = []; head = Atom "vl" } ];
+           } ]);
+      ("ty", [{
            cparameters = [];
-           cname = "vt";
-           cpositions = [ { binders = []; head = Atom "vl" } ];
-         } ]);
-    ("ty", [{
-         cparameters = [];
-         cname = "arr";
-         cpositions = [ { binders = []; head = Atom "ty" };
-                       { binders = []; head = Atom "ty" } ];
-       }; {
-          cparameters = [];
-          cname = "all";
-          cpositions = [ { binders = [ Single "ty" ]; head = Atom "ty" } ];
-        } ]);
-    ("vl", [{
-         cparameters = [];
-         cname = "lam";
-         cpositions = [ { binders = []; head = Atom "ty" };
-                       { binders = [ Single "vl" ]; head = Atom "tm" } ];
-       }; {
-          cparameters = [];
-          cname = "tlam";
-          cpositions = [ { binders = [ Single "ty" ]; head = Atom "tm" } ];
-        } ])
-  ]
+           cname = "arr";
+           cpositions = [ { binders = []; head = Atom "ty" };
+                          { binders = []; head = Atom "ty" } ];
+         }; {
+            cparameters = [];
+            cname = "all";
+            cpositions = [ { binders = [ Single "ty" ]; head = Atom "ty" } ];
+          } ]);
+      ("vl", [{
+           cparameters = [];
+           cname = "lam";
+           cpositions = [ { binders = []; head = Atom "ty" };
+                          { binders = [ Single "vl" ]; head = Atom "tm" } ];
+         }; {
+            cparameters = [];
+            cname = "tlam";
+            cpositions = [ { binders = [ Single "ty" ]; head = Atom "tm" } ];
+          } ])
+    ]
 
   let mySig = {
     sigSpec = mySigSpec;
@@ -119,46 +119,46 @@ end
 module [@warning "-32"] Hsig_fol = struct
   open CG
   let mySigSpec = AL.from_list [
-    ("form", [ {
-         cparameters = [];
-         cname = "Fal";
-         cpositions = []
-       }; {
-           cparameters = [("p","nat")];
-           cname = "Pred";
-           cpositions = [ { binders = []; head = FunApp ("cod", Some (app1_ (ref_ "fin") (ref_ "p")), [ Atom "term" ]); }]
-         }; {
+      ("form", [ {
            cparameters = [];
-           cname = "Impl";
-           cpositions = [ { binders = []; head = Atom "form"; };
-                         { binders = []; head = Atom "form"; } ];
+           cname = "Fal";
+           cpositions = []
          }; {
-           cparameters = [];
-           cname = "Conj";
-           cpositions = [ { binders = []; head = Atom "form" };
-                         { binders = []; head = Atom "form" } ];
-         }; {
-           cparameters = [];
-           cname = "Disj";
-           cpositions = [ { binders = []; head = Atom "form" };
-                         { binders = []; head = Atom "form" } ];
-         }; {
-           cparameters = [];
-           cname = "All";
-           cpositions = [ { binders = [Single "term"];
-                           head = Atom "form" } ];
-         }; {
-           cparameters = [];
-           cname = "Ex";
-           cpositions = [ { binders = [Single "term"]; head = Atom "form"; } ]
-         }
-       ]
-    ); ("term", [ {
-        cparameters = [("f","nat")];
-        cname = "Func";
-        cpositions = [ {binders = []; head = FunApp ("cod", Some (app1_ (ref_ "fin") (ref_ "f")), [Atom "term"]); } ]
-      } ] )
-  ]
+             cparameters = [("p","nat")];
+             cname = "Pred";
+             cpositions = [ { binders = []; head = FunApp ("cod", Some (app1_ (ref_ "fin") (ref_ "p")), [ Atom "term" ]); }]
+           }; {
+             cparameters = [];
+             cname = "Impl";
+             cpositions = [ { binders = []; head = Atom "form"; };
+                            { binders = []; head = Atom "form"; } ];
+           }; {
+             cparameters = [];
+             cname = "Conj";
+             cpositions = [ { binders = []; head = Atom "form" };
+                            { binders = []; head = Atom "form" } ];
+           }; {
+             cparameters = [];
+             cname = "Disj";
+             cpositions = [ { binders = []; head = Atom "form" };
+                            { binders = []; head = Atom "form" } ];
+           }; {
+             cparameters = [];
+             cname = "All";
+             cpositions = [ { binders = [Single "term"];
+                              head = Atom "form" } ];
+           }; {
+             cparameters = [];
+             cname = "Ex";
+             cpositions = [ { binders = [Single "term"]; head = Atom "form"; } ]
+           }
+         ]
+      ); ("term", [ {
+          cparameters = [("f","nat")];
+          cname = "Func";
+          cpositions = [ {binders = []; head = FunApp ("cod", Some (app1_ (ref_ "fin") (ref_ "f")), [Atom "term"]); } ]
+        } ] )
+    ]
   let mySig = {
     sigSpec = mySigSpec;
     sigSubstOf = AL.from_list [ ("form",["term"]); ("term",["term"])];

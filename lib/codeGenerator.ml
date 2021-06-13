@@ -50,11 +50,11 @@ let genVar sort ns =
     pure @@ [constructor_ (var_ sort) t]
 
 let genConstr sort ns L.{ cparameters; cname; cpositions } =
-    let* t =
-      let* up_n_x = a_map (fun L.{ binders; head } -> genArg sort ns binders head) cpositions in
-      pure @@ (up_n_x ==> sortType sort ns) in
-    let* () = tell_argument (cname, sty_names ns) in
-    pure @@ constructor_ cname (if list_empty cparameters then t else forall_ (createBinders cparameters) t)
+  let* t =
+    let* up_n_x = a_map (fun L.{ binders; head } -> genArg sort ns binders head) cpositions in
+    pure @@ (up_n_x ==> sortType sort ns) in
+  let* () = tell_argument (cname, sty_names ns) in
+  pure @@ constructor_ cname (if list_empty cparameters then t else forall_ (createBinders cparameters) t)
 
 
 let genBody sort =
@@ -207,7 +207,7 @@ let genUpS (binder, sort) =
   in
   (* register up for unfolding *)
   let* () = tell_unfold_function (up_ sort binder) in
-(* TODO what does upSubstT do here? *)
+  (* TODO what does upSubstT do here? *)
   let* sigma = upSubstT binder sort ns sigma in
   let (_, bpms) = bparameters binder in
   let m' = succ_ m sort binder in
@@ -292,7 +292,7 @@ let genUpExtRen (binder, sort) =
       (fun p _ -> (app_ref "scons_p_congr" [
            abs_ref "n" eq_refl_;
            abs_ref "n" @@ ap_ (app_ref "shift_p" [ref_ p]) (t (ref_ "n"))
-      ], t (ref_ n))) in
+         ], t (ref_ n))) in
   pure @@ lemma_ (upExtRen_ sort binder) (bpms @ scopeBinders @ b_eq) ret (abs_ref "n" defBody)
 
 let genExtRen sort =
@@ -327,11 +327,11 @@ let genUpExt (binder, sort) =
   let defBody = definitionBody sort binder
       (matchFin_ (ref_ n) t eq_refl_, t (ref_ n))
       (const2 @@ (app_ref "scons_p_congr" [ abs_ref "n" eq_refl_
-                                         ; abs_ref "n" (t (ref_ "n")) ],
+                                          ; abs_ref "n" (t (ref_ "n")) ],
                   t (ref_ n))) in
   pure @@ lemma_ (upExt_ sort binder) (bpms @ scopeBinders @ beq) ret (abs_ref "n" defBody)
 
- let genExt sort =
+let genExt sort =
   let* v = V.genVariables sort [ `MS; `NS; `SIGMAS (`MS, `NS); `TAUS (`MS, `NS) ] in
   let [@warning "-8"] [], [ ms; ns; sigmas; taus ], scopeBinders = v in
   let* substSorts = substOf sort in
@@ -346,7 +346,7 @@ let genUpExt (binder, sort) =
        pure @@ app1_ toVarT z)
     mapExt_
 
- let genUpRenRen (binder, sort) =
+let genUpRenRen (binder, sort) =
   let* v = V.genVariables sort [ `K; `L; `M; `XI (`K, `L); `ZETA (`L, `M); `RHO (`K, `M) ] in
   let [@warning "-8"] [ k; l; m; xi; zeta; rho ], [], scopeBinders = v in
   let (eq, beq) = genEq "Eq" (xi >>> zeta) rho in
@@ -360,7 +360,7 @@ let genUpExt (binder, sort) =
       (const2 @@ (app_ref "up_ren_ren_p" [eq], eq)) in
   pure @@ lemma_ (up_ren_ren_ sort binder) (bpms @ scopeBinders @ beq) ret defBody
 
- let genCompRenRen sort =
+let genCompRenRen sort =
   let* v = V.genVariables sort [ `KS; `LS; `MS;
                                  `XIS (`MS, `KS); `ZETAS (`KS, `LS); `RHOS (`MS, `LS) ] in
   let [@warning "-8"] [], [ ks; ls; ms; xis; zetas; rhos ], scopeBinders = v in
@@ -375,7 +375,7 @@ let genUpExt (binder, sort) =
            else s) in
   let ret s = eq_
       (app_fix (ren_ sort) (sty_terms zetas
-                           @ [ app_ref (ren_ sort) @@ sty_terms xis @ [s] ]))
+                            @ [ app_ref (ren_ sort) @@ sty_terms xis @ [s] ]))
       (app_ref (ren_ sort) (sty_terms rhos @ [s])) in
   traversal sort ms compRenRen_ ~ret (scopeBinders @ beqs) [xis; zetas; rhos; eqs]
     (fun n ->
@@ -383,7 +383,7 @@ let genUpExt (binder, sort) =
        pure @@ ap_ (app_var_constr sort ls) (app1_ toVarT n))
     mapComp_
 
- let genUpRenSubst (binder, sort) =
+let genUpRenSubst (binder, sort) =
   let* v = V.genVariables sort [ `K; `L; `MS;
                                  `XI (`K, `L); `TAU (`L, `MS); `THETA (`K, `MS) ] in
   let [@warning "-8"] [ k; l; xi; tau; theta ], [ ms ], scopeBinders = v in
@@ -400,15 +400,15 @@ let genUpExt (binder, sort) =
   let s = eqTrans_
       (scons_p_comp' (ref_ n))
       (scons_p_congr_ (abs_ref "z" (eqTrans_
-                                    (scons_p_tail' (app1_ xi (ref_ "z")))
-                                    (t (ref_ "z"))))
+                                      (scons_p_tail' (app1_ xi (ref_ "z")))
+                                      (t (ref_ "z"))))
          (abs_ref "z" @@ scons_p_head' (ref_ "z"))) in
   let defBody = definitionBody sort binder
       (matchFin_ (ref_ n) t eq_refl_, t (ref_ n))
       (const2 (s, t (ref_ n))) in
   pure @@ lemma_ (up_ren_subst_ sort binder) (bpms @ scopeBinders @ beq) ret (abs_ref "n" defBody)
 
- let genCompRenSubst sort =
+let genCompRenSubst sort =
   let* v = V.genVariables sort
       [ `KS; `LS; `MS; `XIS (`MS, `KS); `TAUS (`KS, `LS); `THETAS (`MS, `LS) ] in
   let [@warning "-8"] [], [ ks; ls; ms; xis; taus; thetas ], scopeBinders = v in
@@ -425,7 +425,7 @@ let genUpExt (binder, sort) =
        pure @@ app1_ toVarT n)
     mapComp_
 
- let genUpSubstRen (binder, sort) =
+let genUpSubstRen (binder, sort) =
   let* v = V.genVariables sort [ `K; `LS; `MS; `SIGMA (`K, `LS)
                                ; `ZETAS (`LS, `MS); `THETA (`K, `MS) ] in
   let [@warning "-8"] [ k; sigma; theta ], [ ls; ms; zetas ], scopeBinders = v in
@@ -443,28 +443,28 @@ let genUpExt (binder, sort) =
   let* shift = patternSId sort binder in
   let t n = eqTrans_
       (app_ref (compRenRen_ sort) (pat @ sty_terms zetas'
-                                 @ List.map2 (>>>) (sty_terms zetas) pat
-                                 @ List.map (const (abs_ref "x" eq_refl_)) pat
-                                 @ [ app1_ sigma n ]))
+                                   @ List.map2 (>>>) (sty_terms zetas) pat
+                                   @ List.map (const (abs_ref "x" eq_refl_)) pat
+                                   @ [ app1_ sigma n ]))
       (eqTrans_
          (eqSym_ (app_ref (compRenRen_ sort) (sty_terms zetas @ pat
-                                            @ List.map2 (>>>) (sty_terms zetas) pat
-                                            @ List.map (const (abs_ref "x" eq_refl_)) pat
-                                            @ [ app1_ sigma n ])))
+                                              @ List.map2 (>>>) (sty_terms zetas) pat
+                                              @ List.map (const (abs_ref "x" eq_refl_)) pat
+                                              @ [ app1_ sigma n ])))
          (ap_ (app_ref (ren_ sort) pat) (app1_ eq n))) in
   let t' n z' = eqTrans_
       (app_ref (compRenRen_ sort) (pat @ sty_terms zetas'
-                                 @ List.map2 (>>>) (sty_terms zetas) pat
-                                 @ List.map (fun x ->
-                                     (abs_ref "x" (if x = z'
-                                                 then scons_p_tail' (ref_ "x")
-                                                 else eq_refl_))) substSorts
-                                 @ [ app1_ sigma n ]))
+                                   @ List.map2 (>>>) (sty_terms zetas) pat
+                                   @ List.map (fun x ->
+                                       (abs_ref "x" (if x = z'
+                                                     then scons_p_tail' (ref_ "x")
+                                                     else eq_refl_))) substSorts
+                                   @ [ app1_ sigma n ]))
       (eqTrans_
          (eqSym_ (app_ref (compRenRen_ sort) (sty_terms zetas @ pat
-                                            @ List.map2 (>>>) (sty_terms zetas) pat
-                                            @ List.map (const (abs_ref "x" eq_refl_)) pat
-                                            @ [ app1_ sigma n ])))
+                                              @ List.map2 (>>>) (sty_terms zetas) pat
+                                              @ List.map (const (abs_ref "x" eq_refl_)) pat
+                                              @ [ app1_ sigma n ])))
          (ap_ (app_ref (ren_ sort) pat) (app1_ eq n))) in
   let hd = abs_ref "x" (ap_ (app_var_constr sort ms) (scons_p_head' (ref_ "x"))) in
   let defBody = definitionBody sort binder
@@ -472,10 +472,10 @@ let genUpExt (binder, sort) =
       (fun _ sort' -> (eqTrans_
                          (scons_p_comp' (ref_ "n"))
                          (scons_p_congr_ (abs_ref "n" (t' (ref_ "n") sort')) hd),
-                      t' (ref_ n) sort')) in
+                       t' (ref_ n) sort')) in
   pure @@ lemma_ (up_subst_ren_ sort binder) (bpms @ scopeBinders @ beq) ret (abs_ref "n" defBody)
 
- let genCompSubstRen sort =
+let genCompSubstRen sort =
   let* v = V.genVariables sort [ `KS; `LS; `MS; `SIGMAS (`MS, `KS)
                                ; `ZETAS (`KS, `LS); `THETAS (`MS, `LS) ] in
   let [@warning "-8"] [], [ ks; ls; ms; sigmas; zetas; thetas ], scopeBinders = v in
@@ -485,11 +485,11 @@ let genUpExt (binder, sort) =
       (fun z y s ->
          let* zetas' = castSubst sort z zetas in
          pure @@ app_ref (up_subst_ren_ z y) ([underscore_]
-                                            @ List.map (const underscore_) (sty_terms zetas')
-                                            @ [underscore_; s])) in
+                                              @ List.map (const underscore_) (sty_terms zetas')
+                                              @ [underscore_; s])) in
   let ret s = eq_
       (app_ref (ren_ sort) (sty_terms zetas
-                           @ [app_ref (subst_ sort) (sty_terms sigmas @ [s])]))
+                            @ [app_ref (subst_ sort) (sty_terms sigmas @ [s])]))
       (app_ref (subst_ sort) (sty_terms thetas @ [s])) in
   traversal sort ms compSubstRen_ ~ret (scopeBinders @ beqs) [sigmas; zetas; thetas; eqs]
     (fun n ->
@@ -517,45 +517,45 @@ let genUpSubstSubst (binder, sort) =
   let* pat' = comp_ren_or_subst sort (SubstRen pat) taus in
   let t n = eqTrans_
       (app_ref (compRenSubst_ sort) (pat @ sty_terms taus'
-                                   @ List.map2 (>>>) pat (sty_terms taus')
-                                   @ List.map (const (abs_ref "x" eq_refl_)) pat
-                                   @ [ app1_ sigma n ]))
+                                     @ List.map2 (>>>) pat (sty_terms taus')
+                                     @ List.map (const (abs_ref "x" eq_refl_)) pat
+                                     @ [ app1_ sigma n ]))
       (eqTrans_
          (eqSym_ (app_ref (compSubstRen_ sort) (sty_terms taus @ pat @ pat'
-                                              @ List.map (const (abs_ref "x" eq_refl_)) pat
-                                              @ [ app1_ sigma n ])))
+                                                @ List.map (const (abs_ref "x" eq_refl_)) pat
+                                                @ [ app1_ sigma n ])))
          (ap_ (app_ref (ren_ sort) pat) (app1_ eq n))) in
   let t' n z' = eqTrans_
       (app_ref (compRenSubst_ sort) (pat @ sty_terms taus'
-                                   @ List.map2 (>>>) pat (sty_terms taus')
-                                   @ List.map (const (abs_ref "x" eq_refl_)) pat
-                                   @ [ app1_ sigma n ]))
+                                     @ List.map2 (>>>) pat (sty_terms taus')
+                                     @ List.map (const (abs_ref "x" eq_refl_)) pat
+                                     @ [ app1_ sigma n ]))
       (eqTrans_
          (eqSym_ (app_ref (compSubstRen_ sort)
                     (sty_terms taus @ pat
                      @ List.map (const underscore_) pat'
                      @ List.map (fun substSort ->
                          abs_ref "x" @@ eqSym_ (if substSort = z'
-                                              then scons_p_tail' (ref_ "x")
-                                              else eq_refl_)) substSorts
+                                                then scons_p_tail' (ref_ "x")
+                                                else eq_refl_)) substSorts
                      @ [ app1_ sigma n ])))
          (ap_ (app_ref (ren_ sort) pat) (app1_ eq n))) in
   let hd = abs_ref "x" (app_ref "scons_p_head'" [ underscore_
-                                            ; abs_ref "z" (app_ref (ren_ sort)
-                                                           (shift @ [underscore_]))
-                                            ; ref_ "x" ]) in
+                                                ; abs_ref "z" (app_ref (ren_ sort)
+                                                                 (shift @ [underscore_]))
+                                                ; ref_ "x" ]) in
   let defBody = definitionBody sort binder
       (matchFin_ (ref_ n) t eq_refl_ , t (ref_ n))
       (fun p sort' -> (eqTrans_
-          (app_ref "scons_p_comp'" [ app_ref "zero_p" [ref_ p]
-                                   >>> app_var_constr sort ls'
-                                 ; underscore_; underscore_
-                                 ; ref_ "n" ])
-          (scons_p_congr_ (abs_ref "n" (t' (ref_ "n") sort')) hd),
+                         (app_ref "scons_p_comp'" [ app_ref "zero_p" [ref_ p]
+                                                    >>> app_var_constr sort ls'
+                                                  ; underscore_; underscore_
+                                                  ; ref_ "n" ])
+                         (scons_p_congr_ (abs_ref "n" (t' (ref_ "n") sort')) hd),
                        t' (ref_ n) sort')) in
   pure @@ lemma_ (up_subst_subst_ sort binder) (bpms @ scopeBinders @ beq) ret (abs_ref "n" defBody)
 
- let genCompSubstSubst sort =
+let genCompSubstSubst sort =
   let* v = V.genVariables sort [ `KS; `LS; `MS; `SIGMAS (`MS, `KS)
                                ; `TAUS (`KS, `LS); `THETAS (`MS, `LS) ] in
   let [@warning "-8"] [], [ ks; ls; ms; sigmas; taus; thetas ], scopeBinders = v in
@@ -564,11 +564,11 @@ let genUpSubstSubst (binder, sort) =
   let* (eqs, beqs) = genEqs sort "Eq" sigmatau (sty_terms thetas) (fun z y s ->
       let* taus' = castSubst sort z taus in
       pure @@ app_ref (up_subst_subst_ z y) ([underscore_]
-                                           @ List.map (const underscore_) (sty_terms taus')
-                                           @ [underscore_; s])) in
+                                             @ List.map (const underscore_) (sty_terms taus')
+                                             @ [underscore_; s])) in
   let ret s = eq_
       (app_ref (subst_ sort) (sty_terms taus
-                           @ [app_ref (subst_ sort) (sty_terms sigmas @ [s])]))
+                              @ [app_ref (subst_ sort) (sty_terms sigmas @ [s])]))
       (app_ref (subst_ sort) (sty_terms thetas @ [s])) in
   traversal sort ms compSubstSubst_ ~ret (scopeBinders @ beqs) [sigmas; taus; thetas; eqs]
     (fun n ->
@@ -576,7 +576,7 @@ let genUpSubstSubst (binder, sort) =
        pure @@ app1_ toVarT n)
     mapComp_
 
- let genUpSubstSubstNoRen (binder, sort) =
+let genUpSubstSubstNoRen (binder, sort) =
   let* v = V.genVariables sort [ `K; `LS; `MS; `SIGMA (`K, `LS); `TAUS (`LS, `MS); `THETA (`K, `MS) ] in
   let [@warning "-8"] [ k; sigma; theta ], [ ls; ms; taus ], scopeBinders = v in
   let (eq, beq) = genEq "Eq" (sigma >>> app_ref (subst_ sort) (sty_terms taus)) theta in
@@ -617,28 +617,28 @@ let genUpSubstSubst (binder, sort) =
                      @ List.map (const underscore_) pat'
                      @ List.map (fun substSort ->
                          abs_ref "x" (eqSym_ (if substSort = z'
-                                             then scons_p_tail' (ref_ "x")
-                                             else eq_refl_)))
+                                              then scons_p_tail' (ref_ "x")
+                                              else eq_refl_)))
                        substSorts
                      @ [ app1_ sigma n ])))
          (ap_ (app_ref (subst_ sort) pat) (app1_ eq n))) in
   let hd = abs_ref "x" (app_ref "scons_p_head'"
-                        [ underscore_
-                        ; abs_ref "z" (app_ref (subst_ sort) (pat @ [underscore_]))
-                        ; ref_ "x" ]) in
+                          [ underscore_
+                          ; abs_ref "z" (app_ref (subst_ sort) (pat @ [underscore_]))
+                          ; ref_ "x" ]) in
   let defBody = definitionBody sort binder
       (matchFin_ (ref_ n) t eq_refl_, t (ref_ n))
       (fun p z' -> (eqTrans_
-         (app_ref "scons_p_comp'"
-            [ app_ref "zero_p" [ref_ p] >>> (app_var_constr sort ls')
-            ; underscore_
-            ; underscore_
-            ; ref_ "n" ])
-         (scons_p_congr_  (abs_ref "n" (t' (ref_ "n") z')) hd),
-                   t' (ref_ n) z')) in
+                      (app_ref "scons_p_comp'"
+                         [ app_ref "zero_p" [ref_ p] >>> (app_var_constr sort ls')
+                         ; underscore_
+                         ; underscore_
+                         ; ref_ "n" ])
+                      (scons_p_congr_  (abs_ref "n" (t' (ref_ "n") z')) hd),
+                    t' (ref_ n) z')) in
   pure @@ lemma_ (up_subst_subst_ sort binder) (bpms @ scopeBinders @ beq) ret (abs_ref "n" defBody)
 
- let genUpRinstInst (binder, sort) =
+let genUpRinstInst (binder, sort) =
   let* v = V.genVariables sort [ `M; `NS ] in
   let [@warning "-8"] [ m ], [ ns ], scopeBinders = v in
   let* n_var = toVar sort ns in
@@ -662,7 +662,7 @@ let genUpSubstSubst (binder, sort) =
   pure @@ lemma_ (up_rinstInst_ sort binder) (bpms @ scopeBinders @ bxi @ bsigma @ beq)
     ret (abs_ref "n" defBody)
 
- let genRinstInst sort =
+let genRinstInst sort =
   let* v = V.genVariables sort [ `MS; `NS; `XIS (`MS, `NS); `SIGMAS (`MS, `NS) ] in
   let [@warning "-8"] [], [ ms; ns; xis; sigmas ], scopeBinders = v in
   let* substSorts = substOf sort in
@@ -678,7 +678,7 @@ let genUpSubstSubst (binder, sort) =
        pure @@ app1_ toVarT n)
     mapExt_
 
- let genLemmaRinstInst sort =
+let genLemmaRinstInst sort =
   let* v = V.genVariables sort [ `MS; `NS; `XIS (`MS, `NS) ] in
   let [@warning "-8"] [], [ ms; ns; xis ], scopeBinders = v in
   (* register substify lemma *)
@@ -711,7 +711,7 @@ let genLemmaRinstInst' sort =
                                          @ [ ref_ s ]) in
   pure @@ lemma_ (rinstInst'Fun_ sort) (scopeBinders @ [ binder1_ ~btype:(app_sort sort ms) s ]) ret proof
 
- let genLemmaVarL sort =
+let genLemmaVarL sort =
   (* register lemma for asimpl *)
   let* () = tell_rewrite_lemma (varLFun_ sort) in
   let* v = V.genVariables sort [ `MS; `NS; `SIGMAS (`MS, `NS) ] in
@@ -719,23 +719,23 @@ let genLemmaRinstInst' sort =
   let* sigma' = toVar sort sigmas in
   let ret = eq_ (app_var_constr sort ms >>> app_ref (subst_ sort) (sty_terms sigmas)) sigma' in
   let proof = fext_ (abs_ref "x" eq_refl_) in
-    pure @@ lemma_ (varLFun_ sort) scopeBinders ret proof
+  pure @@ lemma_ (varLFun_ sort) scopeBinders ret proof
 
- (* varL' the extensional variant of varL *)
- let genLemmaVarL' sort =
-   let* v = V.genVariables sort [ `MS; `NS; `SIGMAS (`MS, `NS) ] in
-   let [@warning "-8"] [], [ ms; ns; sigmas ], scopeBinders = v in
-   (* generate type *)
-   (* on the right hand side we only need the sigma for the current sort *)
-   let* sigma' = toVar sort sigmas in
-   let* m' = toVar sort ms in
-   let x = VarState.tfresh "x" in
-   let ret = eq_
-       (app_ref (subst_ sort) (sty_terms sigmas
-                               @ [ app_constr (var_ sort) ms [ ref_ x ] ]))
-       (app1_ sigma' (ref_ x)) in
-   let proof = eq_refl_ in
-   pure @@ lemma_ (varL'Fun_ sort) (scopeBinders @ [ binder1_ ~btype:(varT m') x ]) ret proof
+(* varL' the extensional variant of varL *)
+let genLemmaVarL' sort =
+  let* v = V.genVariables sort [ `MS; `NS; `SIGMAS (`MS, `NS) ] in
+  let [@warning "-8"] [], [ ms; ns; sigmas ], scopeBinders = v in
+  (* generate type *)
+  (* on the right hand side we only need the sigma for the current sort *)
+  let* sigma' = toVar sort sigmas in
+  let* m' = toVar sort ms in
+  let x = VarState.tfresh "x" in
+  let ret = eq_
+      (app_ref (subst_ sort) (sty_terms sigmas
+                              @ [ app_constr (var_ sort) ms [ ref_ x ] ]))
+      (app1_ sigma' (ref_ x)) in
+  let proof = eq_refl_ in
+  pure @@ lemma_ (varL'Fun_ sort) (scopeBinders @ [ binder1_ ~btype:(varT m') x ]) ret proof
 
 let genLemmaVarLRen sort =
   (* register lemma for asimpl *)
@@ -819,7 +819,7 @@ let genLemmaRinstId' sort =
   pure @@ lemma_ (rinstId'Fun_ sort) (scopeBinders @ [ binder1_ ~btype:(app_sort sort ms) s ]) ret proof
 
 
- let genLemmaRenRenComp sort =
+let genLemmaRenRenComp sort =
   (* register lemmas for asimpl *)
   let* () = tell_rewrite_lemma (renRen_ sort) in
   let* () = tell_rewrite_lemma (renRen'_ sort) in
@@ -830,14 +830,14 @@ let genLemmaRinstId' sort =
   let s = VarState.tfresh "s" in
   let ret = eq_
       (app_ref (ren_ sort) (sty_terms zetas
-                           @ [ app_ref (ren_ sort) (sty_terms xis
-                                                   @ [ ref_ s ]) ]))
+                            @ [ app_ref (ren_ sort) (sty_terms xis
+                                                     @ [ ref_ s ]) ]))
       (app_ref (ren_ sort) (sigmazeta @ [ ref_ s ])) in
   let proof = app_ref (compRenRen_ sort) (sty_terms xis
-                                        @ sty_terms zetas
-                                        @ List.map (const underscore_) substSorts
-                                        @ List.map (const (abs_ref "n" eq_refl_)) substSorts
-                                        @ [ ref_ s ]) in
+                                          @ sty_terms zetas
+                                          @ List.map (const underscore_) substSorts
+                                          @ List.map (const (abs_ref "n" eq_refl_)) substSorts
+                                          @ [ ref_ s ]) in
   let ret' = eq_
       (app_ref (ren_ sort) (sty_terms xis) >>> app_ref (ren_ sort) (sty_terms zetas))
       (app_ref (ren_ sort) sigmazeta) in
@@ -847,8 +847,8 @@ let genLemmaRinstId' sort =
                             @ sty_terms zetas
                             @ [ ref_ "n" ]))) in
   pure (lemma_ (renRen_ sort) (scopeBinders
-                                @ [ binder1_ ~btype:(app_sort sort ms) s ])
-           ret proof,
+                               @ [ binder1_ ~btype:(app_sort sort ms) s ])
+          ret proof,
         lemma_ (renRen'_ sort) scopeBinders ret' proof')
 
 let genLemmaCompRenSubst sort =
@@ -862,14 +862,14 @@ let genLemmaCompRenSubst sort =
   let* sigmazeta = comp_ren_or_subst sort zetas sigmas in
   let ret = eq_
       (app_ref (ren_ sort) (sty_terms zetas
-                           @ [ app_ref (subst_ sort) (sty_terms sigmas
-                                                     @ [ ref_ s ]) ]))
+                            @ [ app_ref (subst_ sort) (sty_terms sigmas
+                                                       @ [ ref_ s ]) ]))
       (app_ref (subst_ sort) (sigmazeta @ [ ref_ s ])) in
   let proof = app_ref (compSubstRen_ sort) (sty_terms sigmas
-                                          @ sty_terms zetas
-                                          @ List.map (const underscore_) substSorts
-                                          @ List.map (const (abs_ref "n" eq_refl_)) substSorts
-                                          @ [ ref_ s ]) in
+                                            @ sty_terms zetas
+                                            @ List.map (const underscore_) substSorts
+                                            @ List.map (const (abs_ref "n" eq_refl_)) substSorts
+                                            @ [ ref_ s ]) in
   let ret' = eq_
       (app_ref (subst_ sort) (sty_terms sigmas) >>> app_ref (ren_ sort) (sty_terms zetas))
       (app_ref (subst_ sort) sigmazeta) in
@@ -879,11 +879,11 @@ let genLemmaCompRenSubst sort =
                             @ sty_terms zetas
                             @ [ ref_ "n" ]))) in
   pure (lemma_ (compRen_ sort) (scopeBinders
-                                 @ [ binder1_ ~btype:(app_sort sort ms) s ])
-                ret proof,
+                                @ [ binder1_ ~btype:(app_sort sort ms) s ])
+          ret proof,
         lemma_ (compRen'_ sort) scopeBinders ret' proof')
 
- let genLemmaCompSubstRen sort =
+let genLemmaCompSubstRen sort =
   (* register lemmas for asimpl *)
   let* () = tell_rewrite_lemma (renComp_ sort) in
   let* () = tell_rewrite_lemma (renComp'_ sort) in
@@ -894,14 +894,14 @@ let genLemmaCompRenSubst sort =
   let s = VarState.tfresh "s" in
   let ret = eq_
       (app_ref (subst_ sort) (sty_terms taus
-                             @ [ app_ref (ren_ sort) (sty_terms xis
-                                                     @ [ref_ s])]))
+                              @ [ app_ref (ren_ sort) (sty_terms xis
+                                                       @ [ref_ s])]))
       (app_ref (subst_ sort) (sigmazeta @ [ref_ s])) in
   let proof = app_ref (compRenSubst_ sort) (sty_terms xis
-                                          @ sty_terms taus
-                                          @ List.map (const underscore_) substSorts
-                                          @ List.map (const (abs_ref "n" eq_refl_)) substSorts
-                                          @ [ref_ s]) in
+                                            @ sty_terms taus
+                                            @ List.map (const underscore_) substSorts
+                                            @ List.map (const (abs_ref "n" eq_refl_)) substSorts
+                                            @ [ref_ s]) in
   let ret' = eq_
       (app_ref (ren_ sort) (sty_terms xis) >>> (app_ref (subst_ sort) (sty_terms taus)))
       (app_ref (subst_ sort) sigmazeta) in
@@ -911,8 +911,8 @@ let genLemmaCompRenSubst sort =
                             @ sty_terms taus
                             @ [ref_ "n"]))) in
   pure (lemma_ (renComp_ sort) (scopeBinders
-                                 @ [ binder1_ ~btype:(app_sort sort ms) s ])
-                ret proof,
+                                @ [ binder1_ ~btype:(app_sort sort ms) s ])
+          ret proof,
         lemma_ (renComp'_ sort) scopeBinders ret' proof')
 
 let genLemmaCompSubstSubst sort =
@@ -927,13 +927,13 @@ let genLemmaCompSubstSubst sort =
   let ret = eq_
       (app_ref (subst_ sort) (sty_terms taus
                               @ [ app_ref (subst_ sort) (sty_terms sigmas
-                                                        @ [ref_ s])]))
+                                                         @ [ref_ s])]))
       (app_ref (subst_ sort) (sigmatau @ [ref_ s])) in
   let proof = app_ref (compSubstSubst_ sort) (sty_terms sigmas
-                                            @ sty_terms taus
-                                            @ List.map (const underscore_) substSorts
-                                            @ List.map (const (abs_ref "n" eq_refl_)) substSorts
-                                            @ [ref_ s]) in
+                                              @ sty_terms taus
+                                              @ List.map (const underscore_) substSorts
+                                              @ List.map (const (abs_ref "n" eq_refl_)) substSorts
+                                              @ [ref_ s]) in
   let ret' = eq_
       (app_ref (subst_ sort) (sty_terms sigmas) >>> app_ref (subst_ sort) (sty_terms taus))
       (app_ref (subst_ sort) sigmatau) in
@@ -943,8 +943,8 @@ let genLemmaCompSubstSubst sort =
                             @ sty_terms taus
                             @ [ref_ "n"]))) in
   pure (lemma_ (compComp_ sort) (scopeBinders
-                                  @ [ binder1_ ~btype:(app_sort sort ms) s ])
-                ret proof,
+                                 @ [ binder1_ ~btype:(app_sort sort ms) s ])
+          ret proof,
         lemma_ (compComp'_ sort) scopeBinders ret' proof')
 
 (** This function delegates to all the different code generation functions and in the end
@@ -1044,10 +1044,10 @@ let gen_code sorts upList =
                       lemmaRenSubst @
                       lemmaInstId @ lemmaRinstId @
                       lemmaVarL @ lemmaVarLRen;
-as_fext_units = lemmaRenSubst_fext @
-                lemmaInstId_fext @ lemmaRinstId_fext @
-                lemmaVarL_fext @ lemmaVarLRen_fext @
-                lemma_subst_ren_ren_fext @
-                lemma_subst_comp_ren_fext @
-                lemma_subst_ren_comp_fext @
-                lemma_subst_comp_fext }
+           as_fext_units = lemmaRenSubst_fext @
+                           lemmaInstId_fext @ lemmaRinstId_fext @
+                           lemmaVarL_fext @ lemmaVarLRen_fext @
+                           lemma_subst_ren_ren_fext @
+                           lemma_subst_comp_ren_fext @
+                           lemma_subst_ren_comp_fext @
+                           lemma_subst_comp_fext }

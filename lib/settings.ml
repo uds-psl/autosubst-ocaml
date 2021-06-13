@@ -9,9 +9,9 @@ let var__ = ref "var_%s"
 type scope = WellScoped | Unscoped
 
 let equal_scopeType x y = match (x, y) with
-| WellScoped, WellScoped -> true
-| Unscoped, Unscoped -> true
-| _, _ -> false
+  | WellScoped, WellScoped -> true
+  | Unscoped, Unscoped -> true
+  | _, _ -> false
 
 let scope_type = ref Unscoped
 
