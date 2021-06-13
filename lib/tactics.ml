@@ -17,6 +17,12 @@ module S = Settings
  ** substitution variable: some function that represents a substitution. E.g. sigma : fin m -> vl mty mvl
  **  *)
 
+(** Create a variable index either of type nat or a finite type *)
+let varT m =
+  match !Settings.scope_type with
+  | S.Unscoped -> nat_
+  | S.WellScoped -> fin_ m
+
 (** For a given sort create a renaming type
  ** fin m -> fin n *)
 let renT m n =
@@ -222,14 +228,17 @@ let patternSIdNoRen sort binder =
     (mk_refs substSorts) binder
 
 (** Create an application of the var constructor for each element of the substitition vector
- ** of the given sort *)
+ ** of the given sort
+ **
+ ** e.g. [ var_ty m_ty; var_vl m_ty m_vl ] *)
 let mk_var_apps sort ms =
   let* substSorts = substOf sort in
   a_map (fun substSort ->
-      map2 app_var_constr (pure @@ substSort) (castSubst sort substSort ms))
+      map2 app_var_constr (pure substSort) (castSubst sort substSort ms))
     substSorts
 
-(** Convert a renaming to a substitution *)
+(** Convert a renaming to a substitution by postcomposing it with the variable constructor
+ ** of the given sort. The domain of xis is the given ns *)
 let substify sort ns xis =
   let* substSorts = substOf sort in
   a_map2_exn (fun substSort xi ->

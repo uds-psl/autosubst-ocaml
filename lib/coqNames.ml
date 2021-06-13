@@ -53,11 +53,16 @@ let upId_ = upNameGen upId__
 let up_rinstInst_ = upNameGen "rinstInst_up"
 
 let varLFun_ x = sepd ["varL"; x]
+let varL'Fun_ x = sepd ["varL'"; x]
 let varLRenFun_ x = sepd ["varLRen"; x]
+let varLRen'Fun_ x = sepd ["varLRen'"; x]
 let instIdFun_ x = sepd ["instId"; x]
+let instId'Fun_ x = sepd ["instId'"; x]
 let rinstInst_ x = sepd ["rinst_inst"; x]
 let rinstInstFun_ x = sepd ["rinstInst"; x]
+let rinstInst'Fun_ x = sepd ["rinstInst'"; x]
 let rinstIdFun_ x = sepd ["rinstId"; x]
+let rinstId'Fun_ x = sepd ["rinstId'"; x]
 
 let ext_ x = sepd ["ext"; x]
 let extRen_ x = sepd ["extRen"; x]
