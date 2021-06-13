@@ -49,7 +49,7 @@ let equiv_ s t =
  ** *)
 let toVar sort ts =
   let* substSorts = substOf sort in
-  let zs = List.filter (fun (substSort,_) -> sort = substSort) (list_zip substSorts (sty_terms ts)) in
+  let zs = List.filter (fun (substSort, _) -> sort = substSort) (list_zip substSorts (sty_terms ts)) in
   if list_empty zs
   then error "toVar was called with incompatible sort and substitution vector. The substitution vector must contain the sort!"
   else List.hd zs |> snd |> pure
@@ -99,6 +99,7 @@ let cast x y xs =
       if mem x arg_y then v :: ws else ws)
       (list_zip arg_x xs) [])
 
+(* TODO documentation. iirc it narrows a substitution vector *)
 let castSubst x y = function
   | SubstScope (ns, xs) -> map (fun xs -> SubstScope (ns, xs)) (cast x y xs)
   | SubstRen xs -> map (fun xs -> SubstRen xs) (cast x y xs)

@@ -103,6 +103,7 @@ let gen_classes () =
 
 let gen_instances () =
   let* instances = gets instances in
+  (* the instances created here should also be unfolded *)
   let register_instance_unfolds (inst_type, sort, _) =
     let unfolds = instance_unfolds sort inst_type in
     let* info = get in
