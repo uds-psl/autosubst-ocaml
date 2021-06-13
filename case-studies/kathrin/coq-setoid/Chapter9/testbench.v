@@ -44,6 +44,24 @@ Ltac normalize t :=
     assert (H: t = t2) by (now asimpl)
   end.
 
+(* this normalization tactic is a bit better since it does not apply asimpl to the original goal (like asimpl in H does)
+ It uses the evar tactic to carry out information out of the second goal of the `enough`
+ Could also be done by assert instead of enough and matching on the context but this seems safer. *)
+Ltac normalize_evar t T :=
+  let x := fresh "x" in
+  let H := fresh "H" in
+  evar (x : T);
+  enough (H : t = t);
+  [| asimpl;
+     match goal with
+     | [|- ?t2 = ?t2] =>
+       instantiate (x := t2);
+       reflexivity
+     end ];
+  clear H;
+  assert (H : t = x) by (subst x; now asimpl);
+  subst x.
+
 (*** Testing out asimpl. ***)
 (* this subsitution equation that appears for example in step_inst is pretty nice to test since it uses a lot of the lemmas.
  Experience shows that if asimpl works here it works for a lot of other lemmas of Chapter9 *)
@@ -52,6 +70,8 @@ Lemma default_subst_lemma {m n} (f : fin m -> tm n) (s : tm (S m)) (t : tm m) :
 Proof.
   now asimpl.
   Restart.
+  (* use normalization tactic *)
+  normalize_evar (s[t..][f]) (tm n).
   (* manually apply the tactics based on the trace by asimpl
 compComp
 unfold

@@ -88,22 +88,20 @@ Lemma default_subst_lemma {m n} (f : fin m -> tm n) (s : tm (S m)) (t : tm m) :
   s[t..][f] = s[up_tm_tm f][(t[f])..].
 Proof.
   assert (s[t..][f] = _) by (asimpl; reflexivity).
-  assert (exists x, s[t..][f] = x). 
+  evar (x : tm n).
+  assert (s[t..][f] = x). 
   { 
-    eexists.
+    subst x.
     auto_unfold.
     rewrite compComp_tm.
-    erewrite subst_morphism.
-    2: {
-      intros ?.
+    simple apply subst_morphism; intros ?.
+    (* it does not make sense to do simple apply scons_comp' here since that would abort the normalization. simple apply only makes sense with the morphisms since they have a hypothesis *)
       erewrite scons_comp'.
-      erewrite scons_morphism.
-      reflexivity.
-        intros ?.
+      simple apply scons_morphism; intros ?.
         erewrite varL_tm''.
         fsimpl.
         reflexivity.
-    }
+  } 
     eta_reduce.
     reflexivity.
   }

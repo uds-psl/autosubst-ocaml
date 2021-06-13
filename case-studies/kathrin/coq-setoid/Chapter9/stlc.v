@@ -504,7 +504,7 @@ Notation "x '__tm'" := (var_tm x) ( at level 5, format "x __tm") :
 Lemma rinstInst_tm' {m_tm : nat} {n_tm : nat} (xi_tm : fin m_tm -> fin n_tm) :
   forall s:tm m_tm, ren_tm xi_tm s = subst_tm (funcomp (var_tm n_tm) xi_tm) s.
 Proof.
-  apply rinst_inst_tm. intros x. reflexivity.
+  exact (rinst_inst_tm xi_tm (funcomp (var_tm n_tm) xi_tm) (fun x => eq_refl)).
 Qed.
 
 (* Lemma rinstInst_tm {m_tm : nat} {n_tm : nat} (xi_tm : fin m_tm -> fin n_tm) : *)
@@ -516,15 +516,14 @@ Qed.
 
 Lemma instId_tm' {n_tm:nat} : forall (s: tm n_tm), subst_tm (var_tm n_tm) s = s.
 Proof.
-  exact (fun x => idSubst_tm (var_tm _) (fun n => eq_refl) x).
+  exact (fun s => idSubst_tm (var_tm _) (fun n => eq_refl) s).
 Qed.
 
 Lemma rinstId_tm' {n_tm:nat}: forall (s: tm n_tm), ren_tm id s = s.
 Proof.
-  intros s.
-  erewrite rinst_inst_tm. apply instId_tm'.
-  intros x. reflexivity.
+  exact (fun s => eq_ind_r (fun t => t = s) (instId_tm' s) (rinstInst_tm' id s)).
 Qed.
+
 (* Lemma instId_tm {m_tm : nat} : subst_tm (var_tm m_tm) = id. *)
 (* Proof. *)
 (* exact (FunctionalExtensionality.functional_extensionality _ _ *)
@@ -536,10 +535,10 @@ Qed.
 (* exact (eq_trans (rinstInst_tm (id _)) instId_tm). *)
 (* Qed. *)
 
-Lemma varL_tm' {m_tm n_tm:nat} (sigma_tm : fin m_tm -> tm n_tm) (x: fin m_tm) :
+Lemma varL_tm' {m_tm n_tm:nat} (sigma_tm : fin m_tm -> tm n_tm) (x: fin m_tm):
   subst_tm sigma_tm (var_tm _ x) = sigma_tm x.
 Proof.
-  reflexivity.
+  exact (eq_refl).
 Qed.
 
 (* TODO keep the id on the right side so that the funcomp morphism triggers *)
@@ -559,7 +558,7 @@ Qed.
 Lemma varLRen_tm' {m_tm n_tm: nat} (xi_tm : fin m_tm -> fin n_tm) (x : fin m_tm) :
   ren_tm xi_tm (var_tm _ x) = var_tm _ (xi_tm x).
 Proof.
-  reflexivity.
+  exact eq_refl.
 Qed.
 
 (* Lemma varLRen_tm'' {m_tm n_tm: nat} (xi_tm : fin m_tm -> fin n_tm) (x: fin m_tm) : *)
