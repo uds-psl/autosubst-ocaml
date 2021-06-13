@@ -39,20 +39,20 @@ let gen_static_files dir scope version outfile outfile_fext =
     copy_file (concat "data" name) (concat dir out_name)
   in
   let open Settings in
-  let () = match scope, version with
-    | WellScoped, LT810 ->
-      copy_static_file ~out_name:"fintype.v" "fintype_809.v"
-    | Unscoped, LT810 ->
-      copy_static_file ~out_name:"unscoped.v" "unscoped_809.v"
-    | WellScoped, GE810 ->
+  let () = match scope with
+    | WellScoped ->
       let () = copy_static_file "fintype_axioms.v" in
       copy_static_file "fintype.v"
-    | Unscoped, GE810 ->
+    | Unscoped ->
       let () = copy_static_file "unscoped_axioms.v" in
       copy_static_file "unscoped.v"
   in
   let () = copy_static_file "core_axioms.v" in
-  let () = copy_static_file "core.v" in
+  let () = match version with
+    | GE810 ->
+      copy_static_file "core.v"
+    | LT810 ->
+      copy_static_file ~out_name:"core.v" "core_809.v" in
   ()
   (* now coq_project files contains all files for the _CoqProject in the correct order. TODO do it without ref? *)
   (* let coq_project = "-Q . \"\"\n\n"
