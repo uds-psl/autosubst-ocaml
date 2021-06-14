@@ -78,3 +78,14 @@ Hint Rewrite in_map_iff : FunctorInstances.
 (* Declaring the scopes that all our notations will live in *)
 Declare Scope fscope.
 Declare Scope subst_scope.
+
+Ltac eta_reduce :=
+  repeat match goal with
+         | [|- context[fun x => ?f x]] => change (fun x => f x) with f (* eta reduction *)
+         end.
+
+Ltac minimize :=
+  repeat match goal with
+         | [|- context[fun x => ?f x]] => change (fun x => f x) with f (* eta reduction *)
+         | [|- context[fun x => ?g (?f x)]] => change (fun x => g (f x)) with (funcomp g f) (* funcomp folding *)
+         end.

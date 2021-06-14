@@ -28,12 +28,12 @@ Lemma scons_p_comp {X Y m n} {f : fin m -> X} {g : fin n -> X} {h : X -> Y} :
 Proof. fext. intros z. unfold funcomp. apply scons_p_comp'. Qed.
 
 (** Generic fsimpl tactic: simplifies the above primitives in a goal. *)
-Ltac fsimpl :=
+Ltac fsimpl_fext :=
   repeat match goal with
          | [|- context[id >> ?f]] => change (id >> f) with f (* AsimplCompIdL *)
          | [|- context[?f >> id]] => change (f >> id) with f (* AsimplCompIdR *)
          | [|- context [id ?s]] => change (id s) with s
-         | [|- context[comp ?f ?g]] => change (comp f g) with (g >> f) (* AsimplCompIdL *)
+         (* | [|- context[comp ?f ?g]] => change (comp f g) with (g >> f) (* AsimplCompIdL *) *)
          | [|- context[(?f >> ?g) >> ?h]] =>
            change ((f >> g) >> h) with (f >> (g >> h)) (* AsimplComp *)
 
@@ -55,12 +55,12 @@ Ltac fsimpl :=
          end.
 
 (** Generic fsimpl tactic: simplifies the above primitives in the context *)
-Ltac fsimplc :=
+Ltac fsimplc_fext :=
   repeat match goal with
          | [H: context[id >> ?f] |- _] => change (id >> f) with f in H(* AsimplCompIdL *)
          | [H: context[?f >> id]|- _] => change (f >> id) with f in H(* AsimplCompIdR *)
          | [H: context [id ?s]|- _] => change (id s) with s in H
-         | [H: context[comp ?f ?g]|- _] => change (comp f g) with (g >> f) in H (* AsimplCompIdL *)
+         (* | [H: context[comp ?f ?g]|- _] => change (comp f g) with (g >> f) in H (* AsimplCompIdL *) *)
          | [H: context[(?f >> ?g) >> ?h]|- _] =>
            change ((f >> g) >> h) with (f >> (g >> h)) in H (* AsimplComp *)
          | [H: context[(?s.:?sigma) var_zero]|- _] => change ((s.:sigma) var_zero) with s in H
@@ -80,7 +80,7 @@ Ltac fsimplc :=
          end.
 
 (** Simplification in both the goal and the context *)
-Tactic Notation "fsimpl" "in" "*" :=
-  fsimpl; fsimplc.
+Tactic Notation "fsimpl_fext" "in" "*" :=
+  fsimpl_fext; fsimplc_fext.
 
 Hint Rewrite @scons_p_comp scons_p_head scons_p_tail : FunctorInstances.

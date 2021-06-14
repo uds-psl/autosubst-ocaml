@@ -16,7 +16,7 @@ Proof.
 Qed.
 
 (** Generic fsimpl tactic: simplifies the above primitives in a goal. *)
-Ltac fsimpl :=
+Ltac fsimpl_fext :=
   unfold up_ren; repeat match goal with
          | [|- context[id >> ?f]] => change (id >> f) with f (* AsimplCompIdL *)
          | [|- context[?f >> id]] => change (f >> id) with f (* AsimplCompIdR *)
@@ -41,7 +41,7 @@ Ltac fsimpl :=
  end.
 
 (** Generic fsimpl tactic: simplifies the above primitives in the context *)
-Ltac fsimplc :=
+Ltac fsimplc_fext :=
   unfold up_ren; repeat match goal with
          | [H : context[id >> ?f] |- _] => change (id >> f) with f in H(* AsimplCompIdL *)
          | [H: context[?f >> id] |- _] => change (f >> id) with f in H(* AsimplCompIdR *)
@@ -66,5 +66,5 @@ Ltac fsimplc :=
  end.
 
 (** Simplification in both the goal and the context *)
-Tactic Notation "fsimpl" "in" "*" :=
-  fsimpl; fsimplc.
+Tactic Notation "fsimpl_fext" "in" "*" :=
+  fsimpl_fext; fsimplc_fext.
