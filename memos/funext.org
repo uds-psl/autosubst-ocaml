@@ -41,28 +41,39 @@ s[t .: (fun x => h (f x))]
 #+end_src
 ** What is needed to change?
 *** Lemmas
-For stlc we need 5 new lemmas, or rather new versions of 5 lemmas that stated an equality between functions.
-- varL_tm : var >> [sigma] == sigma >> id
-- varLRen_tm : bla
-- rinstInst_tm
-- rinstId_tm
-- instId_tm
+For stlc we need 5 new lemmas, or rather new versions of 5 lemmas that stated an equality between functions before and now state an extensional equality
+1. varL : var >> [sigma] == sigma
+2. varLRen : var >> <xi> == xi >> var
+3. rinstInst : <xi> = [xi >> var]
+4. rinstId : <id> == id
+5. instId : [var] == id
 It should be 5 lemmas per sort that has variables. All of them have very short and mechanical proof scripts so it should be easy to generate.
 *** Proper Instances
-The morphisms are instances of the Proper typeclass. In the ocaml implementation I don't generate instances directly but use the `Existing Instance` command.
-They also have very simple and mechanical proof terms. There is one instance per renaming/subsitution function. The morphisms for scons and function composition are general enough to be in the static files.
-**** TODO check if Existing Instance works for setoid rewriting. It should.
+The morphisms are instances of the Proper typeclass. We can use Coq's pretty printer to print the Instance declarations.
+They also have very simple and mechanical proof terms because there is one instance per renaming/subsitution function and they are basically the extensionality lemmas we already generate. The morphisms for scons/scons_p are general enough to be in the static files.
 *** Tactic
 We can use an ltac script that is very similar to the original asimpl. This is because whenever we could write `rewrite X` to replace a function in the original asimpl we can write `setoid_rewrite X'` with X' being an extensional version of X.
-Except that we completely unfold function composition (so we don't even need that morphism)
+Also we completely unfold function composition as discussed in the next section.
+**** TODO check if there are pathologic cases where we don't have funcomp and would need to eta expand
 ** Problems with function composition
-[essentially it's because to rewrite with lemmas stating an extensional equality we need a syntactic match, i.e. `f x`, even though the morphisms would give us that ]
-[also because setoid rewriting sometimes does not work under multiple function compositions]
+We unfold it because setoid rewrite needs a syntactic match to start the rewrite (i.e. if we rewrite with something of type `f x = g x`, then we need f applied to x somewhere in the term, and `f >> g` unfolded contains such a subterm.)
+This is a bit unsatisfactory because the morphism for subst ((forall x, f x = g x) -> s[f] = s[g]) already gives you such a subterm but setoid rewrite needs `f x` before it even thinks about using that morphism.
+There is also another point in favor of unfolding function composition. There are cases where setoid rewrite fails if the term contains too many function compositions (even though a morphism exists). There should be an instance in the coq-setoid-asimpl copy of Kathrin's case study.
 ** Problem with eta-expanded functions
-A description is in the [[file:../case-studies/kathrin/coq-setoid/Chapter9/testbench.v][source code]] in the MWE module. The heuristics used by setoid rewriting apparently don't lile rewriting under eta-expanded functions.
+A description is in the [[file:../case-studies/kathrin/coq-setoid/Chapter9/testbench.v][source code]] in the MWE module. The heuristics used by setoid rewriting apparently does not lile rewriting under eta-expanded functions.
 This is however not a problem since we can eta-reduce these functions to be able to proceed with rewriting.
-*** TODO morphism for eta-expanded functions?
+*** DONE check morphism for eta-expanded functions
+No it does not work to define a morphism for eta expanded functions. I don't think the setoid rewrite mechanism looks at binders this way, rather it only checks if a morphism exists for the outermost function symbol. But I did not finish the paper about it.
 I think I already tried that but check again.
+*** TODO check the paper if they say anything about eta expansion there
+Iirc they say rewriting under binders is possible, which this is an instance of.
 
 * Replace with Guided Applications of ext_tm
-Since setoid rewriting is pretty slow we can also try to manually apply ext_tm guided by some heuristics. This would then be faster since we only apply ext_tm once at the beginning and then bit-by-bit prove the extensional equality of the two substitutions using othe rewriting lemmas instead of using it once every time we rewrite anything inside a substitution.
+Since setoid rewriting is pretty slow we can also try to manually apply ext_tm guided by some heuristics. This would then be faster since we only apply ext_tm once at the beginning and then bit-by-bit prove the extensional equality of the two substitutions using other rewriting lemmas instead of using it once every time we rewrite anything inside a substitution.
+This works already pretty well for goals involving an equation. However, this method is currently not suited to normalize a given term (which sometimes is necessary if a term appears as an index of some other type, like a type assignment predicate)
+This is because in these cases, rewriting with ext_tm results in a goal of the form `s[f] = ?e` and normal rewriting is too naive because it does spurious rewrites on the right with the evar which then results in a non-normal term.
+** One solution might be to use a technique similar to the `under` tactic (or use the tactic itself)
+https://coq.inria.fr/refman/proof-engine/ssreflect-proof-language.html#coq:tacn.under
+** Another might be to use the fast funext based asimpl
+We could use it purely to compute the normal form `t` of a term `s` and then assert the equation `s = t` which is then provable by the non-funext asimpl.
+We would need to take special care that the funext asimpl never actually appears in the proof term.
