@@ -2,7 +2,7 @@ open Autosubst_lib
 module S = Settings
 
 let print_usage () =
-  print_endline "dune exec -- bin/main.exe <signature-file> <output-file> <syntax-style> [coq-version] [axioms-separate] [generate-static-files]\n\nsyntax-style: coq | ucoq -- generate scoped or unscoped code\n\ncoq-version: lt810 | ge810 -- which coq version to target\n\naxioms-separate: true | false -- put all lemmas involving functional extensionality into a different file (names <output-file>_axioms.v)\n\ngenerate-static-files: true | false -- put core.v, unscoped.v, fintype.v, ... into the output directory"
+  print_endline "dune exec -- bin/main.exe <signature-file> <output-file> <syntax-style> [coq-version] [axioms-separate] [generate-static-files] [force-overwrite]\n\nsyntax-style: coq | ucoq -- generate scoped or unscoped code\n\ncoq-version: lt810 | ge810 -- which coq version to target\n\naxioms-separate: true | false -- put all lemmas involving functional extensionality into a different file (names <output-file>_axioms.v)\n\ngenerate-static-files: true | false -- put core.v, unscoped.v, fintype.v, ... into the output directory\n\nforce-overwrite: true | false -- force overwrite any existing files"
 
 let parse_arguments () =
   let () = if Array.length Sys.argv < 4 then
@@ -22,7 +22,8 @@ let parse_arguments () =
     else S.GE810 in
   let axioms_separate = if Array.length Sys.argv >= 6 then bool_of_string Sys.argv.(5) else true in
   let generate_static_files = if Array.length Sys.argv >= 7 then bool_of_string Sys.argv.(6) else true in
-  S.{ infile; outfile; scope; axioms_separate; generate_static_files; version }
+  let force_overwrite = if Array.length Sys.argv >= 8 then bool_of_string Sys.argv.(7) else false in
+  S.{ infile; outfile; scope; axioms_separate; generate_static_files; force_overwrite; version }
 
 let main () =
   let open ErrorM in

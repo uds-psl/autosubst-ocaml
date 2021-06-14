@@ -14,9 +14,9 @@ let really_write_file outfile content =
   let () = output_string output content in
   close_out output
 
-let write_file ?(force=true) outfile content =
+let write_file ?(force_overwrite=false) outfile content =
   let open Unix in
-  if force then really_write_file outfile content
+  if force_overwrite then really_write_file outfile content
   else
     try
       let _ = stat outfile in
@@ -28,15 +28,15 @@ let write_file ?(force=true) outfile content =
     with Unix_error (ENOENT, _, _) ->
       really_write_file outfile content
 
-let copy_file src dst = write_file dst (read_file src)
+let copy_file ?(force_overwrite=false) src dst = write_file ~force_overwrite dst (read_file src)
 
-let gen_static_files dir scope version outfile outfile_fext =
+let gen_static_files ?(force_overwrite=false) dir scope version outfile outfile_fext =
   let open Filename in
   (* let coq_project_files = ref [outfile; outfile_fext] in *)
   let copy_static_file ?out_name name =
     let out_name = Option.default name out_name in
     (* coq_project_files := out_name :: !coq_project_files; *)
-    copy_file (concat "data" name) (concat dir out_name)
+    copy_file ~force_overwrite (concat "data" name) (concat dir out_name)
   in
   let open Settings in
   let () = match scope with
@@ -72,7 +72,7 @@ let create_outdir dir =
   with Unix_error (ENOENT, _, _) ->
     Unix.mkdir dir 0o755
 
-let main S.{ infile; outfile; scope; axioms_separate; generate_static_files; version } =
+let main S.{ infile; outfile; scope; axioms_separate; generate_static_files; force_overwrite; version } =
   let open ErrorM.Syntax in
   let open ErrorM in
   let () = Printexc.record_backtrace true in
@@ -82,7 +82,7 @@ let main S.{ infile; outfile; scope; axioms_separate; generate_static_files; ver
   (* setup static files *)
   let () = create_outdir dir in
   let () = if generate_static_files
-    then gen_static_files dir scope version outfile outfile_fext
+    then gen_static_files ~force_overwrite dir scope version outfile outfile_fext
     else () in
   (* parse input HOAS *)
   let* spec = read_file infile |> SigParser.parse_signature in
@@ -94,9 +94,9 @@ let main S.{ infile; outfile; scope; axioms_separate; generate_static_files; ver
   let open Filename in
   let () = if axioms_separate
     then
-      let () = write_file (concat dir outfile) code in
-      write_file (concat dir outfile_fext) fext_code
+      let () = write_file ~force_overwrite (concat dir outfile) code in
+      write_file ~force_overwrite (concat dir outfile_fext) fext_code
     else
-      write_file (concat dir outfile) (code ^ fext_code)
+      write_file ~force_overwrite (concat dir outfile) (code ^ fext_code)
   in
   pure "done"

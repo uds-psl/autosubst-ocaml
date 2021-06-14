@@ -29,5 +29,6 @@ type args = {
   scope : scope;
   axioms_separate : bool;
   generate_static_files : bool;
+  force_overwrite : bool;
   version : coq_version;
 }
