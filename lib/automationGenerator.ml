@@ -28,11 +28,12 @@ let gen_asimpl' () =
   let asimpl_rewrite_lemmas = info.asimpl_rewrite_lemmas in
   let asimpl_cbn_functions = info.asimpl_cbn_functions in
   let asimpl_unfold_functions = info.asimpl_unfold_functions in
-  let rewrites = List.map (fun t -> progress_ (rewrite_ t)) asimpl_rewrite_lemmas in
+  let rewrites = List.map (fun t -> progress_ (setoid_rewrite_ t)) asimpl_rewrite_lemmas in
   let tac = repeat_ (first_ (rewrites @
                              [ progress_ (unfold_ asimpl_unfold_functions)
                              ; progress_ (cbn_ asimpl_cbn_functions)
-                             ; calltac_ "fsimpl" ])) in
+                             ; calltac_ "fsimpl"
+                             ; repeat_ (unfold_ [ "funcomp" ]) ])) in
   pure @@ TacticLtac ("asimpl'", tac)
 
 let gen_asimpl_star () =

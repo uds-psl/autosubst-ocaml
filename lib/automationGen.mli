@@ -8,6 +8,7 @@ module TacGen : sig
   val star_locus_clause : locus_clause_expr
 
   val idtac_ : t
+  val setoid_rewrite_ : ?to_left:bool -> string -> t
   val rewrite_ : ?repeat_star:bool -> ?with_evars:bool -> ?to_left:bool -> ?locus_clause:locus_clause_expr -> string -> t
   val repeat_ : t -> t
   val first_ : t list -> t
