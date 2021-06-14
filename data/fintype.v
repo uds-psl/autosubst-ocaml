@@ -179,6 +179,19 @@ Proof.
   reflexivity.
 Qed.
 
+Instance scons_p_morphism {X: Type} {m n:nat} :
+  Proper (pointwise_relation _ eq ==> pointwise_relation _ eq ==> pointwise_relation _ eq) (@scons_p X m n).
+Proof.
+  intros sigma sigma' Hsigma tau tau' Htau.
+  intros x.
+  induction m.
+  - cbn. apply Htau.
+  - cbn. change (fin (S m + n)) with (fin (S (m + n))) in x.
+    destruct x as [x|].
+    + cbn. apply IHm.
+      intros ?. apply Hsigma.
+    + cbn. apply Hsigma.
+Qed.
 
 (** ** Variadic Substitution Primitives *)
 

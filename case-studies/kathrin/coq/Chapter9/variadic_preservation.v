@@ -24,20 +24,6 @@ Proof. intros ->. now constructor. Qed.
 
 (** *** Substitutivity *)
 
-Require Import Setoid Morphisms Relation_Definitions.
-Instance scons_p_morphism {X: Type} {m n:nat} :
-  Proper (pointwise_relation _ eq ==> pointwise_relation _ eq ==> pointwise_relation _ eq) (@scons_p X m n).
-Proof.
-  intros sigma sigma' Hsigma tau tau' Htau.
-  intros x.
-  induction m.
-  - cbn. apply Htau.
-  - cbn. change (fin (S m + n)) with (fin (S (m + n))) in x.
-    destruct x as [x|].
-    + cbn. apply IHm.
-      intros ?. apply Hsigma.
-    + cbn. apply Hsigma.
-Qed.
 Require Import core_axioms.
 Lemma step_inst {m n} (f : fin m -> tm n) (s t : tm m) :
   step s t -> step (subst_tm f s) (subst_tm f t).
