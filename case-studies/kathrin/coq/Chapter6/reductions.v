@@ -4,7 +4,7 @@
 
 Module polyadic.
 Section polyadic.
-  Require Import core core_axioms fintype fintype_axioms.
+  Require Import core fintype.
   Import ScopedNotations.
   From Chapter6 Require Export utlc_pairs.
   
@@ -29,7 +29,7 @@ End polyadic.
 
 Module sysf_cbv.
 Section sysf_cbv.
-  Require Import core core_axioms fintype fintype_axioms.
+  Require Import core fintype.
   Import ScopedNotations.
   From Chapter6 Require Export sysf_cbv.
 

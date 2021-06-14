@@ -4,6 +4,8 @@
 Version: December 11, 2019.
 *)
 Require Import core.
+Require Import Setoid Morphisms Relation_Definitions.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 
@@ -39,8 +41,6 @@ Definition null {T} (i : fin 0) : T := match i with end.
 
 Definition shift {n : nat} : ren n (S n) :=
   Some.
-
-Definition comp := @funcomp.
 
 (** Extension of Finite Mappings
     Assume we are given a mapping _f_ from _I^n_ to some type _X_, then we can _extend_ this mapping with a new value from _x : X_ to a mapping from _I^n+1_ to _X_. We denote this operation by _x . f_ and define it as follows:
@@ -155,6 +155,30 @@ Lemma fin_eta {X} (f g : fin 0 -> X) :
   forall x, f x = g x.
 Proof. intros []. Qed.
 
+(** Eta laws *)
+Lemma scons_eta' {T} {n : nat} (f : fin (S n) -> T) (x: fin (S n)) :
+  (f var_zero .: (fun x => f (shift x))) x = f x.
+Proof. destruct x; reflexivity. Qed.
+
+Lemma scons_eta_id' {n : nat} (x: fin (S n)) :
+  (var_zero .: shift) x = id x.
+Proof. destruct x; reflexivity. Qed.
+
+Lemma scons_comp' {T:Type} {U} {m} (s: T) (sigma: fin m -> T) (tau: T -> U) (x: fin (S m)) :
+  tau ((s .: sigma) x) = ((tau s) .: (fun x => tau (sigma x))) x.
+Proof. destruct x; reflexivity. Qed.
+
+(* Morphism for Setoid Rewriting. The only morphism that can be defined statically. *)
+Instance scons_morphism {X: Type} {n:nat} (t: X) :
+  Proper (pointwise_relation _ eq ==> pointwise_relation _ eq) (fun f => (@scons X n t f)).
+Proof.
+  cbv - [scons].
+  intros sigma tau H.
+  intros [x|].
+  cbn. apply H.
+  reflexivity.
+Qed.
+
 
 (** ** Variadic Substitution Primitives *)
 
@@ -261,7 +285,6 @@ Opaque shift.
 Opaque up_ren.
 Opaque var_zero.
 Opaque idren.
-Opaque comp.
 Opaque funcomp.
 Opaque id.
 
@@ -300,6 +323,57 @@ Tactic Notation "auto_case" tactic(t) :=  (match goal with
                                            | [|- forall (i : fin (S _)), _] =>  intros [?|]; t
                                            end).
 
-
 (** Functor instances which can be added later on. *)
 Hint Rewrite @scons_p_head' @scons_p_tail' : FunctorInstances.
+
+(** Generic fsimpl tactic: simplifies the above primitives in a goal. *)
+Ltac fsimpl :=
+  repeat match goal with
+         | [|- context[id >> ?f]] => change (id >> f) with f (* AsimplCompIdL *)
+         | [|- context[?f >> id]] => change (f >> id) with f (* AsimplCompIdR *)
+         | [|- context [id ?s]] => change (id s) with s
+         | [|- context[(?f >> ?g) >> ?h]] => change ((f >> g) >> h) with (f >> (g >> h)) (* AsimplComp *)
+         (* | [|- zero_p >> scons_p ?f ?g] => rewrite scons_p_head *)
+         | [|- context[(?s .: ?sigma) var_zero]] => change ((s.:sigma) var_zero) with s
+         | [|- context[(?s .: ?sigma) (shift ?m)]] => change ((s.:sigma) (shift m)) with (sigma m)
+         | [|- context[idren >> ?f]] => change (idren >> f) with f
+         | [|- context[?f >> idren]] => change (f >> idren) with f
+         | [|- context[?f >> (?x .: ?g)]] => change (f >> (x .: g)) with g (* f should evaluate to shift *)
+         | [|- context[?x2 .: (fun x => ?f (shift x))]] => change (scons x2 (fun x => f (shift x))) with (fun x => (scons (f var_zero) (fun x => f (shift x))) x); setoid_rewrite (@scons_eta' _ _ f); eta_reduce
+         | [|- context[?f var_zero .: ?g]] => change (scons (f var_zero) g) with (fun x => (scons (f var_zero) (fun x => f (shift x))) x); setoid_rewrite scons_eta'; eta_reduce
+         (* we completely unfold funcomp *)
+         (* |[|- _ =  ?h (?f ?s)] => change (h (f s)) with ((f >> h) s) *)
+         (* |[|-  ?h (?f ?s) = _] => change (h (f s)) with ((f >> h) s) *)
+         | [|- context[fun x => ?tau (scons ?s ?sigma x)]] => setoid_rewrite scons_comp'; eta_reduce
+         | [|- context[scons (@var_zero ?n) shift]] => change (scons (@var_zero n) shift) with (fun x => (scons (@var_zero n) shift) x); setoid_rewrite scons_eta_id'; eta_reduce
+         | _ => progress autorewrite with FunctorInstances
+         end.
+
+(** Generic fsimpl tactic: simplifies the above primitives in the context *)
+Ltac fsimplc :=
+  repeat match goal with
+         | [H: context[id >> ?f] |- _] => change (id >> f) with f in H(* AsimplCompIdL *)
+         | [H: context[?f >> id]|- _] => change (f >> id) with f in H(* AsimplCompIdR *)
+         | [H: context [id ?s]|- _] => change (id s) with s in H
+         (* | [H: context[comp ?f ?g]|- _] => change (comp f g) with (g >> f) in H (* AsimplCompIdL *) *)
+         | [H: context[(?f >> ?g) >> ?h]|- _] =>
+           change ((f >> g) >> h) with (f >> (g >> h)) in H (* AsimplComp *)
+         | [H: context[(?s.:?sigma) var_zero]|- _] => change ((s.:sigma) var_zero) with s in H
+         | [H: context[(?s.:?sigma) var_zero]|- _] => change ((s.:sigma) var_zero) with s in H
+         | [H: context[(?s.:?sigma) (shift ?m)]|- _] => change ((s.:sigma) (shift m)) with (sigma m) in H
+                                                                                      |[H : context[ _ =  ?h (?f ?s)]|- _] => change (h (f s)) with ((f >> h) s) in H
+         (* |[H: context[?h (?f ?s) = _]|- _] => change (h (f s)) with ((f >> h) s) in H *)
+         | [H: context[idren >> ?f]|- _] => change (idren >> f) with f in H
+         | [H: context[?f >> idren]|- _] => change (f >> idren) with f in H
+         | [H: context[?f >> (?x .: ?g)]|- _] =>
+           change (f >> (x .: g)) with g in H
+         (* | [H: context[?x2 .: shift >> ?f]|- _] => *)
+         (*   change x2 with (f var_zero) in H; rewrite (@scons_eta _ _ f) in H *)
+         (* | [H: context[?f var_zero .: ?g]|- _] => *)
+           (* change g with (shift >> f) in H; rewrite scons_eta in H *)
+         (* | _ => first [progress (rewrite scons_comp in * ) | progress (rewrite scons_eta_id in * ) | progress (autorewrite with FunctorInstances in * )] *)
+         end.
+
+(** Simplification in both the goal and the context *)
+Tactic Notation "fsimpl" "in" "*" :=
+  fsimpl; fsimplc.

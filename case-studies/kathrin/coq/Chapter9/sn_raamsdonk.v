@@ -1,7 +1,7 @@
 (** ** Raamsdonk's Characterisation *)
 
-  Require Import core core_axioms fintype fintype_axioms.
-  Import ScopedNotations.
+Require Import core fintype.
+Import ScopedNotations.
 From Chapter9 Require Export reduction.
 
 Lemma sn_mstep {n} (s t : tm n):
@@ -163,10 +163,12 @@ Lemma anti_rename:
  /\ (forall n (M: tm n), SNe M -> forall n' M' (R: fin n' -> fin n), M = ren_tm R M' -> SNe M')
  /\ (forall n (M N: tm n), SNRed M N -> forall n' (R: fin n' -> fin n) M', M = ren_tm R M' -> exists N', N = ren_tm R N' /\ SNRed M' N').
 Proof.
-  apply SN_multind; intros; repeat invTm; asimpl in *; subst; eauto.
+  apply SN_multind; intros; repeat invTm; (* asimpl in *; *) subst; eauto.
+  (* a.d. asimpl * does not exist anymore. was not needed here anyways *)
   - destruct (H0 _ _ _ (eq_refl _)) as (M''&->&?).
     eapply SRed; eauto.
-  - destruct M'; simpl in *; try congruence.
+  - asimpl in H.
+    destruct M'; simpl in *; try congruence.
     inv H; now constructor.
   - exists (M'0_1 [M'0_2..]).
     split. now asimpl. constructor; eauto.
@@ -179,7 +181,8 @@ Lemma rename :
   /\   (forall n (M: tm n),  SNe M -> forall n' (R: fin n -> fin n'), SNe (ren_tm R M))
   /\ (forall n (M N: tm n), SNRed M N -> forall n' (R: fin n -> fin n'), SNRed (ren_tm R M) (ren_tm R N)).
 Proof.
-  apply SN_multind; intros; asimpl in *; eauto.
+  (* a.d. moved asimpl before intros to remove the `in *` *)
+  apply SN_multind; asimpl; intros; eauto.
   - constructor.
   - intros. subst. constructor. auto. now asimpl.
 Qed.
@@ -253,7 +256,7 @@ Proof.
       * reflexivity.
     + asimpl. eapply IHhas_type. intros [|]; eauto.
       * cbn. unfold funcomp.
-        (* adrian: had to insert the following line *) 
+        (* a.d. had to insert the following line *) 
         change (fun x : fin n' => @var_tm m (R x)) with (funcomp var_tm R).
        renamify. 
         apply rename_red. eauto.

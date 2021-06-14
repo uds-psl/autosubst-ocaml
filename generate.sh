@@ -3,27 +3,26 @@ set -euo pipefail
 
 # generate code for the example signatures
 for n in utlc stlc fcbv variadic pi num; do
-    echo dune exec -- bin/main.exe signatures/${n}.sig case-studies/examples/${n}_wellscoped.v coq ge810
-    dune exec -- bin/main.exe signatures/${n}.sig case-studies/examples/${n}_wellscoped.v coq ge810
+    echo dune exec -- bin/main.exe signatures/${n}.sig case-studies/examples/${n}_wellscoped.v coq ge810 true true true
+    dune exec -- bin/main.exe signatures/${n}.sig case-studies/examples/${n}_wellscoped.v coq ge810 true true true
 done
 
 # just for fol because it uses the cod functor, so it needs functional extensionality 
-echo dune exec -- bin/main.exe signatures/fol.sig case-studies/examples/fol_wellscoped.v coq ge810 false
-dune exec -- bin/main.exe signatures/fol.sig case-studies/examples/fol_wellscoped.v coq ge810 false
+echo dune exec -- bin/main.exe signatures/fol.sig case-studies/examples/fol_wellscoped.v coq ge810 false true true
+dune exec -- bin/main.exe signatures/fol.sig case-studies/examples/fol_wellscoped.v coq ge810 false true true
 
 for n in utlc stlc fcbv pi num; do
-    echo dune exec -- bin/main.exe signatures/${n}.sig case-studies/examples/${n}_unscoped.v ucoq ge810
-    dune exec -- bin/main.exe signatures/${n}.sig case-studies/examples/${n}_unscoped.v ucoq ge810
+    echo dune exec -- bin/main.exe signatures/${n}.sig case-studies/examples/${n}_unscoped.v ucoq ge810 true true true
+    dune exec -- bin/main.exe signatures/${n}.sig case-studies/examples/${n}_unscoped.v ucoq ge810 true true true
 done
 
 # generate the code for Kathrin's case study.
-# Since I don't generate tactics and typeclasses I used the ones from Kathrin and append them to the code I generated
 KAT="case-studies/kathrin/coq/"
 generate_file() {
     file=$1
     scope=$2
-    echo dune exec -- bin/main.exe ${KAT}${file}.sig ${KAT}${file}.v ${scope} ge810 false false
-    dune exec -- bin/main.exe ${KAT}${file}.sig ${KAT}${file}.v ${scope} ge810 false false
+    echo dune exec -- bin/main.exe ${KAT}${file}.sig ${KAT}${file}.v ${scope} ge810 false false true
+    dune exec -- bin/main.exe ${KAT}${file}.sig ${KAT}${file}.v ${scope} ge810 false false true
 }
 
 echo cp data/core_809.v data/core_axioms.v data/fintype.v data/fintype_axioms.v data/unscoped.v data/unscoped_axioms.v ${KAT}

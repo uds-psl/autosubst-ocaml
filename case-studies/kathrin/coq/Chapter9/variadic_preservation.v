@@ -1,7 +1,7 @@
 (** ** Variadic Preservation *)
 
 Require Export ARS Program.Equality.
-Require Import core core_axioms fintype fintype_axioms.
+Require Import core fintype.
 Import ScopedNotations.
 From Chapter6 Require Export variadic_fin.
 Set Implicit Arguments.
@@ -24,11 +24,29 @@ Proof. intros ->. now constructor. Qed.
 
 (** *** Substitutivity *)
 
+Require Import Setoid Morphisms Relation_Definitions.
+Instance scons_p_morphism {X: Type} {m n:nat} :
+  Proper (pointwise_relation _ eq ==> pointwise_relation _ eq ==> pointwise_relation _ eq) (@scons_p X m n).
+Proof.
+  intros sigma sigma' Hsigma tau tau' Htau.
+  intros x.
+  induction m.
+  - cbn. apply Htau.
+  - cbn. change (fin (S m + n)) with (fin (S (m + n))) in x.
+    destruct x as [x|].
+    + cbn. apply IHm.
+      intros ?. apply Hsigma.
+    + cbn. apply Hsigma.
+Qed.
+Require Import core_axioms.
 Lemma step_inst {m n} (f : fin m -> tm n) (s t : tm m) :
   step s t -> step (subst_tm f s) (subst_tm f t).
 Proof.
   intros st. revert n f.  induction st; intros; cbn.
-  - apply step_beta'. now asimpl.
+  - apply step_beta'. asimpl.
+    unfold funcomp. setoid_rewrite scons_p_head'.
+    (* TODO a.d. why is cod_map not unfolded + why does the rewrite with scons_p_head' fail. It should happen in fsimpl *)
+    asimpl. unfold cod_map. asimpl. reflexivity.
   - apply step_abs. eapply IHst.
   - apply step_appL, IHst.
 Qed.

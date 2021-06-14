@@ -1,6 +1,6 @@
 (** ** Weak Head Normalisation *)
 
-Require Import core core_axioms fintype fintype_axioms.
+Require Import core fintype.
 Import ScopedNotations.
 From Chapter9 Require Export preservation.
 
@@ -54,7 +54,8 @@ Proof.
     specialize (IHC _ _ H1).
     destruct (IHC) as (v'&?&?).
     exists v'; split; eauto.
-    revert H2. rewrite rinstInst_tm. eauto using mstep_inst.
+    (* a.d. I had to unfold funcomp here to setoid rewrite with rinstInst' *)
+    revert H2. unfold funcomp. setoid_rewrite rinstInst'_tm. eauto using mstep_inst.
   - destruct (IHC1 _ _  H) as (v1&?&?).
     destruct (IHC2  _ _ H) as (v2&?&?).
     destruct v1; try contradiction.
@@ -66,5 +67,6 @@ Proof.
       eapply mstep_app; eauto. assumption.
     + eapply star_trans.
       * eright. econstructor; eauto. constructor.
-      * now asimpl in *.
+        (* a.d. asimpl directly in hypothesis instead of * *)
+      * now asimpl in H4.
 Qed.
