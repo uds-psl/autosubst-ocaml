@@ -6,6 +6,7 @@ open AutomationGen
 open TacGen
 open ClassGen
 open NotationGen
+open Termutil
 open RWEM.Syntax
 open RWEM
 
@@ -101,6 +102,38 @@ let gen_classes () =
     class_ (class_name sort inst_type) binders ctors in
   pure @@ List.map gen_class classes
 
+let gen_proper_instances () =
+  let* proper_instances = gets proper_instances in
+  let gen_instance (sort, fun_sort, ext_sort) =
+    let* v = Variables.genVariables sort [ `MS; `NS ] in
+    let [@warning "-8"] [], [ ms; ns ], scopeBinders = v in
+    let* substSorts = substOf sort in
+    let iname = sep (fun_sort) "morphism" in
+    let signature = List.fold_right (fun _ signature ->
+        app_ref "respectful" [ app_ref "pointwise_relation" [ underscore_; ref_ "eq" ]
+                             ; signature ])
+        substSorts (app_ref "respectful" [ ref_ "eq"; ref_ "eq" ]) in
+    let itype = app_ref "Proper" [ signature; app_fix ~expl:true (fun_sort) ~scopes:[ ms; ns ] [] ] in
+    (* a.d. TODO right now this is the easiest way to generate all the names. all the other functions liek genRen are too generalized and we can't use the binders they return. So we generate them again fresh *)
+    let fs = mk_refs @@ List.map (sep "f") substSorts in
+    let gs = mk_refs @@ List.map (sep "g") substSorts in
+    let eqs = mk_refs @@ List.map (sep "Eq") substSorts in
+    let s = VarState.tfresh "s" in
+    let t = VarState.tfresh "t" in
+    let eq_st = VarState.tfresh "Eq_st" in
+    let proof_binders = binder_ (List.fold_right (fun substSort binders ->
+        [ sep "f" substSort; sep "g" substSort; sep "Eq" substSort ] @ binders)
+        substSorts [ s; t; eq_st ]) in
+    let proof = lambda_ [ proof_binders ]
+        (app_ref "eq_ind" [ ref_ s
+                          ; abs_ref "t'" (eq_ (app_ref fun_sort (fs @ [ ref_ s])) (app_ref fun_sort (gs @ [ ref_ "t'" ])))
+                          ; app_ref ext_sort (fs @ gs @ eqs @ [ ref_ s ])
+                          ; ref_ t
+                          ; ref_ eq_st ]) in
+    pure @@ instance'_ iname scopeBinders itype ~interactive:true proof
+  in
+  a_map gen_instance proper_instances
+
 let gen_instances () =
   let* instances = gets instances in
   (* the instances created here should also be unfolded *)
@@ -115,11 +148,11 @@ let gen_instances () =
     let fname = function_name sort inst_type in
     let cbinders = guard (Settings.is_wellscoped ()) [ binder_ ~implicit:true ~btype:(ref_ "nat") params ] in
     let args = guard (Settings.is_wellscoped ()) (List.map ref_ params) in
-    instance_ iname cbinders (app_ref cname (class_args inst_type)) (app_ref ~expl:true fname args)
+    instance'_ iname cbinders (app_ref cname (class_args inst_type)) (app_ref ~expl:true fname args)
   in
   (* TODO better way to chain actions? *)
   let* _ = sequence (List.map register_instance_unfolds instances) in
-  let instance_definitions = List.concat_map (fun (inst_type, sort, params) -> [ gen_instance inst_type sort params; ex_instance_ (instance_name sort inst_type) ]) instances in
+  let instance_definitions = List.concat_map (fun (inst_type, sort, params) -> [ gen_instance inst_type sort params ]) instances in
   pure instance_definitions
 
 let gen_notations () =
@@ -133,6 +166,7 @@ let gen_additional () =
   let* classes = gen_classes () in
   let* instances = gen_instances () in
   let* notations = gen_notations () in
+  let* proper_instances = gen_proper_instances () in
   let tactic_funs = [ gen_auto_unfold
                     ; gen_auto_unfold_star
                     ; gen_asimpl'
@@ -143,4 +177,4 @@ let gen_additional () =
                     ; gen_substify
                     ; gen_renamify ] in
   let* tactics = a_map (fun f -> f ()) tactic_funs in
-  pure { as_units = classes @ instances @ notations; as_fext_units =  arguments @ tactics }
+  pure { as_units = classes @ instances @ notations; as_fext_units = proper_instances @ arguments @ tactics }

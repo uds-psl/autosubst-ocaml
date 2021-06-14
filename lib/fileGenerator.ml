@@ -16,17 +16,18 @@ let unscoped_preamble_axioms = "Require Import core core_axioms unscoped unscope
 let scoped_preamble = "Require Import core fintype.\n\n"
 let scoped_preamble_axioms = "Require Import core core_axioms fintype fintype_axioms.\n"
 let base_preamble = Scanf.format_from_string "Require Import %s.\n\n" "%s"
+let setoid_preamble = "Require Import Setoid Morphisms Relation_Definitions.\n\n"
 
 let get_preambles outfile_basename axioms_separate =
   let base_preamble = Printf.sprintf base_preamble outfile_basename in
   if axioms_separate then
     match !Settings.scope_type with
-    | S.Unscoped -> (unscoped_preamble, unscoped_preamble_axioms ^ base_preamble)
-    | S.WellScoped -> (scoped_preamble, scoped_preamble_axioms ^ base_preamble)
+    | S.Unscoped -> (unscoped_preamble, unscoped_preamble_axioms ^ base_preamble ^ setoid_preamble)
+    | S.WellScoped -> (scoped_preamble, scoped_preamble_axioms ^ base_preamble ^ setoid_preamble)
   else
     match !Settings.scope_type with
-    | S.Unscoped -> (unscoped_preamble_axioms, "")
-    | S.WellScoped -> (scoped_preamble_axioms, "")
+    | S.Unscoped -> (unscoped_preamble_axioms ^ setoid_preamble, "")
+    | S.WellScoped -> (scoped_preamble_axioms ^ setoid_preamble, "")
 
 (** Generate all the liftings (= Up = fatarrow^y_x) for all pairs of sorts in the current component.
  ** So that we can later build the lifting functions "X_ty_ty", "X_ty_vl" etc. *)
@@ -89,6 +90,7 @@ let genTactics () =
     arguments = [];
     (* XXX *)
     classes = [ Up "", "tm" ];
+    proper_instances = [];
     (* XXX *)
     instances = [ Subst 1, "tm", []
                 ; Ren 1, "tm", []

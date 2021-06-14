@@ -159,6 +159,7 @@ let genRenaming sort =
   let* () = tell_cbn_function (ren_ sort) in
   let* () = tell_notation (NotationGen.RenApply substSorts, sort) in
   let* () = tell_notation (NotationGen.Ren substSorts, sort) in
+  let* () = tell_proper_instance (sort, ren_ sort, extRen_ sort) in
   (* DONE what is the result of toVar here?\
    * when I call it with sort=tm, xi=[xity;xivl] I get this weird error term that toVar constructs. This is then probably ignored by some similar logic in the traversal. Seems brittle.
    * When I call it instead with sort=vl I get xivl. So it seems get the renaming of the sort that I'm currently inspecting *)
@@ -227,6 +228,7 @@ let genSubstitution sort =
   let* () = tell_notation (NotationGen.Up, sort) in
   let* () = tell_notation (NotationGen.SubstApply substSorts, sort) in
   let* () = tell_notation (NotationGen.Subst substSorts, sort) in
+  let* () = tell_proper_instance (sort, subst_ sort, ext_ sort) in
   let ret _ = app_sort sort ns in
   traversal sort ms subst_ ~no_args:id ~ret scopeBinders [sigmas]
     (fun s ->

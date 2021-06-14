@@ -53,6 +53,10 @@ module Tells = struct
     let* info = get in
     put { info with classes = x :: info.classes }
 
+  let tell_proper_instance x =
+    let* info = get in
+    put { info with proper_instances = x :: info.proper_instances }
+
   let tell_instance x =
     let* info = get in
     put { info with instances = x :: info.instances }

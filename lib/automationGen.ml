@@ -215,6 +215,7 @@ type t = {
   auto_unfold_functions : string list;
   arguments : (string * string list) list;
   classes : (ClassGen.t * string) list;
+  proper_instances : (string * string * string) list;
   instances : (ClassGen.t * string * string list) list;
   notations : (NotationGen.t * string) list;
 }
@@ -227,6 +228,7 @@ let initial = {
   auto_unfold_functions = [];
   arguments = [];
   classes = [];
+  proper_instances = [];
   instances = [];
   notations = [];
 }
@@ -238,5 +240,6 @@ let substify_lemmas info = info.substify_lemmas
 let auto_unfold_functions info = info.auto_unfold_functions
 let arguments info = info.arguments
 let classes info = info.classes
+let proper_instances info = info.proper_instances
 let instances info = info.instances
 let notations info = info.notations

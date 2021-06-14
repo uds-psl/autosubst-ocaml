@@ -504,7 +504,7 @@ Notation "x '__tm'" := (var_tm x) ( at level 5, format "x __tm") :
 Lemma rinstInst_tm' {m_tm : nat} {n_tm : nat} (xi_tm : fin m_tm -> fin n_tm) :
   forall s:tm m_tm, ren_tm xi_tm s = subst_tm (funcomp (var_tm n_tm) xi_tm) s.
 Proof.
-  exact (rinst_inst_tm xi_tm (funcomp (var_tm n_tm) xi_tm) (fun x => eq_refl)).
+  exact (rinst_inst_tm xi_tm _ (fun x => eq_refl)).
 Qed.
 
 (* Lemma rinstInst_tm {m_tm : nat} {n_tm : nat} (xi_tm : fin m_tm -> fin n_tm) : *)
@@ -629,11 +629,11 @@ Require Import Setoid Morphisms.
 Require Import Relation_Definitions.
 
 Instance ren_morphism {m_tm n_tm:nat}:
-  Proper (pointwise_relation _ eq ==> eq ==> eq) (@ren_tm m_tm n_tm).
+  Proper (respectful (pointwise_relation _ eq) (respectful eq eq)) (@ren_tm m_tm n_tm).
 Proof.
-  cbv - [ren_tm].
-  intros sigma tau H s t ->. apply extRen_tm.
-  apply H.
+  refine (fun xi_tm zeta_tm Eq_tm s t Eq_st => _).
+  refine (eq_ind s (fun x => ren_tm xi_tm s = ren_tm zeta_tm x) _ t Eq_st).
+  refine (extRen_tm xi_tm zeta_tm Eq_tm s).
 Qed.
 
 Instance subst_morphism {m_tm n_tm:nat}:
