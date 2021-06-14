@@ -1,4 +1,4 @@
-Require Import core core_axioms fintype fintype_axioms.
+Require Import core fintype.
 Inductive ty : Type :=
   | Base : ty
   | Fun : ty -> ty -> ty.
@@ -642,17 +642,6 @@ Proof.
   cbv - [subst_tm].
   intros sigma tau H s t ->. apply ext_tm.
   apply H.
-Qed.
-
-Instance scons_morphism {m_tm n_tm:nat} (t: tm m_tm) :
-  Proper (pointwise_relation _ eq ==> pointwise_relation _ eq) (fun f  => (@scons _ n_tm t f)).
-Proof.
-  cbv - [scons].
-  intros sigma tau H.
-  intros x.
-  destruct x.
-  cbn.  apply H.
-  reflexivity.
 Qed.
 
 (* Instance eta_morphism {X Y} : *)

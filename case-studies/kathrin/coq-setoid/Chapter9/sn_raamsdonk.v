@@ -1,7 +1,7 @@
 (** ** Raamsdonk's Characterisation *)
 
-  Require Import core core_axioms fintype fintype_axioms.
-  Import ScopedNotations.
+Require Import core fintype.
+Import ScopedNotations.
 From Chapter9 Require Export reduction.
 
 Lemma sn_mstep {n} (s t : tm n):

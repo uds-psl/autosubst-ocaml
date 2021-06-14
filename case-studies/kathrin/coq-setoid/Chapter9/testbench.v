@@ -147,7 +147,7 @@ Module MWE.
     eta_reduce.
     setoid_rewrite H.
     reflexivity.
-  Abort.
+  Qed.
 
   Lemma mwe2 (f g h: X -> X) (H: forall x, f (g x) = h x) :
     op1 (funcomp f g) = op1 h.
@@ -161,6 +161,27 @@ Module MWE.
     setoid_rewrite H.
     reflexivity.
   Qed.
+
+  (* not sure if such an instance even makes sense. But it does not work *)
+  Instance eta_morphism {A B:Type} :
+    Proper (@pointwise_relation A B eq ==> @pointwise_relation A B eq) (fun f x => f x).
+  Proof.
+    intros f f' Hf x. apply Hf.
+  Qed.
+  
+  Lemma mwe3 (b:X) (f g h: X -> X) (H: forall x, f (g x) = h x) :
+      op1 (op2 b (funcomp f g)) = op1 (op2 b h).
+  Proof.
+    unfold funcomp.
+    change (op2 b (fun x => f (g x))) with (fun y => (op2 b (fun x => f (g x))) y).
+    Set Typeclasses Debug.
+    try setoid_rewrite H.
+    (* needs eta reduction first *)
+    eta_reduce.
+    setoid_rewrite H.
+    reflexivity.
+  Abort.
+
 
   Definition const (a b:X) := a.
 

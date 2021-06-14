@@ -8,8 +8,8 @@ Logical Relations and a case study in equivalence checking (Karl Crary, 2005)
 **)
 
 Require Export List Omega.
-  Require Import core core_axioms unscoped unscoped_axioms.
-  Import UnscopedNotations.
+Require Import core unscoped.
+Import UnscopedNotations.
 From Chapter3 Require Export utlc_pure.
 
 Ltac inv H := inversion H; subst.

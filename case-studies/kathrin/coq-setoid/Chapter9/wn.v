@@ -1,6 +1,6 @@
 (** ** Weak Head Normalisation *)
 
-Require Import core core_axioms fintype fintype_axioms.
+Require Import core fintype.
 Import ScopedNotations.
 From Chapter9 Require Export preservation.
 

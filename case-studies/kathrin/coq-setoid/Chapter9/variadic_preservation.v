@@ -1,7 +1,7 @@
 (** ** Variadic Preservation *)
 
 Require Export ARS Program.Equality.
-Require Import core core_axioms fintype fintype_axioms.
+Require Import core fintype.
 Import ScopedNotations.
 From Chapter6 Require Export variadic_fin.
 Set Implicit Arguments.
