@@ -20,6 +20,7 @@ val lemma_ : ?opaque:bool -> identifier -> binder_expr list -> constr_expr -> co
 
 val class_ : string -> binder_expr list -> constructor_expr list -> vernac_unit
 val instance_ : string -> binder_expr list -> constr_expr -> constr_expr -> vernac_unit
+val instance'_ : string -> binder_expr list -> constr_expr -> ?interactive:bool -> constr_expr -> vernac_unit
 val ex_instances_ : string list -> vernac_unit
 val ex_instance_ : string -> vernac_unit
 

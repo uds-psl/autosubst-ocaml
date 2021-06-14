@@ -1,6 +1,7 @@
 open Util
 open GallinaGen
 open AutomationGen
+open Vernacexpr
 
 module TG = TacGen
 
@@ -15,7 +16,6 @@ type autosubst_exprs = { as_units: vernac_unit list; as_fext_units: vernac_unit 
 (** I catch the VernacExactProof constructor because the way Coq normally prints it does not
  ** work well with proof general. So I explicitly add an `exact (...)` *)
 let pr_vernac_expr =
-  let open Vernacexpr in
   let open Pp in
   function
   | VernacExactProof cexpr ->
@@ -33,13 +33,11 @@ let pr_vernac_units vunits = Pp.seq (List.map pr_vernac_unit vunits)
 
 
 let definition_ dname dbinders ?rtype dbody =
-  let open Vernacexpr in
   let dname = name_decl_ dname in
   let dexpr = definition_expr_ dbinders ?rtype dbody in
   Vernac [ VernacDefinition ((NoDischarge, Decls.Definition), dname, dexpr) ]
 
 let lemma_ ?(opaque=true) lname lbinders ltype lbody =
-  let open Vernacexpr in
   let pexpr = (ident_decl_ lname, (lbinders, ltype)) in
   let lbegin = VernacStartTheoremProof (Decls.Lemma, [pexpr]) in
   let lbody = VernacExactProof lbody in
@@ -47,7 +45,6 @@ let lemma_ ?(opaque=true) lname lbinders ltype lbody =
   Vernac [ lbegin; lbody; lend ]
 
 let fixpoint_ ~is_rec fexprs =
-  let open Vernacexpr in
   if is_rec
   then Vernac [ VernacFixpoint (NoDischarge, fexprs) ]
   else match fexprs with
@@ -58,20 +55,28 @@ let fixpoint_ ~is_rec fexprs =
 
 
 let inductive_ inductiveBodies =
-  let open Vernacexpr in
   Vernac [ VernacInductive (Inductive_kw, inductiveBodies) ]
 
 let class_ name binders fields =
-  let open Vernacexpr in
   let body = inductiveBody_ name binders fields in
+  (* a.d. false argument to Class to make it inductive, not definitional *)
   Vernac [ VernacInductive (Class false, [ body ]) ]
 
 let instance_ inst_name cbinders class_type body =
   definition_ inst_name cbinders ~rtype:class_type body
 
+let instance'_ inst_name cbinders class_type ?(interactive=false) body =
+  let vexprs = if interactive
+    then
+      [ VernacInstance (name_decl_ inst_name, cbinders, class_type, None, Typeclasses.{ hint_priority = None; hint_pattern = None })
+      ; VernacExactProof body
+      ; VernacEndProof (Proved (Opaque, None)) ]
+    else [ VernacInstance (name_decl_ inst_name, cbinders, class_type, Some (false, body), Typeclasses.{ hint_priority = None; hint_pattern = None }) ]
+  in
+  Vernac vexprs
+
 (* a.d. don't call with multiple names for now b/c printing is wrong *)
 let ex_instances_ names =
-  let open Vernacexpr in
   Vernac [ VernacExistingInstance
              (List.map (fun s ->
                   (qualid_ s, Typeclasses.{ hint_priority = None; hint_pattern = None }))
@@ -80,11 +85,9 @@ let ex_instances_ names =
 let ex_instance_ name = ex_instances_ [ name ]
 
 let notation_ notation modifiers ?scope body =
-  let open Vernacexpr in
   Vernac [ VernacNotation (body, (CAst.make notation, modifiers), scope) ]
 
 let impl_arguments_ name args =
-  let open Vernacexpr in
   let qname = CAst.make (Constrexpr.AN (qualid_ name)) in
   let impl_args = List.map (fun a ->
       RealArg {
