@@ -681,10 +681,10 @@ let genRinstInst sort =
     mapExt_
 
 let genLemmaRinstInst sort =
+  (* register substify lemma *)
+  let* () = tell_substify_lemma_fext (rinstInstFun_ sort) in
   let* v = V.genVariables sort [ `MS; `NS; `XIS (`MS, `NS) ] in
   let [@warning "-8"] [], [ ms; ns; xis ], scopeBinders = v in
-  (* register substify lemma *)
-  let* () = tell_substify_lemma (rinstInstFun_ sort) in
   let* substSorts = substOf sort in
   let* xis_subst = substify sort ns xis in
   let ret = eq_
@@ -699,6 +699,8 @@ let genLemmaRinstInst sort =
   pure @@ lemma_ (rinstInstFun_ sort) scopeBinders ret proof
 
 let genLemmaRinstInst' sort =
+  (* register substify lemma *)
+  let* () = tell_substify_lemma (rinstInst'Fun_ sort) in
   let* v = V.genVariables sort [ `MS; `NS; `XIS (`MS, `NS) ] in
   let [@warning "-8"] [], [ ms; ns; xis ], scopeBinders = v in
   let* substSorts = substOf sort in
@@ -715,7 +717,7 @@ let genLemmaRinstInst' sort =
 
 let genLemmaVarL sort =
   (* register lemma for asimpl *)
-  let* () = tell_rewrite_lemma (varLFun_ sort) in
+  let* () = tell_rewrite_fext (varLFun_ sort) in
   let* v = V.genVariables sort [ `MS; `NS; `SIGMAS (`MS, `NS) ] in
   let [@warning "-8"] [], [ ms; ns; sigmas ], scopeBinders = v in
   let* sigma' = toVar sort sigmas in
@@ -725,6 +727,8 @@ let genLemmaVarL sort =
 
 (* varL' the extensional variant of varL *)
 let genLemmaVarL' sort =
+  (* register lemma for asimpl *)
+  let* () = tell_rewrite_no_fext (varL'Fun_ sort) in
   let* v = V.genVariables sort [ `MS; `NS; `SIGMAS (`MS, `NS) ] in
   let [@warning "-8"] [], [ ms; ns; sigmas ], scopeBinders = v in
   (* generate type *)
@@ -741,7 +745,7 @@ let genLemmaVarL' sort =
 
 let genLemmaVarLRen sort =
   (* register lemma for asimpl *)
-  let* () = tell_rewrite_lemma (varLRenFun_ sort) in
+  let* () = tell_rewrite_fext (varLRenFun_ sort) in
   let* v = V.genVariables sort [ `MS; `NS; `XIS (`MS, `NS) ] in
   let [@warning "-8"] [], [ ms; ns; xis ], scopeBinders = v in
   let* xi' = toVar sort xis in
@@ -753,6 +757,8 @@ let genLemmaVarLRen sort =
 
 (* varLRen' the extensional variant of varLRen *)
 let genLemmaVarLRen' sort =
+  (* register lemma for asimpl *)
+  let* () = tell_rewrite_no_fext (varLRen'Fun_ sort) in
   let* v = V.genVariables sort [ `MS; `NS; `XIS (`MS, `NS) ] in
   let [@warning "-8"] [], [ ms; ns; xis ], scopeBinders = v in
   let* xi' = toVar sort xis in
@@ -767,7 +773,7 @@ let genLemmaVarLRen' sort =
 
 let genLemmaInstId sort =
   (* register lemma for asimpl *)
-  let* () = tell_rewrite_lemma (instIdFun_ sort) in
+  let* () = tell_rewrite_fext (instIdFun_ sort) in
   let* (ms, bms) = introScopeVar "m" sort in
   let* substSorts = substOf sort in
   let* vars = mk_var_apps sort ms in
@@ -780,6 +786,8 @@ let genLemmaInstId sort =
   pure @@ lemma_ (instIdFun_ sort) bms ret proof
 
 let genLemmaInstId' sort =
+  (* register lemma for asimpl *)
+  let* () = tell_rewrite_no_fext (instId'Fun_ sort) in
   let* v = V.genVariables sort [ `MS ] in
   let [@warning "-8"] [], [ ms ], scopeBinders = v in
   let* substSorts = substOf sort in
@@ -793,7 +801,7 @@ let genLemmaInstId' sort =
 
 let genLemmaRinstId sort =
   (* register lemma for asimpl *)
-  let* () = tell_rewrite_lemma (rinstIdFun_ sort) in
+  let* () = tell_rewrite_fext (rinstIdFun_ sort) in
   let* (ms, bms) = introScopeVar "m" sort in
   let* substSorts = substOf sort in
   let* vars = mk_var_apps sort ms in
@@ -806,6 +814,8 @@ let genLemmaRinstId sort =
   pure @@ lemma_ (rinstIdFun_ sort) bms ret proof
 
 let genLemmaRinstId' sort =
+  (* register lemma for asimpl *)
+  let* () = tell_rewrite_no_fext (rinstId'Fun_ sort) in
   let* v = V.genVariables sort [ `MS ] in
   let [@warning "-8"] [], [ ms ], scopeBinders = v in
   let* substSorts = substOf sort in
@@ -823,8 +833,8 @@ let genLemmaRinstId' sort =
 
 let genLemmaRenRenComp sort =
   (* register lemmas for asimpl *)
-  let* () = tell_rewrite_lemma (renRen_ sort) in
-  let* () = tell_rewrite_lemma (renRen'_ sort) in
+  let* () = tell_rewrite_base (renRen_ sort) in
+  let* () = tell_rewrite_fext (renRen'_ sort) in
   let* v = V.genVariables sort [ `KS; `LS; `MS; `XIS (`MS, `KS); `ZETAS (`KS, `LS) ] in
   let [@warning "-8"] [], [ ks; ls; ms; xis; zetas ], scopeBinders = v in
   let* substSorts = substOf sort in
@@ -855,8 +865,8 @@ let genLemmaRenRenComp sort =
 
 let genLemmaCompRenSubst sort =
   (* register lemmas for asimpl *)
-  let* () = tell_rewrite_lemma (compRen_ sort) in
-  let* () = tell_rewrite_lemma (compRen'_ sort) in
+  let* () = tell_rewrite_base (compRen_ sort) in
+  let* () = tell_rewrite_fext (compRen'_ sort) in
   let* v = V.genVariables sort [ `KS; `LS; `MS; `SIGMAS (`MS, `KS); `ZETAS (`KS, `LS) ] in
   let [@warning "-8"] [], [ ks; ls; ms; sigmas; zetas ], scopeBinders = v in
   let* substSorts = substOf sort in
@@ -887,8 +897,8 @@ let genLemmaCompRenSubst sort =
 
 let genLemmaCompSubstRen sort =
   (* register lemmas for asimpl *)
-  let* () = tell_rewrite_lemma (renComp_ sort) in
-  let* () = tell_rewrite_lemma (renComp'_ sort) in
+  let* () = tell_rewrite_base (renComp_ sort) in
+  let* () = tell_rewrite_fext (renComp'_ sort) in
   let* v = V.genVariables sort [ `KS; `LS; `MS; `XIS (`MS, `KS); `TAUS (`KS, `LS) ] in
   let [@warning "-8"] [], [ ks; ls; ms; xis; taus ], scopeBinders = v in
   let* substSorts = substOf sort in
@@ -919,8 +929,8 @@ let genLemmaCompSubstRen sort =
 
 let genLemmaCompSubstSubst sort =
   (* register lemmas for asimpl *)
-  let* () = tell_rewrite_lemma (compComp_ sort) in
-  let* () = tell_rewrite_lemma (compComp'_ sort) in
+  let* () = tell_rewrite_base (compComp_ sort) in
+  let* () = tell_rewrite_fext (compComp'_ sort) in
   let* v = V.genVariables sort [ `KS; `LS; `MS; `SIGMAS (`MS, `KS); `TAUS (`KS, `LS) ] in
   let [@warning "-8"] [], [ ks; ls; ms; sigmas; taus ], scopeBinders = v in
   let* substSorts = substOf sort in

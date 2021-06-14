@@ -210,9 +210,12 @@ end
 
 
 type t = {
-  asimpl_rewrite_lemmas : string list;
+  asimpl_rewrite_no_fext : string list;
+  asimpl_rewrite_fext : string list;
+  asimpl_rewrite_base : string list;
   asimpl_cbn_functions : string list;
   asimpl_unfold_functions : string list;
+  substify_lemmas_fext : string list;
   substify_lemmas : string list;
   auto_unfold_functions : string list;
   arguments : (string * string list) list;
@@ -223,9 +226,12 @@ type t = {
 }
 
 let initial = {
-  asimpl_rewrite_lemmas = [];
+  asimpl_rewrite_no_fext = [];
+  asimpl_rewrite_fext = [];
+  asimpl_rewrite_base = [];
   asimpl_cbn_functions = [];
   asimpl_unfold_functions = ["up_ren"];
+  substify_lemmas_fext = [];
   substify_lemmas = [];
   auto_unfold_functions = [];
   arguments = [];
@@ -235,9 +241,12 @@ let initial = {
   notations = [];
 }
 
-let asimpl_rewrite_lemmas info = info.asimpl_rewrite_lemmas
+let asimpl_rewrite_no_fext info = info.asimpl_rewrite_no_fext
+let asimpl_rewrite_fext info = info.asimpl_rewrite_fext
+let asimpl_rewrite_base info = info.asimpl_rewrite_base
 let asimpl_cbn_functions info = info.asimpl_cbn_functions
 let asimpl_unfold_functions info = info.asimpl_unfold_functions
+let substify_lemmas_fext info = info.substify_lemmas_fext
 let substify_lemmas info = info.substify_lemmas
 let auto_unfold_functions info = info.auto_unfold_functions
 let arguments info = info.arguments

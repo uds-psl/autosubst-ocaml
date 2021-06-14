@@ -27,7 +27,10 @@ val ex_instance_ : string -> vernac_unit
 val notation_ : string -> Vernacexpr.syntax_modifier list -> ?scope:Vernacexpr.scope_name -> constr_expr -> vernac_unit
 
 (** create command to set implicit arguments
- ** e.g. Arguments foo {bar} {baz}. *)
+ ** e.g.
+ **  Arguments foo : clear implicits.
+ **  Arguments foo {bar} {baz}. *)
+val clear_arguments_ : string -> vernac_unit
 val impl_arguments_ : string -> string list -> vernac_unit
 
 module GenTestsClass : sig

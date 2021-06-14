@@ -72,9 +72,12 @@ module NotationGen : sig
 end
 
 type t = {
-  asimpl_rewrite_lemmas : string list;
+  asimpl_rewrite_no_fext : string list;
+  asimpl_rewrite_fext : string list;
+  asimpl_rewrite_base : string list;
   asimpl_cbn_functions : string list;
   asimpl_unfold_functions : string list;
+  substify_lemmas_fext : string list;
   substify_lemmas : string list;
   auto_unfold_functions : string list;
   arguments : (string * string list) list;
@@ -86,9 +89,12 @@ type t = {
 
 val initial : t
 
-val asimpl_rewrite_lemmas : t -> string list
+val asimpl_rewrite_no_fext : t -> string list
+val asimpl_rewrite_fext : t -> string list
+val asimpl_rewrite_base : t -> string list
 val asimpl_cbn_functions : t -> string list
 val asimpl_unfold_functions : t -> string list
+val substify_lemmas_fext : t -> string list
 val substify_lemmas : t -> string list
 val auto_unfold_functions : t -> string list
 val arguments : t -> (string * string list) list

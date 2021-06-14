@@ -87,6 +87,10 @@ let ex_instance_ name = ex_instances_ [ name ]
 let notation_ notation modifiers ?scope body =
   Vernac [ VernacNotation (body, (CAst.make notation, modifiers), scope) ]
 
+let clear_arguments_ name =
+  let qname = CAst.make (Constrexpr.AN (qualid_ name)) in
+  Vernac [ VernacArguments (qname, [], [], [ `ClearImplicits ]) ]
+
 let impl_arguments_ name args =
   let qname = CAst.make (Constrexpr.AN (qualid_ name)) in
   let impl_args = List.map (fun a ->

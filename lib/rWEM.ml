@@ -25,9 +25,17 @@ module Tells = struct
   open AG
   open Syntax
 
-  let tell_rewrite_lemma x =
+  let tell_rewrite_no_fext x =
     let* info = get in
-    put { info with asimpl_rewrite_lemmas = x :: info.asimpl_rewrite_lemmas }
+    put { info with asimpl_rewrite_no_fext = x :: info.asimpl_rewrite_no_fext }
+
+  let tell_rewrite_fext x =
+    let* info = get in
+    put { info with asimpl_rewrite_fext = x :: info.asimpl_rewrite_fext }
+
+  let tell_rewrite_base x =
+    let* info = get in
+    put { info with asimpl_rewrite_base = x :: info.asimpl_rewrite_base }
 
   let tell_cbn_function x =
     let* info = get in
@@ -36,6 +44,10 @@ module Tells = struct
   let tell_unfold_function x =
     let* info = get in
     put { info with asimpl_unfold_functions = x :: info.asimpl_unfold_functions }
+
+  let tell_substify_lemma_fext x =
+    let* info = get in
+    put { info with substify_lemmas_fext = x :: info.substify_lemmas_fext }
 
   let tell_substify_lemma x =
     let* info = get in

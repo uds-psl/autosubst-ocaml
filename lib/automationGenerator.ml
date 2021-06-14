@@ -23,19 +23,34 @@ let gen_auto_unfold_star () =
   let* auf = gen_auto_unfold_star' () in
   pure @@ TacticNotation ([ "\"auto_unfold\""; "\"in\""; "\"*\"" ], auf)
 
-let gen_asimpl' () =
+let gen_asimpl_fext' () =
   let* info = get in
-  let asimpl_rewrite_lemmas = info.asimpl_rewrite_lemmas in
+  let asimpl_rewrite_fext = info.asimpl_rewrite_fext in
+  let asimpl_rewrite_base = info.asimpl_rewrite_base in
   let asimpl_cbn_functions = info.asimpl_cbn_functions in
   let asimpl_unfold_functions = info.asimpl_unfold_functions in
-  let rewrites = List.map (fun t -> progress_ (setoid_rewrite_ t)) asimpl_rewrite_lemmas in
+  let rewrites = List.map (fun t -> progress_ (setoid_rewrite_ t)) (asimpl_rewrite_base @ asimpl_rewrite_fext) in
   let tac = repeat_ (first_ (rewrites @
                              [ progress_ (unfold_ asimpl_unfold_functions)
                              ; progress_ (cbn_ asimpl_cbn_functions)
-                             ; calltac_ "fsimpl"
+                             ; calltac_ "fsimpl_fext" ])) in
+  pure @@ TacticLtac ("asimpl_fext'", tac)
+
+let gen_asimpl' () =
+  let* info = get in
+  let asimpl_rewrite_no_fext = info.asimpl_rewrite_no_fext in
+  let asimpl_rewrite_base = info.asimpl_rewrite_base in
+  let asimpl_cbn_functions = info.asimpl_cbn_functions in
+  let asimpl_unfold_functions = info.asimpl_unfold_functions in
+  let rewrites = List.concat_map (fun t -> [ progress_ (setoid_rewrite_ t); progress_ (rewrite_ t) ]) (asimpl_rewrite_base @ asimpl_rewrite_no_fext) in
+  let tac = repeat_ (first_ (rewrites @
+                             [ progress_ (unfold_ asimpl_unfold_functions)
+                             ; progress_ (cbn_ asimpl_cbn_functions)
+                             ; progress_ (calltac_ "fsimpl")
                              ; repeat_ (unfold_ [ "funcomp" ]) ])) in
   pure @@ TacticLtac ("asimpl'", tac)
 
+(*
 let gen_asimpl_star () =
   let* info = get in
   let asimpl_rewrite_lemmas = info.asimpl_rewrite_lemmas in
@@ -49,6 +64,16 @@ let gen_asimpl_star () =
                         ; progress_ (cbn_ ~locus_clause:star_locus_clause asimpl_cbn_functions)
                         ; calltac_ "fsimpl" ]))) in
   pure @@ TacticNotation ([ "\"asimpl\""; "\"in\""; "\"*\"" ], tac)
+*)
+
+let gen_asimpl_fext () =
+  let* auto_unfold_star = gen_auto_unfold_star' () in
+  let unfold_funcomp = repeat_ (try_ (calltac_ "unfold_funcomp")) in
+  let tac = then_ [ unfold_funcomp
+                  ; auto_unfold_star
+                  ; calltac_ "asimpl_fext'"
+                  ; unfold_funcomp ] in
+  pure @@ TacticLtac ("asimpl_fext", tac)
 
 let gen_asimpl () =
   let* auto_unfold_star = gen_auto_unfold_star' () in
@@ -56,14 +81,27 @@ let gen_asimpl () =
   let tac = then_ [ unfold_funcomp
                   ; auto_unfold_star
                   ; calltac_ "asimpl'"
-                  ; unfold_funcomp ] in
+                  ; calltac_ "minimize" ] in
   pure @@ TacticLtac ("asimpl", tac)
+
+let gen_asimpl_fext_hyp () =
+  let tac = then_ [ calltacArgs_ "revert" [ "J" ]
+                  ; calltac_ "asimpl_fext"
+                  ; intros_ [ "J" ] ] in
+  pure @@  TacticNotation ([ "\"asimpl_fext\""; "\"in\""; "hyp(J)" ], tac)
 
 let gen_asimpl_hyp () =
   let tac = then_ [ calltacArgs_ "revert" [ "J" ]
                   ; calltac_ "asimpl"
                   ; intros_ [ "J" ] ] in
   pure @@  TacticNotation ([ "\"asimpl\""; "\"in\""; "hyp(J)" ], tac)
+
+let gen_auto_case_fext () =
+  let inner_tac = then_ [ calltac_ "asimpl_fext"
+                        ; cbn_ []
+                        ; calltac_ "eauto" ] in
+  let tac = calltacTac_ "auto_case" inner_tac in
+  pure @@ TacticNotation ([ "\"auto_case_fext\"" ], tac)
 
 let gen_auto_case () =
   let inner_tac = then_ [ calltac_ "asimpl"
@@ -72,17 +110,35 @@ let gen_auto_case () =
   let tac = calltacTac_ "auto_case" inner_tac in
   pure @@ TacticNotation ([ "\"auto_case\"" ], tac)
 
+let gen_substify_fext () =
+  let* substify_lemmas = gets substify_lemmas_fext in
+  let rewrites = List.map (fun t -> try_ (repeat_ (rewrite_ ~with_evars:true t))) substify_lemmas in
+  let tac = then_ (calltac_ "auto_unfold" :: rewrites) in
+  pure @@ TacticLtac ("substify_fext", tac)
+
 let gen_substify () =
   let* substify_lemmas = gets substify_lemmas in
   let rewrites = List.map (fun t -> try_ (repeat_ (rewrite_ ~with_evars:true t))) substify_lemmas in
   let tac = then_ (calltac_ "auto_unfold" :: rewrites) in
   pure @@ TacticLtac ("substify", tac)
 
+let gen_renamify_fext () =
+  let* substify_lemmas = gets substify_lemmas_fext in
+  let rewrites = List.map (fun t -> try_ (repeat_ (rewrite_ ~with_evars:true ~to_left:true t))) substify_lemmas in
+  let tac = then_ (calltac_ "auto_unfold" :: rewrites) in
+  pure @@ TacticLtac ("renamify_fext", tac)
+
 let gen_renamify () =
   let* substify_lemmas = gets substify_lemmas in
   let rewrites = List.map (fun t -> try_ (repeat_ (rewrite_ ~with_evars:true ~to_left:true t))) substify_lemmas in
   let tac = then_ (calltac_ "auto_unfold" :: rewrites) in
   pure @@ TacticLtac ("renamify", tac)
+
+let gen_arguments_clear () =
+  let* arguments = gets arguments in
+  if Settings.is_wellscoped () then
+    pure @@ List.map (fun (name, _) -> clear_arguments_ name) arguments
+  else pure []
 
 let gen_arguments () =
   let* arguments = gets arguments in
@@ -162,7 +218,7 @@ let gen_notations () =
     notation_ (notation_string sort ntype) (notation_modifiers sort ntype) ~scope:(notation_scope ntype) (notation_body sort ntype) in
   pure @@ List.map gen_notation notations
 
-let gen_additional () =
+let gen_automation () =
   let* arguments = gen_arguments () in
   let* classes = gen_classes () in
   let* instances = gen_instances () in
@@ -174,8 +230,14 @@ let gen_additional () =
                     ; gen_asimpl
                     ; gen_asimpl_hyp
                     ; gen_auto_case
-                    ; gen_asimpl_star
+                    (* ; gen_asimpl_star *)
                     ; gen_substify
                     ; gen_renamify ] in
+  let tactic_fext_funs = [ gen_asimpl_fext'
+                         ; gen_asimpl_fext
+                         ; gen_asimpl_fext_hyp
+                         ; gen_substify_fext
+                         ; gen_renamify_fext ] in
   let* tactics = a_map (fun f -> f ()) tactic_funs in
-  pure { as_units = classes @ instances @ notations; as_fext_units = proper_instances @ arguments @ tactics }
+  let* tactics_fext = a_map (fun f -> f ()) tactic_fext_funs in
+  pure { as_units = classes @ instances @ notations @ proper_instances @ arguments @ tactics; as_fext_units = arguments @ tactics_fext }

@@ -22,8 +22,8 @@ let get_preambles outfile_basename axioms_separate =
   let base_preamble = Printf.sprintf base_preamble outfile_basename in
   if axioms_separate then
     match !Settings.scope_type with
-    | S.Unscoped -> (unscoped_preamble, unscoped_preamble_axioms ^ base_preamble ^ setoid_preamble)
-    | S.WellScoped -> (scoped_preamble, scoped_preamble_axioms ^ base_preamble ^ setoid_preamble)
+    | S.Unscoped -> (unscoped_preamble ^ setoid_preamble, unscoped_preamble_axioms ^ base_preamble)
+    | S.WellScoped -> (scoped_preamble ^ setoid_preamble, scoped_preamble_axioms ^ base_preamble)
   else
     match !Settings.scope_type with
     | S.Unscoped -> (unscoped_preamble_axioms ^ setoid_preamble, "")
@@ -69,46 +69,48 @@ let genCode components =
   pure { as_units = code; as_fext_units = fext_code }
 
 let genTactics () =
-  let open RWEM.Syntax in
-  let open RWEM in
-  let open AutomationGen in
-  let open GG in
-  let open Termutil in
-  let info = {
-    (* XXX *)
-    asimpl_rewrite_lemmas = ["instId_tm"; "compComp_tm"; "compComp'_tm"; "rinstId_tm"; "compRen_tm";
-                             "compRen'_tm"; "renComp_tm"; "renComp'_tm"; "renRen_tm"; "renRen'_tm";
-                             "varL_tm"; "varLRen_tm" ];
-    (* XXX *)
-    asimpl_cbn_functions = ["subst_tm"; "ren_tm"];
-    (* XXX *)
-    asimpl_unfold_functions = ["up_ren"; "upRen_tm_tm"; "up_tm_tm" ];
-    (* XXX *)
-    substify_lemmas = ["rinstInst_tm"];
-    (* XXX *)
-    auto_unfold_functions = ["subst1"; "Subst1"; "ids"; "Var"; "ren1"; "Ren1"; "Subst_tm"; "Ren_tm"; "VarInstance_tm"];
-    arguments = [];
-    (* XXX *)
-    classes = [ Up "", "tm" ];
-    proper_instances = [];
-    (* XXX *)
-    instances = [ Subst 1, "tm", []
-                ; Ren 1, "tm", []
-                ; Var, "tm", []
-                ; Up "tm", "tm", [] ];
-    (* XXX *)
-    notations = [ VarConstr, "tm"
-                ; VarInst, "tm"
-                ; Var, "tm"
-                ; Up, "tm"
-                ; UpInst "tm", "tm"
-                ; SubstApply [ "tm" ], "tm"
-                ; Subst [ "tm" ], "tm"
-                ; RenApply [ "tm" ], "tm"
-                ; Ren [ "tm" ], "tm" ];
-  } in
+  (* let open RWEM.Syntax in
+   * let open RWEM in
+   * let open AutomationGen in
+   * let open GG in
+   * let open Termutil in
+   * let info = {
+   *   asimpl_rewrite_no_fext = ["rinstId_tm'"; "instId_tm'"; "varL_tm'"; "varLRen_tm'"];
+   *   (\* XXX *\)
+   *   asimpl_rewrite_fext = ["compComp'_tm"; "compRen'_tm"; "renComp'_tm"; "renRen'_tm";
+   *                          "rinstId_tm"; "instId_tm"; "varL_tm"; "varLRen_tm" ];
+   *   asimpl_rewrite_base = ["compComp_tm"; "compRen_tm";"renComp_tm"; "renRen_tm"; ];
+   *   (\* XXX *\)
+   *   asimpl_cbn_functions = ["subst_tm"; "ren_tm"];
+   *   (\* XXX *\)
+   *   asimpl_unfold_functions = ["up_ren"; "upRen_tm_tm"; "up_tm_tm" ];
+   *   substify_lemmas_fext = ["rinstInst_tm"];
+   *   (\* XXX *\)
+   *   substify_lemmas = ["rinstInst_tm'"];
+   *   (\* XXX *\)
+   *   auto_unfold_functions = ["subst1"; "Subst1"; "ids"; "Var"; "ren1"; "Ren1"; "Subst_tm"; "Ren_tm"; "VarInstance_tm"];
+   *   arguments = [];
+   *   (\* XXX *\)
+   *   classes = [ Up "", "tm" ];
+   *   proper_instances = [];
+   *   (\* XXX *\)
+   *   instances = [ Subst 1, "tm", []
+   *               ; Ren 1, "tm", []
+   *               ; Var, "tm", []
+   *               ; Up "tm", "tm", [] ];
+   *   (\* XXX *\)
+   *   notations = [ VarConstr, "tm"
+   *               ; VarInst, "tm"
+   *               ; Var, "tm"
+   *               ; Up, "tm"
+   *               ; UpInst "tm", "tm"
+   *               ; SubstApply [ "tm" ], "tm"
+   *               ; Subst [ "tm" ], "tm"
+   *               ; RenApply [ "tm" ], "tm"
+   *               ; Ren [ "tm" ], "tm" ];
+   * } in *)
   (* let* () = put info in *)
-  AutomationGenerator.gen_additional ()
+  AutomationGenerator.gen_automation ()
 
 let make_file preamble code tactics =
   let pp_code = VG.pr_vernac_units code in
@@ -122,10 +124,13 @@ let genFile outfile_basename axioms_separate =
   let open RWEM in
   let open VG in
   let* components = getComponents in
+  (* TODO accidentally put the hack args above the call to genCode which does not work b/c the state is not set. Another point why losing referential transparency sucks *)
   let* { as_units = code; as_fext_units = fext_code } = genCode components in
+  (* HACK clear implicit arguments so that the fext code works. Either I do this or I will have to use @ in the code *)
+  let* hack_args = AutomationGenerator.gen_arguments_clear () in
   let* { as_units = automation; as_fext_units = fext_automation } = genTactics () in
   let preamble, preamble_axioms = get_preambles outfile_basename axioms_separate in
-  pure (make_file preamble code automation, make_file preamble_axioms fext_code fext_automation)
+  pure (make_file preamble code automation, make_file preamble_axioms (hack_args @ fext_code) fext_automation)
 
 (** Run the computation constructed by genFile *)
 let run_gen_code hsig outfile axioms_separate = RWEM.rwe_run (genFile outfile axioms_separate) hsig AG.initial
