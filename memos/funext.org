@@ -74,6 +74,8 @@ This works already pretty well for goals involving an equation. However, this me
 This is because in these cases, rewriting with ext_tm results in a goal of the form `s[f] = ?e` and normal rewriting is too naive because it does spurious rewrites on the right with the evar which then results in a non-normal term.
 ** One solution might be to use a technique similar to the `under` tactic (or use the tactic itself)
 https://coq.inria.fr/refman/proof-engine/ssreflect-proof-language.html#coq:tacn.under
+[[file:~/programming/bachelor/autosubst3/case-studies/kathrin/coq-ext/Chapter9/testbench.v][Using the under tactic]] kind of works. Instead of rewriting with the extensionality lemmas, we pass them to under and can then rewrite with our normal lemmas. (under requires ssreflect though so the rewrite is the one from there which is more powerful)
+Under the hood the under tatic seems to use a generic relation which wraps the relation in the conclusion, i.e. `s[f] = x` turns into `Under_rel eq (s[f]) x` and then probably uses some kind of morphism so that any rewrite we do only applies to the left-hand side.
 ** Another might be to use the fast funext based asimpl
 We could use it purely to compute the normal form `t` of a term `s` and then assert the equation `s = t` which is then provable by the non-funext asimpl.
 We would need to take special care that the funext asimpl never actually appears in the proof term.
