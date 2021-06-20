@@ -1,0 +1,78 @@
+#+Title Generating Coq Code in OCaml
+
+This memo is concerned with how to use the Coq implementation as a library in OCaml in order to construct and pretty-print Coq terms for later processing by the Coq compiler.
+
+* What kind of terms do we want to produce
+Autosubst generates inductive types, fixpoint definitions, lemmas and Ltac definitions and various Coq vernacular commands. All lemmas are proved with terms of the appropriate type, so Gallina terms.
+As such we want to construct
+- Gallina terms consisting of the basic terms of a type theory like dependent products, applications, etc.
+- Ltac terms consisting of calling primitive tactics like "rewrite" and sequencing and alternation of tactics etc.
+- Vernacular terms consisting of keywords like "Definition" and "Ltac" and terms of the previous two bullet points
+* Which AST do we use for Gallina terms
+There is eronstr (and constr with the same implementation but different interface), glob_constr and constr_expr.
+For the OCaml implementation of Autosubst we went with constr_expr because it's the furthest removed from the kernel. The reasoning is that Coq parses what the user types is parsed into constr_expr, then translates to glob_constr and then to econstr to pass to the kernel. Afterwards, to show the result to the user the opposite translations are done and the constr_expr is printed.
+Comparing constr_expr and econstr (glob_term seems the least useful since it's in the middle and combines usability disadvantages of both)
+The major difference is in ease of construction and printing. Constr_expr can directly be printed whereas econstr first needs to be translated to constr_expr. During this translation, Coq makes sure that all referenced objects (like inductive types and their constructors) are defined in the environment. This is somewhat problematic as we would have to register everything we want to use (our own inductive types and things like `eq`) in the environment.
+Also, constr_expr has some syntactic differences to the other ASTs that make it easier to construct like uncurried products and it uses strings variables, whereas econstr uses curried products and deBruijn indices.
+It might be possible to have a running Coq instance in the background whit loaded stdlib (see discussion in the notation section below) and it should give us a static guarantee that the generated code is parseable (albeit not typeable but if we have a running Coq instance we could also typecheck everything). But atm we really only wanted to construct an AST and print it so we went with constr_expr.
+** important files in the Coq library
+- interp/constrexpr.ml
+- interp/constrexpr_ops.ml
+- engine/econstr.ml
+- printing/ppconstr.ml
+** How to construct a term
+The constr_expr nodes are self-explanatory. Though the AST contains a lot of boilerplate which is why we had to write smart constructors for the subset of terms we want to construct. They can be found in lib/gallinaGen.ml
+One confusing thing is the abundance of related but slightly different types for strings in the AST (as shown in the smart constructors name_, qualid_, ref_, name_id_, etc.)
+* Which AST do we use for Tactics
+We can use the AST provided by the Ltac plugin which is the first step of parsing like constr_expr and very easy to understand if one is already familliar with the standard Coq tactics. The internal representation is another possibility but more low-level. We went with the representation from the Ltac plugin because it's easier to construct.
+** Important files in the Coq library
+- plugins/ltac/tacexpr.ml
+- plugins/ltac/pptactic.ml
+- tacics/tactics.ml
+* How to construct and print Vernacular Commands
+For that there is only one AST so the choice is clear. For most commands it's easy to construct the corresponding terms as the constructors take constr_expr for Gallina terms.
+Exceptions are the VernacExactProof because it is printed like
+#+begin_src
+Lemma foo : bar.
+Proof (baz).
+#+end_src
+Which is valid way to consturct proofs with terms directly, but is unsupported by proof general so we opted to special case it and print
+#+begin_src
+Lemma foo : bar.
+Proof.
+  exact (baz).
+#+end_src
+instead.
+Further exceptions are the `Ltac _ := _` and `Tactic Notation _ := _` commands because they are defined as extensions and are thus not part of the primitive AST in vernacexpr.ml. So we defined our own ad-hoc AST wrapping the normal vernac_expr AST for these two cases (in lib/vernacGen.ml).
+Also, initially we did not find the printing for typeclasses and used structures + the "Existing Instance" command instead but apparently typeclasses are also printed with the command for inductive types.
+** Important files in the Coq library
+- vernac/ppvernac.ml
+- vernac/vernacexpr.ml
+** TODO report wrong printing of "Existing Instance" command.
+Coq parses this "Existing Instance foo bar" but prints this "Existing Instance foo, bar".
+The fix would be one line. How do I make pull requests?
+* Print terms that contain notations
+If we build a term like (eq 1 2) as a constr_expr and print it, it will literally print "eq 1 2". If instead we want to use the more familliar "1 = 2" we need to construct a CNotation node explicitly.
+This is complicated a bit by the fact that we use an empty environment, so notations like "->" for dependent products without a dependency and "=" for equal are not defined.
+In order to use a CNotation node we first need to register the notations in the environment.
+One way might be to load the whole standard library of Coq but it's not clear to us how to trigger this and someone on Zulip said we probably don't want to work with Coq sessions in the code as it gets very hairy. One alternative might be something like SerAPI, though.
+** How can we find out what the CNotation nodes look like
+We know the type definition from the source code but if we want to construct these values we should see examples. In the end we did the following (based on info from https://github.com/coq/coq/blob/master/dev/doc/debugging.md)
+1. Start a Coq toplevel and drop to OCaml toplevel.
+2. Externalize eq to test that the stdlib is loaded
+3. Externalize econstr representing "1 = 1" and "nat -> nat". Since externalization (econstr -> constr_expr) analyzes the econstr and constructs a matching CNotation node as appropriate we can then see what the CNotation nodes look like.
+It turns out that in a CNotation node the notation string needs underscores in place of the variables.
+Below is example code how to add a notation to the environment and then construct a term that would print "a = b".
+#+begin_src ocaml
+let ref_ s = Constrexpr_ops.mkRefC (Libnames.qualid_of_string s);; (* simple way to construct terms from strings *)
+let eqc = Constrexpr_ops.mkAppC (ref_ "x", [ ref_ "y" ]);; (* what Coq thinks "x = y" stands for in our case. We never actually use it because our notations are only used for printing, not parsing so we can use any term that contains the variables "x" and "y". *)
+Notation.declare_scope "autosubst_scope";;
+Metasyntax.add_notation ~local:false None (Global.env()) eqc (CAst.make "x = y", [Vernacexpr.SetLevel 70]) (Some "autosubst_scope");; (* to add a notation most arguments are self explanatory (None says it's not deprecated) and correspond to what you would enter in Coq *)
+let n = CAst.make (Constrexpr.CNotation (Some (Constrexpr.LastLonelyNotation), (Constrexpr.InConstrEntry, "_ = _"), ([ref_ "b"; ref_ "a"], [], [], [])));; (* construct the term itself *)
+print_endline (Pp.string_of_ppcmds (Ppconstr.pr_lconstr_expr env sigma n));;
+#+end_src
+It's a bit unfortunate that the information contained in the CNotation node itself is not enough for the pretty printer so we first need to call add_notation. But it's still very convenient that we can use any string with underscores and Coq puts the printed terms in the correct places.
+*** TODO maybe find out why sometimes it prints some formatting code (XML?) additional to "a = b"
+When executing above code in utop, the printed string might also be
+"<constr.variable>a</constr.variable><constr.notation> =</constr.notation> <constr.variable>b</constr.variable>"
+Though when executing the program this has never happened.
