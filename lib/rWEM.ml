@@ -176,5 +176,5 @@ let rec hasRenamings sort =
   (* TODO that is not structural recursion. But it probably terminates. We might have to additionally keep track of all previously visited components. *)
   let* bs = a_map hasRenamings occ in
   let xs_bb = list_intersection component boundBinders |> list_empty |> not in
-  let bs' = list_any id bs in
+  let bs' = list_any bs in
   pure (xs_bb || bs')

@@ -26,10 +26,9 @@ let list_nempty = function
  *   Option.get @@
  *   List.mapi (fun i y -> if x = y then Some i else None) xs *)
 
-let list_any = List.exists
-
-let list_none f xs =
-  list_any f xs |> not
+let rec list_any = function
+  | [] -> false
+  | b :: bs -> b || list_any bs
 
 let cartesian_product xs ys =
   List.fold_left (fun c x ->
