@@ -498,11 +498,28 @@ Proof.
        (* TODO a.d. in this case substify should use setoid_rewrite instead of normal rewrite *)
       unfold funcomp. setoid_rewrite rinstInst'_ty. eauto.
     (* a.d. TODO the following only works with fext asimpl *)
-    + asimpl_fext. eapply IHty2; eauto; asimpl_fext.
+    + asimpl. eapply IHty2; eauto.
+      (* auto_unfold. *)
+      (* unfold upRen_p.  *)
+      (* Unset Printing Notations. *)
+      (* this setoid rewrite unfold scons_p but I don't know why.
+       the varL'_ty lemma is an equality with subst_ty and scons_p does not use subst_ty in its definition *)
+      (* the problem seems to be that varL'_ty holds directly by voncertibility and the setoid rewrite also evaluates the lhs of varL'_ty which is then just subst_ty x = subst_ty x.
+       Although I still don't understand where tha actual rewrite then happens b/c subst_ty does not appear in the goal.
+       But we can fix this behavior by making either scons_p or subst_ty opaque for setoid rewriting. *)
+      (* Hint Opaque scons_p : rewrite. *)
+      Hint Opaque subst_ty : rewrite.
+      (* Print HintDb rewrite. *)
+      Fail setoid_rewrite varL'_ty.
+      Info 2 asimpl.
       * intros z.
         (* adrian: had to add the following line to make it compile.*)
         unfold dctx in Gamma, Gamma0. unfold upRen_p.
-        asimpl_fext. f_equal. fext. eauto.
+        (* https://coq.zulipchat.com/#narrow/stream/237656-Coq-devs.20.26.20plugin.20devs/topic/Change.20of.20case.20representation/near/220411671 *)
+        Info 3 asimpl_fext.
+        (* TODO actually I did not have to use fext here since the goal compates the output of scons_p and we have a morphism *)
+        apply scons_p_morphism; easy.
+        (* f_equal. fext. eauto. *)
   - econstructor. eauto. eapply sub_weak; eauto.
 Qed.
 
