@@ -11,8 +11,6 @@ open Util
 module L = Language
 module V = Variables
 
-open RWEM.Syntax
-open RWEM
 open CoqSyntax
 open Tactics
 open CoqNames
@@ -20,6 +18,8 @@ open GallinaGen
 open VernacGen
 open Termutil
 open AutomationGen
+open RWEM.Syntax
+open RWEM
 
 let createBinders = List.map (fun p -> binder1_ ~btype:(ref_ (snd p)) (fst p))
 
@@ -116,14 +116,14 @@ let traversal
       let* var_body = var_case_body (ref_ s0) in
       pure [ branch_ (var_ sort) (underscore_pattern @ [s0]) var_body ]
     ) in
-  (* computes the result for a constructor *)
+  (* computes the match branch for one constructor *)
   let mk_constr_pattern { cparameters; cname; cpositions; } =
     let ss = getPattern "s" cpositions in
-    let rec arg_map bs arg = match arg with
+    let rec arg_map bs head = match head with
       | Atom y ->
         let* b = hasArgs y in
-        let* arg = a_map (castUpSubst sort bs y) args in
-        pure @@ if b then app_ref (name y) (List.(concat (map sty_terms arg)))
+        let* args = a_map (castUpSubst sort bs y) args in
+        pure @@ if b then app_ref (name y) (List.(concat (map sty_terms args)))
         else abs_ref "x" (no_args (ref_ "x"))
       | FunApp (f, p, xs) ->
         let* res = a_map (arg_map bs) xs in
@@ -132,6 +132,7 @@ let traversal
                                     (arg_map binders head) (pure @@ [ref_ s]))
         ss cpositions in
     pure @@ branch_ cname (underscore_pattern @ List.map fst cparameters @ ss)
+      (* TODO remove first parameter from sem *)
       (sem (List.map fst cparameters) cname positions) in
   let* constr_pattern = a_map mk_constr_pattern cs in
   let t = match_ (ref_ s) (var_pattern @ constr_pattern) in
@@ -141,7 +142,7 @@ let traversal
 let genUpRen (binder, sort) =
   let* v = V.genVariables sort [ `M; `N; `XI (`M, `N) ] in
   let [@warning "-8"] [ m; n; xi ], [], scopeBinders = v in
-  (* register upRen for unfolding *)
+  (** register upRen for unfolding *)
   let* () = tell_unfold_function (upRen_ sort binder) in
   let (_, bpms) = bparameters binder in
   let m' = succ_ m sort binder in
@@ -177,15 +178,20 @@ let genRenamings sorts =
   let* is_rec = isRecursive sorts in
   pure @@ fixpoint_ ~is_rec fs
 
-let zero_ sort binder ms =
-  match binder with
-  | L.Single y -> app1_ (app_var_constr sort ms) var_zero_
-  | L.BinderList (p, y) -> app_ref "zero_p" [ref_ p] >>> app_var_constr sort ms
-
 let mk_scons sort binder sigma ms =
   match binder with
-  | L.Single y -> if sort = y then app_ cons_ [zero_ sort (Single y) ms; sigma] else sigma
-  | L.BinderList (p, y) -> if sort = y then app_ref "scons_p" [ref_ p; zero_ sort (BinderList (p, y)) ms; sigma] else sigma
+  | L.Single y ->
+    if sort = y
+    then
+      let zero_ = app1_ (app_var_constr sort ms) var_zero_ in
+      app_ cons_ [zero_; sigma]
+    else sigma
+  | L.BinderList (p, y) ->
+    if sort = y
+    then
+      let zero_ = app_ref "zero_p" [ref_ p] >>> app_var_constr sort ms in
+      app_ref "scons_p" [ref_ p; zero_; sigma]
+    else sigma
 
 let upSubstT binder sort ms sigma =
   let* pat = patternSId sort binder in
@@ -300,9 +306,8 @@ let genUpExtRen (binder, sort) =
 let genExtRen sort =
   let* v = V.genVariables sort [ `MS; `NS; `XIS (`MS, `NS); `ZETAS (`MS, `NS) ] in
   let [@warning "-8"] [], [ ms; ns; xis; zetas ], scopeBinders = v in
-  let* substSorts = substOf sort in
   let* (eqs, beqs) = genEqs sort "Eq" (sty_terms xis) (sty_terms zetas)
-      (fun x y s -> pure @@ app_ref (upExtRen_ x y) [underscore_; underscore_; s]) in
+      (fun sort binder s -> pure @@ app_ref (upExtRen_ sort binder) [underscore_; underscore_; s]) in
   let ret s = eq_
       (app_fix (ren_ sort) ~scopes:[xis] [s])
       (app_fix (ren_ sort) ~scopes:[zetas] [s]) in
@@ -336,7 +341,6 @@ let genUpExt (binder, sort) =
 let genExt sort =
   let* v = V.genVariables sort [ `MS; `NS; `SIGMAS (`MS, `NS); `TAUS (`MS, `NS) ] in
   let [@warning "-8"] [], [ ms; ns; sigmas; taus ], scopeBinders = v in
-  let* substSorts = substOf sort in
   let* (eqs, beqs) = genEqs sort "Eq" (sty_terms sigmas) (sty_terms taus)
       (fun x y s -> pure @@ app_ref (upExt_ x y) [underscore_; underscore_; s]) in
   let ret s = eq_
@@ -963,7 +967,7 @@ let genLemmaCompSubstSubst sort =
  ** aggregates all the returned vernacular units. *)
 let gen_code sorts upList =
   (* GENERATE INDUCTIVE TYPES *)
-  let* def_sorts = a_filter definable sorts in
+  let* def_sorts = a_filter isDefinable sorts in
   let* types = a_map genBody def_sorts in
   let inductive = match types with
     | [] -> Vernac []

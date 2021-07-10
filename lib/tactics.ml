@@ -34,7 +34,7 @@ let renT m n =
  ** fin m -> tm nty nvl *)
 let substT m ns sort =
   match !Settings.scope_type with
-  | S.Unscoped -> arr1_ nat_ (sortType sort ns)
+  | S.Unscoped -> arr1_ nat_ (ref_ sort)
   | S.WellScoped -> arr1_ (fin_ m) (sortType sort ns)
 
 (** Create an extensional equivalence between unary functions s & t
@@ -47,6 +47,7 @@ let equiv_ s t =
 (** For a given sort and some SubstTy ts return the component of ts that has the same name as the sort.
  ** E.g. for sort vl and ts being a list of renamings [ xity; xivl ] return xivl
  ** *)
+(* TODO I think it would be easier if ts was already a list of pairs where the first component is the corresponding substSort. I would have to change all the genRen/genSubst/... functions for that but then here it would just be a call to AssocList.find *)
 let toVar sort ts =
   let* substSorts = substOf sort in
   let zs = List.filter (fun (substSort, _) -> sort = substSort) (list_zip substSorts (sty_terms ts)) in
@@ -84,13 +85,14 @@ let up' x f n b =
   let* xs = substOf x in
   a_map (fun (p, n_i) -> f p b n_i) (list_zip xs n)
 
+(* this (and the up') is finally responsible for calling the function contained in the SubstEq *)
 let upEq x bs xs f = m_fold (up' x f) xs bs
 
 let upSubst x bs = function
   | SubstScope (ns, xs) -> map (fun xs -> SubstScope (ns, xs)) (upScope x bs xs)
   | SubstRen xs -> map (fun xs -> SubstRen xs) (upRen x bs xs)
   | SubstSubst xs -> map (fun xs -> SubstSubst xs) (upSubstS x bs xs)
-  | SubstEq (xs, f) -> map2 (fun xs f -> SubstEq (xs, f)) (upEq x bs xs f) (pure f)
+  | SubstEq (xs, f) -> map (fun xs -> SubstEq (xs, f)) (upEq x bs xs f)
 
 let cast x y xs =
   let* arg_x = substOf x in
@@ -104,7 +106,7 @@ let castSubst x y = function
   | SubstScope (ns, xs) -> map (fun xs -> SubstScope (ns, xs)) (cast x y xs)
   | SubstRen xs -> map (fun xs -> SubstRen xs) (cast x y xs)
   | SubstSubst xs -> map (fun xs -> SubstSubst xs) (cast x y xs)
-  | SubstEq (xs, f) -> map2 (fun xs f -> SubstEq (xs, f)) (cast x y xs) (pure f)
+  | SubstEq (xs, f) -> map (fun xs -> SubstEq (xs, f)) (cast x y xs)
 
 let castUpSubst sort bs y arg =
   let* arg' = castSubst sort y arg in
@@ -209,6 +211,7 @@ let patternSId sort binder =
   let* hasRen = hasRenamings sort in
   let shift y = if hasRen
     then shift_
+      (* TODO remove app_var_constr and the SubstScope since I'm calling sty_terms right away *)
     else (shift_ >>> app_var_constr y (SubstScope (List.map (const "_") substSorts, List.map (const underscore_) substSorts))) in
   let shiftp p y = if hasRen
     then app_ref shift_p_ [ref_ p]

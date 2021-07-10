@@ -114,7 +114,7 @@ let isOpen sort =
   pure @@ L.SSet.mem sort opens
 
 (** A sort is definable if it has any constructor *)
-let definable sort =
+let isDefinable sort =
   let* b = isOpen sort in
   let* cs = constructors sort in
   pure (b || not (list_empty cs))
@@ -142,7 +142,7 @@ let getComponent s =
       if mem s component then Some component else None)
       components)
 
-(** Check if the arguments of the first sort of a components and the component itself overlaps
+(** Check if the arguments of the first sort of a component and the component itself overlaps
  ** We can only check the first element of the component because they all have the same
  ** substitution vector. *)
 let isRecursive xs =
