@@ -51,40 +51,22 @@ let matchFin_ s f b =
     match_ s [ branch_ "Some" ["fin_n"] (f (ref_ "fin_n"))
              ; branch_ "None" [] b ]
 
-let app_sort cname scope =
-  match !Settings.scope_type with
-  | S.Unscoped -> ref_ cname
-  | S.WellScoped -> app_ref cname (sty_terms scope)
-let app_constr cname scope rest =
-  let args = match !Settings.scope_type with
-    | S.Unscoped -> rest
-    | S.WellScoped -> (sty_terms scope) @ rest in
-  if list_empty args
-  then ref_ cname
-  else app_ref cname args
+let app_sort cname scope = app_ref cname (ss_terms scope)
+let app_constr cname scope rest = app_ref cname (ss_terms scope @ rest)
 let app_var_constr sort scope = app_constr (var_ sort) scope []
-let filter_scope_vars = List.filter (function
-    | SubstScope _ -> (match !Settings.scope_type with
-        | S.Unscoped -> false
-        | S.WellScoped -> true)
-    | _ -> true)
 (* TODO document. seems to build an application that uses the scope variabes from scoped. But in most uses in the code this seem sunecessary *)
-let app_fix ?expl cname ?(scopes=[]) rest =
+let app_fix ?expl cname ?(sscopes=[]) ?(scopes=[]) rest =
+  let sscope_ts = List.(sscopes
+                        |> map ss_terms
+                        |> concat) in
   let scope_ts = List.(scopes
-                       |> filter_scope_vars
                        |> map sty_terms
                        |> concat) in
-  app_ref ?expl cname (scope_ts @ rest)
-let mk_underscore_pattern scope =
-  match !Settings.scope_type with
-  | S.Unscoped -> []
-  | S.WellScoped -> List.map (const "_") (sty_terms scope)
+  app_ref ?expl cname (sscope_ts @ scope_ts @ rest)
+let mk_underscore_pattern scope = List.map (const "_") (ss_terms scope)
 
-let sortType x ns =
-  let args = match !Settings.scope_type with
-    | S.Unscoped -> []
-    | S.WellScoped -> sty_terms ns in
-  app_ (ref_ x) args
+(* this is the same as app_sort *)
+let sort_type x ns = app_ (ref_ x) (ss_terms ns)
 
 let (==>) s t = List.fold_right (fun s t -> arr1_ s t) s t
 

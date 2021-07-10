@@ -163,14 +163,14 @@ let gen_proper_instances () =
   let* proper_instances = gets proper_instances in
   let gen_instance (sort, fun_sort, ext_sort) =
     let* v = Variables.genVariables sort [ `MS; `NS ] in
-    let [@warning "-8"] [], [ ms; ns ], scopeBinders = v in
+    let [@warning "-8"] [], [ ms; ns ], [], scopeBinders = v in
     let* substSorts = substOf sort in
     let iname = sep (fun_sort) "morphism" in
     let signature = List.fold_right (fun _ signature ->
         app_ref "respectful" [ app_ref "pointwise_relation" [ underscore_; ref_ "eq" ]
                              ; signature ])
         substSorts (app_ref "respectful" [ ref_ "eq"; ref_ "eq" ]) in
-    let itype = app_ref "Proper" [ signature; app_fix ~expl:true (fun_sort) ~scopes:[ ms; ns ] [] ] in
+    let itype = app_ref "Proper" [ signature; app_fix ~expl:true (fun_sort) ~sscopes:[ ms; ns ] [] ] in
     (* a.d. TODO right now this is the easiest way to generate all the names. all the other functions liek genRen are too generalized and we can't use the binders they return. So we generate them again fresh *)
     let fs = mk_refs @@ List.map (sep "f") substSorts in
     let gs = mk_refs @@ List.map (sep "g") substSorts in

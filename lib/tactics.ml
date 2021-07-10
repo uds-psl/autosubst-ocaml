@@ -19,23 +19,21 @@ module S = Settings
 
 (** Create a variable index either of type nat or a finite type *)
 let varT m =
-  match !Settings.scope_type with
+  match !S.scope_type with
   | S.Unscoped -> nat_
   | S.WellScoped -> fin_ m
 
 (** For a given sort create a renaming type
  ** fin m -> fin n *)
-let renT m n =
-  match !Settings.scope_type with
+let renT m n = match !S.scope_type with
   | S.Unscoped -> arr1_ nat_ nat_
   | S.WellScoped -> arr1_ (fin_ m) (fin_ n)
 
 (** For a given sort create a substitution type.
  ** fin m -> tm nty nvl *)
-let substT m ns sort =
-  match !Settings.scope_type with
+let substT m ns sort = match !S.scope_type with
   | S.Unscoped -> arr1_ nat_ (ref_ sort)
-  | S.WellScoped -> arr1_ (fin_ m) (sortType sort ns)
+  | S.WellScoped -> arr1_ (fin_ m) (sort_type sort ns)
 
 (** Create an extensional equivalence between unary functions s & t
  ** forall x, s x = t x *)
@@ -51,6 +49,13 @@ let equiv_ s t =
 let toVar sort ts =
   let* substSorts = substOf sort in
   let zs = List.filter (fun (substSort, _) -> sort = substSort) (list_zip substSorts (sty_terms ts)) in
+  if list_empty zs
+  then error "toVar was called with incompatible sort and substitution vector. The substitution vector must contain the sort!"
+  else List.hd zs |> snd |> pure
+
+let toVarScope sort ts =
+  let* substSorts = substOf sort in
+  let zs = List.filter (fun (substSort, _) -> sort = substSort) (list_zip substSorts (ss_terms_all ts)) in
   if list_empty zs
   then error "toVar was called with incompatible sort and substitution vector. The substitution vector must contain the sort!"
   else List.hd zs |> snd |> pure
@@ -88,8 +93,9 @@ let up' x f n b =
 (* this (and the up') is finally responsible for calling the function contained in the SubstEq *)
 let upEq x bs xs f = m_fold (up' x f) xs bs
 
-let upSubst x bs = function
+let upSubstScope x bs = function
   | SubstScope (ns, xs) -> map (fun xs -> SubstScope (ns, xs)) (upScope x bs xs)
+let upSubst x bs = function
   | SubstRen xs -> map (fun xs -> SubstRen xs) (upRen x bs xs)
   | SubstSubst xs -> map (fun xs -> SubstSubst xs) (upSubstS x bs xs)
   | SubstEq (xs, f) -> map (fun xs -> SubstEq (xs, f)) (upEq x bs xs f)
@@ -102,12 +108,16 @@ let cast x y xs =
       (list_zip arg_x xs) [])
 
 (* TODO documentation. iirc it narrows a substitution vector *)
-let castSubst x y = function
+let castSubstScope x y = function
   | SubstScope (ns, xs) -> map (fun xs -> SubstScope (ns, xs)) (cast x y xs)
+let castSubst x y = function
   | SubstRen xs -> map (fun xs -> SubstRen xs) (cast x y xs)
   | SubstSubst xs -> map (fun xs -> SubstSubst xs) (cast x y xs)
   | SubstEq (xs, f) -> map (fun xs -> SubstEq (xs, f)) (cast x y xs)
 
+let castUpSubstScope sort bs y arg =
+  let* arg' = castSubstScope sort y arg in
+  upSubstScope y bs arg'
 let castUpSubst sort bs y arg =
   let* arg' = castSubst sort y arg in
   upSubst y bs arg'
@@ -117,7 +127,7 @@ let castUpSubst sort bs y arg =
  ** Example: { m : nat } *)
 let introScopeVarS name =
   let name = VarState.tfresh name in
-  let binders = match !Settings.scope_type with
+  let binders = match !S.scope_type with
     | S.Unscoped -> []
     | S.WellScoped -> [binder1_ ~implicit:true ~btype:nat_ name] in
   (ref_ name, binders)
@@ -155,7 +165,7 @@ let introScopeVar name sort =
 let genRen sort name (ms, ns) =
   let* substSorts = substOf sort in
   let names = List.map (sep name) substSorts in
-  let types = List.map2 renT (sty_terms ms) (sty_terms ns) in
+  let types = List.map2 renT (ss_terms_all ms) (ss_terms_all ns) in
   pure @@ (
     SubstRen (mk_refs names),
     List.map2 (fun x t -> binder1_ ~btype:t x) names types
@@ -169,9 +179,9 @@ let genSubst sort name (ms, ns) =
   let names = List.map (sep name) substSorts in
   let* types = a_map2_exn (fun substSort m ->
       (* Here we filter the vector ns to include only the substitution sorts relevant for substSort *)
-      let* ns' = castSubst sort substSort ns in
+      let* ns' = castSubstScope sort substSort ns in
       pure @@ substT m ns' substSort)
-      substSorts (sty_terms ms) in
+      substSorts (ss_terms_all ms) in
   pure @@ (
     SubstSubst (mk_refs names),
     List.map2 (fun n t -> binder1_ ~btype:t n) names types
@@ -199,10 +209,11 @@ let genEqs sort name sigmas taus f =
  ** If we create well scoped code fin will be indexed by the element of the scope indices
  ** corresponding to the sort.
  ** For sort vl and ns = [nty; nvl], create fin nvl *)
+  (* TODO toVar should work on SubstTy and SubstScope. So is should be part of a module *)
 let gen_var_arg sort ns =
-  match !Settings.scope_type with
+  match !S.scope_type with
   | S.Unscoped -> pure @@ nat_
-  | S.WellScoped -> map fin_ (toVar sort ns)
+  | S.WellScoped -> map fin_ (toVarScope sort ns)
 
 (** Construction of patterns, needed for lifting -- yields a fitting pattern of S and id corresponding to the base sort and the binder
  ** TODO example *)
@@ -238,7 +249,7 @@ let patternSIdNoRen sort binder =
 let mk_var_apps sort ms =
   let* substSorts = substOf sort in
   a_map (fun substSort ->
-      map2 app_var_constr (pure substSort) (castSubst sort substSort ms))
+      map2 app_var_constr (pure substSort) (castSubstScope sort substSort ms))
     substSorts
 
 (** Convert a renaming to a substitution by postcomposing it with the variable constructor
@@ -246,7 +257,7 @@ let mk_var_apps sort ms =
 let substify sort ns xis =
   let* substSorts = substOf sort in
   a_map2_exn (fun substSort xi ->
-      let* ns' = castSubst sort substSort ns in
+      let* ns' = castSubstScope sort substSort ns in
       pure (xi >>> app_var_constr substSort ns'))
     substSorts (sty_terms xis)
 

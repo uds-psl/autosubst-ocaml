@@ -21,11 +21,11 @@ let setoid_preamble = "Require Import Setoid Morphisms Relation_Definitions.\n\n
 let get_preambles outfile_basename axioms_separate =
   let base_preamble = Printf.sprintf base_preamble outfile_basename in
   if axioms_separate then
-    match !Settings.scope_type with
+    match !S.scope_type with
     | S.Unscoped -> (unscoped_preamble ^ setoid_preamble, unscoped_preamble_axioms ^ base_preamble)
     | S.WellScoped -> (scoped_preamble ^ setoid_preamble, scoped_preamble_axioms ^ base_preamble)
   else
-    match !Settings.scope_type with
+    match !S.scope_type with
     | S.Unscoped -> (unscoped_preamble_axioms ^ setoid_preamble, "")
     | S.WellScoped -> (scoped_preamble_axioms ^ setoid_preamble, "")
 
@@ -36,8 +36,7 @@ let getUps component =
   let cart = cartesian_product component component in
   let singles = map (fun (x, y) -> (L.Single x, y)) cart in
   let blists = map (fun (x, y) -> (L.BinderList ("p", x), y)) cart in
-  let scope_type = !Settings.scope_type in
-  match scope_type with
+  match !S.scope_type with
   | S.WellScoped -> List.append singles blists
   | S.Unscoped -> singles
 

@@ -32,6 +32,7 @@ let [@warning "-8"] genVariables sort (var_declarations: vars list) =
   let open RWEM.Syntax in
   let open RWEM in
   let genVariable ((simple_vars : (identifier, constr_expr) AL.t),
+                   (sss: (identifier, CoqSyntax.substScope) AL.t),
                    (stys : (identifier, CoqSyntax.substTy) AL.t),
                    (binders : binder_expr list)) =
     function
@@ -39,42 +40,43 @@ let [@warning "-8"] genVariables sort (var_declarations: vars list) =
       let sn = showVar s in
       let (m, bm) = introScopeVarS sn in
       (* let () = print_endline ("putting in (" ^ sn ^ "->" ^ (show_term m) ^ ")") in *)
-      pure (AL.insert sn m simple_vars, stys, binders @ bm)
+      pure (AL.insert sn m simple_vars, sss, stys, binders @ bm)
     | (`KS | `LS | `MS | `NS as s) ->
       let sn = showVar s in
       let* (ms, bms) = introScopeVar sn sort in
       (* let () = print_endline ("putting in (" ^ sn ^ "->" ^ (show_term (TermSubst ms)) ^ ")") in *)
-      pure (simple_vars, AL.insert sn ms stys, binders @ bms)
+      pure (simple_vars, AL.insert sn ms sss, stys, binders @ bms)
     | (`XI (m, n) | `ZETA (m, n) | `RHO (m, n) as s) ->
       let sn = showVar s in
       (* let () = print_endline ("retrieving " ^ (showVar m) ^ " and " ^ showVar n) in *)
       let m = AL.assoc_exn (showVar m) simple_vars in
       let n = AL.assoc_exn (showVar n) simple_vars in
       let (xi, bxi) = genRenS sn (m, n) in
-      pure (AL.insert sn xi simple_vars, stys, binders @ bxi)
+      pure (AL.insert sn xi simple_vars, sss, stys, binders @ bxi)
     | (`XIS (ms, ns) | `ZETAS (ms, ns) | `RHOS (ms, ns) as s) ->
       let sn = showVar s in
       (* let () = print_endline ("retrieving " ^ (showVar ms) ^ " and " ^ showVar ns) in *)
-      let ms = AL.assoc_exn (showVar ms) stys in
-      let ns = AL.assoc_exn (showVar ns) stys in
+      let ms = AL.assoc_exn (showVar ms) sss in
+      let ns = AL.assoc_exn (showVar ns) sss in
       let* (xis, bxis) = genRen sort sn (ms, ns) in
-      pure (simple_vars, AL.insert sn xis stys, binders @ bxis)
+      pure (simple_vars, sss, AL.insert sn xis stys, binders @ bxis)
     | (`SIGMA (m, ns) | `TAU (m, ns) | `THETA (m, ns) as s) ->
       let sn = showVar s in
       (* let () = print_endline ("retrieving " ^ (showVar m) ^ " and " ^ showVar ns) in *)
       let m = AL.assoc_exn (showVar m) simple_vars in
-      let ns = AL.assoc_exn (showVar ns) stys in
+      let ns = AL.assoc_exn (showVar ns) sss in
       let (sigma, bsigma) = genSubstS sn (m, ns) sort in
-      pure (AL.insert sn sigma simple_vars, stys, binders @ bsigma)
+      pure (AL.insert sn sigma simple_vars, sss, stys, binders @ bsigma)
     | (`SIGMAS (ms, ns) | `TAUS (ms, ns) | `THETAS (ms, ns) as s) ->
       let sn = showVar s in
       (* let () = print_endline ("retrieving " ^ (showVar ms) ^ " and " ^ showVar ns) in *)
-      let ms = AL.assoc_exn (showVar ms) stys in
-      let ns = AL.assoc_exn (showVar ns) stys in
+      let ms = AL.assoc_exn (showVar ms) sss in
+      let ns = AL.assoc_exn (showVar ns) sss in
       let* (sigmas, bsigmas) = genSubst sort sn (ms, ns) in
-      pure (simple_vars, AL.insert sn sigmas stys, binders @ bsigmas)
+      pure (simple_vars, sss, AL.insert sn sigmas stys, binders @ bsigmas)
   in
-  let* (simple_vars, stys, binders) = m_fold_left ~f:genVariable ~init:(AL.from_list [], AL.from_list [], []) var_declarations in
+  let* (simple_vars, sss, stys, binders) = m_fold_left ~f:genVariable ~init:(AL.from_list [], AL.from_list [], AL.from_list [], []) var_declarations in
   pure (List.rev_map snd (AL.to_list simple_vars),
+        List.rev_map snd (AL.to_list sss),
         List.rev_map snd (AL.to_list stys),
         binders)

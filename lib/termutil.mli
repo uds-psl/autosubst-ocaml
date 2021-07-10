@@ -33,14 +33,13 @@ val (<<>>) : substTy -> substTy -> constr_expr list
 val repRew : (constr_expr * constr_expr) list -> constr_expr
 val matchFin_ : constr_expr -> (constr_expr -> constr_expr) -> constr_expr -> constr_expr
 
-val app_sort : identifier -> substTy -> constr_expr
-val app_constr : identifier -> substTy -> constr_expr list -> constr_expr
-val app_var_constr : identifier -> substTy -> constr_expr
-val app_fix : ?expl:bool -> identifier -> ?scopes:substTy list -> constr_expr list -> constr_expr
-val mk_underscore_pattern : substTy -> identifier list
-val filter_scope_vars : substTy list -> substTy list
+val app_sort : identifier -> substScope -> constr_expr
+val app_constr : identifier -> substScope -> constr_expr list -> constr_expr
+val app_var_constr : identifier -> substScope -> constr_expr
+val app_fix : ?expl:bool -> identifier -> ?sscopes:substScope list -> ?scopes:substTy list -> constr_expr list -> constr_expr
+val mk_underscore_pattern : substScope -> identifier list
 
-val sortType : identifier -> substTy -> constr_expr
+val sort_type : identifier -> substScope -> constr_expr
 val (==>) : constr_expr list -> constr_expr -> constr_expr
 
 val abs_ref : identifier -> constr_expr -> constr_expr
