@@ -223,12 +223,13 @@ let patternSId sort binder =
   let* hasRen = hasRenamings sort in
   let shift y = if hasRen
     then shift_
-      (* DONE remove app_var_constr and the SubstScope since I'm calling sty_terms right away *)
-    else (shift_ >>> app_ref (var_ y) (List.map (const underscore_) substSorts)) in
+      (* DONE remove app_var_constr and the SubstScope since I'm calling sty_terms right away
+       * no I can't remove it b/c I need the filtering behavior of ss_terms so I need to convert it to a SubstScope *)
+    else (shift_ >>> app_var_constr y (SubstScope (List.map (const "_") substSorts, List.map (const underscore_) substSorts))) in
   let shiftp p y = if hasRen
     then app_ref shift_p_ [ref_ p]
     else app_ref shift_p_ [ref_ p]
-      >>> app_ref (var_ y) (List.map (const underscore_) substSorts) in
+      >>> app_var_constr y (SubstScope (List.map (const "_") substSorts, List.map (const underscore_) substSorts)) in
   up sort (fun y b _ -> match b with
       | L.Single bsort -> if y = bsort then shift y else id_
       | L.BinderList (p, bsort) -> if y = bsort then shiftp p y else id_)
