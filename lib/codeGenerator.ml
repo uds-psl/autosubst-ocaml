@@ -425,7 +425,8 @@ let genUpRenSubst (binder, sort) =
   let [@warning "-8"] [ k; l; xi; tau; theta ], [ ms ], [], scopeBinders = v in
   let (eq, beq) = genEq "Eq" (xi >>> tau) theta in
   let n = VarState.tfresh "n" in
-  let* ms = upSubstScope sort [binder] ms in
+  (* TODO is this really not used? *)
+  (* let* ms = upSubstScope sort [binder] ms in *)
   let (pms, bpms) = binvparameters binder in
   let ret = equiv_
       (app_ref (upRen_ sort binder) (pms @ [xi])
@@ -471,6 +472,7 @@ let genUpSubstRen (binder, sort) =
   let n = VarState.tfresh "n" in
   let* ms = upSubstScope sort [binder] ms in
   let* substSorts = substOf sort in
+  (* TODO document *)
   let* zetas' = upSubst sort [binder] zetas in
   let* pat = patternSId sort binder in
   let (pms, bpms) = binvparameters binder in
@@ -479,6 +481,7 @@ let genUpSubstRen (binder, sort) =
        >>> app_ref (ren_ sort) (sty_terms zetas'))
       (app_ref (up_ sort binder) (pms @ [theta])) in
   let* shift = patternSId sort binder in
+  (* TODO refactor these a bit *)
   let t n = eqTrans_
       (app_ref (compRenRen_ sort) (pat @ sty_terms zetas'
                                    @ List.map2 (>>>) (sty_terms zetas) pat
@@ -517,7 +520,6 @@ let genCompSubstRen sort =
   let* v = V.genVariables sort [ `KS; `LS; `MS; `SIGMAS (`MS, `KS)
                                ; `ZETAS (`KS, `LS); `THETAS (`MS, `LS) ] in
   let [@warning "-8"] [], [ ks; ls; ms ], [ sigmas; zetas; thetas ], scopeBinders = v in
-  let* substSorts = substOf sort in
   let* sigmazeta = comp_ren_or_subst sort zetas sigmas in
   let* (eqs, beqs) = genEqs sort "Eq" sigmazeta (sty_terms thetas)
       (fun z y s ->
@@ -548,12 +550,13 @@ let genUpSubstSubst (binder, sort) =
   let* taus' = upSubst sort [binder] taus in
   let* pat = patternSId sort binder in
   let (pms, bpms) = binvparameters binder in
+  (* TODO document *)
   let ret = equiv_
       (app_ref (up_ sort binder) (pms @ [sigma])
        >>> app_ref (subst_ sort) (sty_terms taus'))
       (app_ref (up_ sort binder) (pms @ [theta])) in
-  let* shift = patternSId sort binder in
   let* substSorts = substOf sort in
+  (* TODO document *)
   let* pat' = comp_ren_or_subst sort (SubstRen pat) taus in
   let t n = eqTrans_
       (app_ref (compRenSubst_ sort) (pat @ sty_terms taus'
@@ -582,7 +585,7 @@ let genUpSubstSubst (binder, sort) =
          (ap_ (app_ref (ren_ sort) pat) (app1_ eq n))) in
   let hd = abs_ref "x" (app_ref "scons_p_head'" [ underscore_
                                                 ; abs_ref "z" (app_ref (ren_ sort)
-                                                                 (shift @ [underscore_]))
+                                                                 (pat @ [underscore_]))
                                                 ; ref_ "x" ]) in
   let defBody = definitionBody sort binder
       (matchFin_ (ref_ n) t eq_refl_ , t (ref_ n))
@@ -599,7 +602,6 @@ let genCompSubstSubst sort =
   let* v = V.genVariables sort [ `KS; `LS; `MS; `SIGMAS (`MS, `KS)
                                ; `TAUS (`KS, `LS); `THETAS (`MS, `LS) ] in
   let [@warning "-8"] [], [ ks; ls; ms ], [ sigmas; taus; thetas ], scopeBinders = v in
-  let* substSorts = substOf sort in
   let* sigmatau = comp_ren_or_subst sort taus sigmas in
   let* (eqs, beqs) = genEqs sort "Eq" sigmatau (sty_terms thetas) (fun z y s ->
       let* taus' = castSubst sort z taus in
