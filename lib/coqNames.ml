@@ -6,11 +6,11 @@ open Util
 
 module L = Language
 
-(** This uses the mutable variable var__ to build the name for variable constructors.
+(** This uses the mutable variable var_fmt to build the name for variable constructors.
  ** format_from_string takes a string and format string (the "%s") and tries to cast the string
  ** to that format. Can error at runtime if user supplied a wrong format string. *)
 let var_ x =
-  let fmt = Scanf.format_from_string !Settings.var__ "%s" in
+  let fmt = Scanf.format_from_string !Settings.var_fmt "%s" in
   Printf.sprintf fmt x
 
 let funname_ f = f
@@ -63,6 +63,8 @@ let rinstInstFun_ x = sepd ["rinstInst"; x]
 let rinstInst'Fun_ x = sepd ["rinstInst'"; x]
 let rinstIdFun_ x = sepd ["rinstId"; x]
 let rinstId'Fun_ x = sepd ["rinstId'"; x]
+let up_class_ x = sepd ["up"; x]
+let up_inst_ y x = sepd ["up"; y; x]
 
 let ext_ x = sepd ["ext"; x]
 let extRen_ x = sepd ["extRen"; x]

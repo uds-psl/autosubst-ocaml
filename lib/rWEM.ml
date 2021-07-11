@@ -173,7 +173,9 @@ let rec hasRenamings sort =
       let* arguments' = getArguments sort' in
       pure @@ List.mem sort arguments')
       all_other_types in
-  (* TODO that is not structural recursion. But it probably terminates. We might have to additionally keep track of all previously visited components. *)
+  (* DONE that is not structural recursion. But it probably terminates. We might have to additionally keep track of all previously visited components.
+   * Was able to translate it to Gallina by doing moving this function to the graph analysis stage.
+   * It works because we can precompute hasRenamings once for each sort similar to to how we compute strongly connected components without recursion. *)
   let* bs = a_map hasRenamings occ in
   let xs_bb = list_intersection component boundBinders |> list_empty |> not in
   let bs' = list_any bs in

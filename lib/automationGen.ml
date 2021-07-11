@@ -1,4 +1,5 @@
 open GallinaGen
+open CoqNames
 open Util
 
 module TacGen = struct
@@ -101,12 +102,12 @@ module ClassGen = struct
     | Var -> "Var"
     | Up _ -> sep "Up" sort
 
-  (* a.d. TODO, maybe directly put constr_expr in the info instead of generating the function name here  *)
+  (* a.d. DONE, maybe directly put constr_expr in the info instead of generating the function name here  *)
   let function_name sort = function
-    | Ren _ -> sep "ren" sort
-    | Subst _ -> sep "subst" sort
-    | Var -> CoqNames.var_ sort
-    | Up bsort -> sepd ["up"; bsort; sort]
+    | Ren _ -> ren_ sort
+    | Subst _ -> subst_  sort
+    | Var -> var_ sort
+    | Up bsort -> up_inst_ bsort sort
 
   let class_args x =
     let us n = list_of_length underscore_ n in
@@ -194,18 +195,18 @@ module NotationGen = struct
     | Subst _ | Ren _ ->
       fscope
 
-  (* TODO hardcoded strings ersetzen durch die korrekten functionen in CoqNames *)
+  (* DONE hardcoded strings ersetzen durch die korrekten functionen in CoqNames *)
   let notation_body sort = function
-    | VarConstr -> app_ref (sep "var" sort) [ ref_ "x" ]
+    | VarConstr -> app_ref (var_ sort) [ ref_ "x" ]
     | VarInst ->
       app_ref ~expl:true "ids" [ underscore_; underscore_; ref_ (ClassGen.instance_name sort Var); ref_ "x" ]
-    | Var -> ref_ (sep "var" sort)
-    | Up -> ref_ (sep "up" sort)
-    | UpInst bsort -> ref_ (sepd ["up"; bsort; sort])
-    | SubstApply substSorts -> app_ref (sep "subst" sort) ((List.map ref_ (to_substs "sigma" substSorts)) @ [ ref_ "s" ])
-    | Subst substSorts -> app_ref (sep "subst" sort) (List.map ref_ (to_substs "sigma" substSorts))
-    | RenApply substSorts -> app_ref (sep "ren" sort) ((List.map ref_ (to_substs "xi" substSorts)) @ [ ref_ "s" ])
-    | Ren substSorts -> app_ref (sep "ren" sort) (List.map ref_ (to_substs "xi" substSorts))
+    | Var -> ref_ (var_ sort)
+    | Up -> ref_ (up_class_ sort)
+    | UpInst bsort -> ref_ (up_inst_ bsort sort)
+    | SubstApply substSorts -> app_ref (subst_ sort) ((List.map ref_ (to_substs "sigma" substSorts)) @ [ ref_ "s" ])
+    | Subst substSorts -> app_ref (subst_ sort) (List.map ref_ (to_substs "sigma" substSorts))
+    | RenApply substSorts -> app_ref (ren_ sort) ((List.map ref_ (to_substs "xi" substSorts)) @ [ ref_ "s" ])
+    | Ren substSorts -> app_ref (ren_ sort) (List.map ref_ (to_substs "xi" substSorts))
 end
 
 

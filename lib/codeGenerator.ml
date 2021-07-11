@@ -262,8 +262,10 @@ let genSubstitution sort =
 
 let genSubstitutions sorts =
   let* fs = a_map genSubstitution sorts in
-  (* a.d. TODO is the isRecursive still from modular syntax? *)
-  let* is_rec = isRecursive [List.hd sorts] in
+  (* a.d. DONE is the isRecursive still from modular syntax?
+   * No, it's not. Assitionally, I think I found a bug in the Haskell implementation. I should not check isRecursive for the head of the component but rather for the whole component.
+   * If we just check the head we can force wrong code generation if the head sort is not an argument of itself (e.g. if we move vl to be the first defined sort in SysF_cbv) *)
+  let* is_rec = isRecursive sorts in
   pure @@ fixpoint_ ~is_rec fs
 
 let genUpId (binder, sort) =
@@ -1009,7 +1011,9 @@ let gen_code sorts upList =
     | l -> inductive_ l in
   (* GENERATE CONGRUENCE LEMMAS *)
   let* congruences = a_concat_map genCongruences sorts in
-  (* a.d. TODO if one sort in a component has a non-zero substitution vector, all of them have? *)
+  (* a.d. DONE if one sort in a component has a non-zero substitution vector, all of them have?
+   * Yes, if the component has only one sort, the statement is trivial
+   * if the component has two or more sorts, then each sort's subsitution vector contains at least the other sorts fo the component. *)
   let* hasbinders = map list_nempty (substOf (List.hd sorts)) in
   if not hasbinders
   then pure { as_units = inductive :: congruences

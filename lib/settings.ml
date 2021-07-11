@@ -2,10 +2,12 @@
  ** state monad to the monad transformer stack *)
 
 (** format string for printing variable constructors *)
-let var__ = ref "var_%s"
+let var_fmt = ref "var_%s"
 
 (** What kind of code we generate. Set after parsing program arguments in Program
- ** TODO can we have mutable references in ocaml that we can only set once? *)
+ ** DONE can we have mutable references in ocaml that we can only set once?
+ ** Yes, something like this is contained in the Core library https://discuss.ocaml.org/t/value-guaranteed-to-be-set-after-initialization/623/6
+ ** We could reimplement it but seems not worth it. *)
 type scope = WellScoped | Unscoped
 
 let equal_scopeType x y = match (x, y) with

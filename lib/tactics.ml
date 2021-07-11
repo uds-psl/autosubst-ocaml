@@ -210,7 +210,6 @@ let genEqs sort name sigmas taus f =
  ** If we create well scoped code fin will be indexed by the element of the scope indices
  ** corresponding to the sort.
  ** For sort vl and ns = [nty; nvl], create fin nvl *)
-  (* TODO toVar should work on SubstTy and SubstScope. So is should be part of a module *)
 let gen_var_arg sort ns =
   match !S.scope_type with
   | S.Unscoped -> pure @@ nat_
