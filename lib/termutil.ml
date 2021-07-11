@@ -65,12 +65,8 @@ let app_fix ?expl cname ?(sscopes=[]) ?(scopes=[]) rest =
   app_ref ?expl cname (sscope_ts @ scope_ts @ rest)
 let mk_underscore_pattern scope = List.map (const "_") (ss_terms scope)
 
-(* this is the same as app_sort *)
-let sort_type x ns = app_ (ref_ x) (ss_terms ns)
-
 let (==>) s t = List.fold_right (fun s t -> arr1_ s t) s t
 
-(** TODO does the fresh variable here work as I expect? check upExtRen_list_vl_vl *)
 let abs_ref x t =
   let x' = VarState.tfresh x in
   lambda_ [binder1_ x'] t
