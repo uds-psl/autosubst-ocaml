@@ -45,20 +45,21 @@ let equiv_ s t =
 (** For a given sort and some SubstTy ts return the component of ts that has the same name as the sort.
  ** E.g. for sort vl and ts being a list of renamings [ xity; xivl ] return xivl
  ** *)
-(* TODO I think it would be easier if ts was already a list of pairs where the first component is the corresponding substSort. I would have to change all the genRen/genSubst/... functions for that but then here it would just be a call to AssocList.find *)
+(* DONE I think it would be easier if ts was already a list of pairs where the first component is the corresponding substSort. I would have to change all the genRen/genSubst/... functions for that but then here it would just be a call to AssocList.find
+ *
+ * No, it was not easier. check the "toVar" feature branch *)
+let toVar_helper sort assoc =
+  match AL.assoc sort assoc with
+  | None -> error "toVar was called with incompatible sort and substitution vector. The substitution vector must contain the sort!"
+  | Some t -> pure t
+
 let toVar sort ts =
   let* substSorts = substOf sort in
-  let zs = List.filter (fun (substSort, _) -> sort = substSort) (list_zip substSorts (sty_terms ts)) in
-  if list_empty zs
-  then error "toVar was called with incompatible sort and substitution vector. The substitution vector must contain the sort!"
-  else List.hd zs |> snd |> pure
+  toVar_helper sort (AL.from_list (list_zip substSorts (sty_terms ts)))
 
 let toVarScope sort ts =
   let* substSorts = substOf sort in
-  let zs = List.filter (fun (substSort, _) -> sort = substSort) (list_zip substSorts (ss_terms_all ts)) in
-  if list_empty zs
-  then error "toVar was called with incompatible sort and substitution vector. The substitution vector must contain the sort!"
-  else List.hd zs |> snd |> pure
+  toVar_helper sort (AL.from_list (list_zip substSorts (ss_terms_all ts)))
 
 (** Return a list of variable names for the input list of positions
  ** [s0, s2, ..., sn-1] *)
