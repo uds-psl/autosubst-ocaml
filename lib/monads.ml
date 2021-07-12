@@ -59,6 +59,11 @@ module ExtraFunctionsList (MON: M.Monad.MONAD) = struct
   open Infix.Syntax
   open MON
 
+  let a_split_map f a =
+    let* bs = a_map f a in
+    let (cs, ds) = List.split bs in
+    pure (cs, ds)
+
   let map2 f a b =
     let* f' = map f a in
     map f' b

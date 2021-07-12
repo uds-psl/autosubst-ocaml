@@ -11,7 +11,17 @@ type vernac_unit = Vernac of vernac_expr list
                  | TacticLtac of string * TacGen.t
                  | TacticNotation of string list * TacGen.t
 
-type autosubst_exprs = { as_units: vernac_unit list; as_fext_units: vernac_unit list }
+type autosubst_modules = { ren_subst_units: vernac_unit list
+                         ; allfv_units : vernac_unit list
+                         ; fext_units: vernac_unit list
+                         ; interface_units : vernac_unit list }
+
+
+let append_modules e0 e1 =
+  { ren_subst_units = e0.ren_subst_units @ e1.ren_subst_units
+  ; allfv_units = e0.allfv_units @ e1.allfv_units
+  ; fext_units = e0.fext_units @ e1.fext_units
+  ; interface_units = e0.interface_units @ e1.interface_units }
 
 (** I catch the VernacExactProof constructor because the way Coq normally prints it does not
  ** work well with proof general. So I explicitly add an `exact (...)` *)
@@ -101,6 +111,31 @@ let impl_arguments_ name args =
         implicit_status = Glob_term.MaxImplicit;
       }) args in
   Vernac [ VernacArguments (qname, impl_args, [], []) ]
+
+
+let start_module_ name =
+  Vernac [ VernacDefineModule (None, lident_ name, [], Declaremods.Check [], []) ]
+
+let end_module_ name =
+  Vernac [ VernacEndSegment (lident_ name) ]
+
+let module_ name contents =
+  if list_empty contents
+  then []
+  else
+    [ start_module_ name ]
+    @ contents
+    @ [ end_module_ name ]
+
+let import_ ?(export=false) name =
+  Vernac [ VernacImport (export, [ (qualid_ name, ImportAll) ]) ]
+let export_ name = import_ ~export:true name
+
+let initial_modules =
+  { ren_subst_units = []
+  ; allfv_units = [ import_ "renSubst" ]
+  ; fext_units = [ import_ "renSubst" ]
+  ; interface_units = [ export_ "renSubst"; export_ "allfv"; export_ "fext" ] }
 
 
 (* disable unused warning *)

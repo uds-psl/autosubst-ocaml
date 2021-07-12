@@ -12,22 +12,20 @@ module L = Language
 module S = Settings
 
 let unscoped_preamble = "Require Import core unscoped.\n\n"
-let unscoped_preamble_axioms = "Require Import core core_axioms unscoped unscoped_axioms.\n"
+let unscoped_preamble_axioms = "Require Import core_axioms unscoped_axioms.\n"
 let scoped_preamble = "Require Import core fintype.\n\n"
-let scoped_preamble_axioms = "Require Import core core_axioms fintype fintype_axioms.\n"
-let base_preamble = Scanf.format_from_string "Require Import %s.\n\n" "%s"
+let scoped_preamble_axioms = "Require Import core_axioms fintype_axioms.\n"
 let setoid_preamble = "Require Import Setoid Morphisms Relation_Definitions.\n\n"
 
-let get_preambles outfile_basename axioms_separate =
-  let base_preamble = Printf.sprintf base_preamble outfile_basename in
-  if axioms_separate then
-    match !S.scope_type with
-    | S.Unscoped -> (unscoped_preamble ^ setoid_preamble, unscoped_preamble_axioms ^ base_preamble)
-    | S.WellScoped -> (scoped_preamble ^ setoid_preamble, scoped_preamble_axioms ^ base_preamble)
-  else
-    match !S.scope_type with
-    | S.Unscoped -> (unscoped_preamble_axioms ^ setoid_preamble, "")
-    | S.WellScoped -> (scoped_preamble_axioms ^ setoid_preamble, "")
+let get_preamble () =
+  let open RWEM.Syntax in
+  let open RWEM in
+  let* gen_fext = is_gen_fext in
+  let preamble = match !S.scope_type with
+    | S.Unscoped -> unscoped_preamble ^ (if gen_fext then unscoped_preamble_axioms else "")
+    | S.WellScoped -> scoped_preamble ^ (if gen_fext then scoped_preamble_axioms else "")
+  in
+  pure (preamble ^ setoid_preamble)
 
 (** Generate all the liftings (= Up = fatarrow^y_x) for all pairs of sorts in the current component.
  ** So that we can later build the lifting functions "X_ty_ty", "X_ty_vl" etc. *)
@@ -58,34 +56,44 @@ let genCode components =
   let open RWEM.Syntax in
   let open RWEM in
   let open VG in
-  let* (_, code, fext_code) = m_fold (fun (done_ups, vexprs, fext_exprs) component ->
+  let* (_, as_modules) = m_fold (fun (done_ups, as_modules) component ->
       let* substSorts = substOf (List.hd component) in
       let new_ups = getUps substSorts in
       let ups = list_diff new_ups done_ups in
-      let* { as_units; as_fext_units } = CodeGenerator.gen_code component ups in
-      pure @@ (ups @ done_ups, vexprs @ as_units, fext_exprs @ as_fext_units))
-      ([], [], []) components in
-  pure { as_units = code; as_fext_units = fext_code }
+      let* new_as_modules = CodeGenerator.gen_code component ups in
+      pure @@ (ups @ done_ups, append_modules as_modules new_as_modules))
+      ([], initial_modules) components in
+  pure as_modules
 
-let make_file preamble code tactics =
-  let pp_code = VG.pr_vernac_units code in
-  let pp_tactics = VG.pr_vernac_units tactics in
-  let text = Pp.(string_of_ppcmds (pp_code ++ pp_tactics)) in
+let make_file preamble VG.{ ren_subst_units; allfv_units; fext_units; interface_units } =
+  let pp_code = VG.pr_vernac_units ren_subst_units in
+  let pp_allfv = VG.pr_vernac_units allfv_units in
+  let pp_fext = VG.pr_vernac_units fext_units in
+  let pp_interface = VG.pr_vernac_units interface_units in
+  let text = Pp.(string_of_ppcmds (pp_code ++ pp_allfv ++ pp_fext ++ pp_interface)) in
   preamble ^ text
 
 (** Generate the Coq file. Here we convert the Coq AST to pretty print expressions and then to strings. *)
-let genFile outfile_basename axioms_separate =
+let genFile () =
   let open RWEM.Syntax in
   let open RWEM in
   let open VG in
+  let* preamble = get_preamble () in
   let* components = getComponents in
-  (* I accidentally put the hack args above the call to genCode which does not work b/c the state is not set. Another point why losing referential transparency sucks *)
-  let* { as_units = code; as_fext_units = fext_code } = genCode components in
-  (* HACK clear implicit arguments so that the fext code works. Either I do this or I will have to use @ in the code *)
-  let* hack_args = AutomationGenerator.gen_arguments_clear () in
-  let* { as_units = automation; as_fext_units = fext_automation } = AutomationGenerator.gen_automation () in
-  let preamble, preamble_axioms = get_preambles outfile_basename axioms_separate in
-  pure (make_file preamble code automation, make_file preamble_axioms (hack_args @ fext_code) fext_automation)
+  let* { ren_subst_units = code
+       ; allfv_units = allfv_code
+       ; fext_units = fext_code
+       ; interface_units = interface_code } = genCode components in
+  let* { ren_subst_units = automation
+       ; allfv_units = _
+       ; fext_units = fext_automation
+       ; interface_units = interface_automation } = AutomationGenerator.gen_automation () in
+  pure (make_file preamble
+          { ren_subst_units = module_ "renSubst" (code @ automation)
+          ; allfv_units = module_ "allfv" allfv_code
+          ; fext_units = module_ "fext" (fext_code @ fext_automation)
+          ; interface_units = (module_ "interface" (interface_code @ interface_automation))
+                              @ [ export_ "interface" ] })
 
 (** Run the computation constructed by genFile *)
-let run_gen_code hsig outfile axioms_separate = RWEM.rwe_run (genFile outfile axioms_separate) hsig AG.initial
+let run_gen_code hsig gen_allfv gen_fext = RWEM.rwe_run (genFile ()) (hsig, gen_allfv, gen_fext) AG.initial

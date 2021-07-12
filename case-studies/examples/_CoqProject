@@ -10,31 +10,20 @@ fintype.v
 fintype_axioms.v
 
 utlc_unscoped.v
-utlc_unscoped_axioms.v
 utlc_wellscoped.v
-utlc_wellscoped_axioms.v
 
 stlc_unscoped.v
-stlc_unscoped_axioms.v
 stlc_wellscoped.v
-stlc_wellscoped_axioms.v
 
 fcbv_unscoped.v
-fcbv_unscoped_axioms.v
 fcbv_wellscoped.v
-fcbv_wellscoped_axioms.v
 
 fol_wellscoped.v
 
 pi_unscoped.v
-pi_unscoped_axioms.v
 pi_wellscoped.v
-pi_wellscoped_axioms.v
 
 num_unscoped.v
-num_unscoped_axioms.v
 num_wellscoped.v
-num_wellscoped_axioms.v
 
 variadic_wellscoped.v
-variadic_wellscoped_axioms.v

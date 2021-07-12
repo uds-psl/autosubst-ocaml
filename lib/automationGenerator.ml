@@ -240,4 +240,7 @@ let gen_automation () =
                          ; gen_renamify_fext ] in
   let* tactics = a_map (fun f -> f ()) tactic_funs in
   let* tactics_fext = a_map (fun f -> f ()) tactic_fext_funs in
-  pure { as_units = classes @ instances @ notations @ proper_instances @ arguments @ tactics; as_fext_units = arguments @ tactics_fext }
+  pure { ren_subst_units = classes @ instances @ notations @ proper_instances @ tactics
+       ; allfv_units = []
+       ; fext_units = tactics_fext
+       ; interface_units = arguments }

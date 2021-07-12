@@ -170,19 +170,19 @@ let signature : specAST t = lift3 (fun _ ds _ ->
  ** and functors exist.
  ** Also, unscoped syntax with variadic binders is not supported and we check that here.
  ** The applicative Syntax *> of the error monad is very nice here because it acts as a semicolon. *)
-let checkSpec (ts, fs, cs) =
+let checkSpec (sorts, functors, ctors) =
   let open ErrorM.Syntax in
   let open ErrorM in
-  let names = ts @ fs @ List.map (fun (cn, _, _, _) -> cn) cs in
+  let names = sorts @ functors @ List.map (fun (ctor_name, _, _, _) -> ctor_name) ctors in
   if list_contains_dup String.compare names
   then error "sort/functor/constructor names must all be different"
   else
     let checkTId tid =
-      if List.mem tid ts
+      if List.mem tid sorts
       then pure ()
       else error ("unknown sort: " ^ tid) in
     let checkFId fid =
-      if List.mem fid fs
+      if List.mem fid functors
       then pure ()
       else error ("unknown functor: " ^ fid) in
     let checkBinder () = function
@@ -203,9 +203,9 @@ let checkSpec (ts, fs, cs) =
       *> m_fold_ checkPosition () cpositions
       *> pure (AL.update rtype (fun cs -> L.{ cparameters; cname; cpositions; } :: cs) spec)
     in
-    let empty_spec = AL.from_list @@ List.map (fun t -> (t, [])) ts in
-    let* spec = m_fold_right ~f:checkConstructor ~init:empty_spec cs in
-    pure (ts, fs, AL.flatten spec)
+    let empty_spec = AL.from_list @@ List.map (fun s -> (s, [])) sorts in
+    let* ctors = m_fold_right ~f:checkConstructor ~init:empty_spec ctors in
+    pure (sorts, functors, AL.flatten ctors)
 
 (** parse and check a signature.
  ** We replace windows line endings here because that's the only way I found to handle comments

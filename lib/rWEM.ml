@@ -10,12 +10,14 @@ module AL = AssocList
 
 
 module WE = M.State.MakeT(ErrorM)(struct type t = AG.t end)
-module RWE = M.Reader.MakeT(WE)(struct type t = L.t end)
+module RWE = M.Reader.MakeT(WE)(struct type t = (L.t * bool * bool) end)
 
 include RWE
 
-let ask = peek
+let ask = peek >>= fun (s, _, _) -> pure s
 let asks f = f <$> ask
+let is_gen_allfv = peek >>= fun (_, gen_allfv, _) -> pure gen_allfv
+let is_gen_fext = peek >>= fun (_, _, gen_fext) -> pure gen_fext
 
 let put x = WE.put x |> elevate
 let get = WE.get |> elevate

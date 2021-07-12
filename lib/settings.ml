@@ -29,7 +29,8 @@ type args = {
   infile : string;
   outfile : string;
   scope : scope;
-  axioms_separate : bool;
+  gen_allfv : bool;
+  gen_fext : bool;
   generate_static_files : bool;
   force_overwrite : bool;
   version : coq_version;

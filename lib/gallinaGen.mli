@@ -14,6 +14,7 @@ val name_ : identifier -> Names.Name.t
 val qualid_ : identifier -> Libnames.qualid
 val ref_ : identifier -> constr_expr
 val name_id_ : identifier -> Names.Id.t
+val lident_ : identifier -> Names.lident
 val ident_decl_ : identifier -> Constrexpr.ident_decl
 val name_decl_ : identifier -> Constrexpr.name_decl
 
