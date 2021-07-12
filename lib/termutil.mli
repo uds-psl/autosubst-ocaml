@@ -14,6 +14,7 @@ val cons_ : constr_expr
 val var_zero_ : constr_expr
 val underscore_ : constr_expr
 val id_ : constr_expr
+val shift_p_ : constr_expr
 
 val eq_refl_ : constr_expr
 val eqSym_ : constr_expr -> constr_expr

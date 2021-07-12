@@ -18,6 +18,7 @@ let cons_ = ref_ "scons"
 let var_zero_ = ref_ "var_zero"
 let underscore_ = underscore_
 let id_ = ref_ "id"
+let shift_p_ = ref_ "shift_p"
 
 let eq_refl_ = ref_ "eq_refl"
 let eqSym_ s = app_ref "eq_sym" [s]

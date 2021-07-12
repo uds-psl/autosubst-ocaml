@@ -226,8 +226,8 @@ let patternSId sort binder =
        * no I can't remove it b/c I need the filtering behavior of ss_terms so I need to convert it to a SubstScope *)
     else (shift_ >>> app_var_constr y (SubstScope (List.map (const "_") substSorts, List.map (const underscore_) substSorts))) in
   let shiftp p y = if hasRen
-    then app_ref shift_p_ [ref_ p]
-    else app_ref shift_p_ [ref_ p]
+    then app1_ shift_p_ (ref_ p)
+    else app1_ shift_p_ (ref_ p)
       >>> app_var_constr y (SubstScope (List.map (const "_") substSorts, List.map (const underscore_) substSorts)) in
   up sort (fun y b _ -> match b with
       | L.Single bsort -> if y = bsort then shift y else id_
@@ -237,7 +237,7 @@ let patternSId sort binder =
 let patternSIdNoRen sort binder =
   let* substSorts = substOf sort in
   let shift = const shift_ in
-  let shiftp p = const @@ app_ref shift_p_ [ ref_ p ] in
+  let shiftp p = const @@ app1_ shift_p_ (ref_ p) in
   up sort (fun y b _ -> match b with
       | L.Single bsort -> if y = bsort then shift y else app_id_ underscore_
       | L.BinderList (p, bsort) -> if y = bsort then shiftp p y else app_id_ underscore_)

@@ -32,7 +32,7 @@ let rec genArg sort n bs = function
   | L.FunApp (f, p, xs) ->
     let* xs' = a_map (genArg sort n bs) xs in
     let p' = Option.default [] (Option.map (fun x -> [x]) p) in
-    pure @@ app_ref (funname_ f) (p' @ xs')
+    pure @@ app_ref f (p' @ xs')
 
 
 let genVar sort ns =
@@ -874,7 +874,7 @@ let genLemmaRinstId' sort =
   pure @@ lemma_ (rinstId'Fun_ sort) (scopeBinders @ [ binder1_ ~btype:(app_sort sort ms) s ]) ret proof
 
 
-let genLemmaRenRenComp sort =
+let genLemmaCompRenRen sort =
   (* register lemmas for asimpl *)
   let* () = tell_rewrite_base (renRen_ sort) in
   let* () = tell_rewrite_fext (renRen'_ sort) in
@@ -906,10 +906,10 @@ let genLemmaRenRenComp sort =
           ret proof,
         lemma_ (renRen'_ sort) scopeBinders ret' proof')
 
-let genLemmaCompRenSubst sort =
+let genLemmaCompSubstRen sort =
   (* register lemmas for asimpl *)
-  let* () = tell_rewrite_base (compRen_ sort) in
-  let* () = tell_rewrite_fext (compRen'_ sort) in
+  let* () = tell_rewrite_base (substRen_ sort) in
+  let* () = tell_rewrite_fext (substRen'_ sort) in
   let* v = V.genVariables sort [ `KS; `LS; `MS; `SIGMAS (`MS, `KS); `ZETAS (`KS, `LS) ] in
   let [@warning "-8"] [], [ ks; ls; ms ], [ sigmas; zetas ], scopeBinders = v in
   let* substSorts = substOf sort in
@@ -929,19 +929,19 @@ let genLemmaCompRenSubst sort =
       (app_ref (subst_ sort) (sty_terms sigmas) >>> app_ref (ren_ sort) (sty_terms zetas))
       (app_ref (subst_ sort) sigmazeta) in
   let proof' = fext_ (abs_ref "n"
-                        (app_ref (compRen_ sort)
+                        (app_ref (substRen_ sort)
                            (sty_terms sigmas
                             @ sty_terms zetas
                             @ [ ref_ "n" ]))) in
-  pure (lemma_ (compRen_ sort) (scopeBinders
+  pure (lemma_ (substRen_ sort) (scopeBinders
                                 @ [ binder1_ ~btype:(app_sort sort ms) s ])
           ret proof,
-        lemma_ (compRen'_ sort) scopeBinders ret' proof')
+        lemma_ (substRen'_ sort) scopeBinders ret' proof')
 
-let genLemmaCompSubstRen sort =
+let genLemmaCompRenSubst sort =
   (* register lemmas for asimpl *)
-  let* () = tell_rewrite_base (renComp_ sort) in
-  let* () = tell_rewrite_fext (renComp'_ sort) in
+  let* () = tell_rewrite_base (renSubst_ sort) in
+  let* () = tell_rewrite_fext (renSubst'_ sort) in
   let* v = V.genVariables sort [ `KS; `LS; `MS; `XIS (`MS, `KS); `TAUS (`KS, `LS) ] in
   let [@warning "-8"] [], [ ks; ls; ms ], [ xis; taus ], scopeBinders = v in
   let* substSorts = substOf sort in
@@ -961,19 +961,19 @@ let genLemmaCompSubstRen sort =
       (app_ref (ren_ sort) (sty_terms xis) >>> (app_ref (subst_ sort) (sty_terms taus)))
       (app_ref (subst_ sort) sigmazeta) in
   let proof' = fext_ (abs_ref "n"
-                        (app_ref (renComp_ sort)
+                        (app_ref (renSubst_ sort)
                            (sty_terms xis
                             @ sty_terms taus
                             @ [ref_ "n"]))) in
-  pure (lemma_ (renComp_ sort) (scopeBinders
+  pure (lemma_ (renSubst_ sort) (scopeBinders
                                 @ [ binder1_ ~btype:(app_sort sort ms) s ])
           ret proof,
-        lemma_ (renComp'_ sort) scopeBinders ret' proof')
+        lemma_ (renSubst'_ sort) scopeBinders ret' proof')
 
 let genLemmaCompSubstSubst sort =
   (* register lemmas for asimpl *)
-  let* () = tell_rewrite_base (compComp_ sort) in
-  let* () = tell_rewrite_fext (compComp'_ sort) in
+  let* () = tell_rewrite_base (substSubst_ sort) in
+  let* () = tell_rewrite_fext (substSubst'_ sort) in
   let* v = V.genVariables sort [ `KS; `LS; `MS; `SIGMAS (`MS, `KS); `TAUS (`KS, `LS) ] in
   let [@warning "-8"] [], [ ks; ls; ms ], [ sigmas; taus ], scopeBinders = v in
   let* substSorts = substOf sort in
@@ -993,14 +993,14 @@ let genLemmaCompSubstSubst sort =
       (app_ref (subst_ sort) (sty_terms sigmas) >>> app_ref (subst_ sort) (sty_terms taus))
       (app_ref (subst_ sort) sigmatau) in
   let proof' = fext_ (abs_ref "n"
-                        (app_ref (compComp_ sort)
+                        (app_ref (substSubst_ sort)
                            (sty_terms sigmas
                             @ sty_terms taus
                             @ [ref_ "n"]))) in
-  pure (lemma_ (compComp_ sort) (scopeBinders
+  pure (lemma_ (substSubst_ sort) (scopeBinders
                                  @ [ binder1_ ~btype:(app_sort sort ms) s ])
           ret proof,
-        lemma_ (compComp'_ sort) scopeBinders ret' proof')
+        lemma_ (substSubst'_ sort) scopeBinders ret' proof')
 
 (** This function delegates to all the different code generation functions and in the end
  ** aggregates all the returned vernacular units. *)
@@ -1077,10 +1077,10 @@ let gen_code sorts upList =
     let* lemmaVarLRen = guard_map genLemmaVarLRen' varSorts in
     let* lemmaRenSubst_fext = guard_map genLemmaRinstInst sorts in
     let* lemmaRenSubst = guard_map genLemmaRinstInst' sorts in
-    let* lemmaSubstRenRen, lemma_subst_ren_ren_fext = guard_split_map genLemmaRenRenComp sorts in
-    let* lemmaSubstCompRen, lemma_subst_comp_ren_fext = guard_split_map genLemmaCompRenSubst sorts in
-    let* lemmaSubstRenComp, lemma_subst_ren_comp_fext = guard_split_map genLemmaCompSubstRen sorts in
-    let* lemmaSubstComp, lemma_subst_comp_fext = guard_split_map genLemmaCompSubstSubst sorts in
+    let* lemmaCompRenRen, lemmaCompRenRenFext = guard_split_map genLemmaCompRenRen sorts in
+    let* lemmaCompSubstRen, lemmaCompSubstRenFext = guard_split_map genLemmaCompSubstRen sorts in
+    let* lemmaCompRenSubst, lemmaCompRenSubstFext = guard_split_map genLemmaCompRenSubst sorts in
+    let* lemmaCompSubstSubst, lemmaCompSubstSubstFext = guard_split_map genLemmaCompSubstSubst sorts in
     let mk_fixpoint = function
       | [] -> []
       | fix_exprs -> [fixpoint_ ~is_rec fix_exprs] in
@@ -1096,15 +1096,13 @@ let gen_code sorts upList =
                       upSubstRen @ mk_fixpoint compSubstRen @
                       upSubstSubst @ mk_fixpoint compSubstSubst @ upSubstSubstNoRen @
                       upRinstInst @ mk_fixpoint rinstInst @
-                      lemmaSubstRenRen @ lemmaSubstCompRen @
-                      lemmaSubstRenComp @ lemmaSubstComp @
+                      lemmaCompRenRen @ lemmaCompSubstRen @
+                      lemmaCompRenSubst @ lemmaCompSubstSubst @
                       lemmaRenSubst @
                       lemmaInstId @ lemmaRinstId @
                       lemmaVarL @ lemmaVarLRen;
            as_fext_units = lemmaRenSubst_fext @
                            lemmaInstId_fext @ lemmaRinstId_fext @
                            lemmaVarL_fext @ lemmaVarLRen_fext @
-                           lemma_subst_ren_ren_fext @
-                           lemma_subst_comp_ren_fext @
-                           lemma_subst_ren_comp_fext @
-                           lemma_subst_comp_fext }
+                           lemmaCompRenRenFext @ lemmaCompSubstRenFext @
+                           lemmaCompRenSubstFext @ lemmaCompSubstSubstFext }

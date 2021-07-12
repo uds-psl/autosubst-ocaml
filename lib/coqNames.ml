@@ -13,19 +13,17 @@ let var_ x =
   let fmt = Scanf.format_from_string !Settings.var_fmt "%s" in
   Printf.sprintf fmt x
 
-let funname_ f = f
-
 let congr_ c = sepd ["congr"; c]
 
 let ren_ x = sepd ["ren"; x]
 let renRen_ x = sepd ["renRen"; x]
 let renRen'_ x = sepd ["renRen'"; x]
-let compRen_ x = sepd ["compRen"; x]
-let compRen'_ x = sepd ["compRen'"; x]
-let renComp_ x = sepd ["renComp"; x]
-let renComp'_ x = sepd ["renComp'"; x]
-let compComp_ x = sepd ["compComp"; x]
-let compComp'_ x = sepd ["compComp'"; x]
+let substRen_ x = sepd ["substRen"; x]
+let substRen'_ x = sepd ["substRen'"; x]
+let renSubst_ x = sepd ["renSubst"; x]
+let renSubst'_ x = sepd ["renSubst'"; x]
+let substSubst_ x = sepd ["substSubst"; x]
+let substSubst'_ x = sepd ["substSubst'"; x]
 
 let upNameGen name = fun y -> function
   | L.Single x -> sepd [name; x; y]
@@ -76,5 +74,3 @@ let compSubstSubst_ x = sepd ["compSubstSubst"; x]
 
 let idSubst_ x = sepd ["idSubst"; x]
 let subst_ x = sepd ["subst"; x]
-
-let shift_p_ = "shift_p"
