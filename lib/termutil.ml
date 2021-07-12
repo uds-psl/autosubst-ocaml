@@ -9,6 +9,8 @@ module S = Settings
 
 let type_ = type_
 let nat_ = ref_ "nat"
+let true_ = ref_ "True"
+let trueProof_ = ref_ "I"
 let none_ = ref_ "None"
 let some_ = ref_ "Some"
 let suc_ = ref_ "S"
@@ -19,13 +21,16 @@ let var_zero_ = ref_ "var_zero"
 let underscore_ = underscore_
 let id_ = ref_ "id"
 let shift_p_ = ref_ "shift_p"
-
 let eq_refl_ = ref_ "eq_refl"
+
+let and_ x y = app_ref "and" [x; y]
 let eqSym_ s = app_ref "eq_sym" [s]
 let eqTrans_ s t = app_ref "eq_trans" [s; t]
 let ap_ s t = app_ref "ap" [s; t]
 let app_id_ s = app_ref "id" [s]
 let fin_ n = app_ref "fin" [n]
+let up_ren_ xi = app_ref "up_ren" [xi]
+let up_allfv_ p = app_ref "up_allfv" [p]
 let fext_ s = app_ref "FunctionalExtensionality.functional_extensionality"
     [underscore_; underscore_; s]
 

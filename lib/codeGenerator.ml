@@ -102,7 +102,9 @@ let genCongruences sort =
   a_map (genCongruence sort) ctrs
 
 (** Constructs the body of a fixpoint.
- **  *)
+ **
+ ** no_args: used when an argument of a constructor does not have a substitution vector. E.g. ty in stlc does not have a substitution vector.
+ ** sem: used to calculate the branch of a non-variable constructor. Most lemmas use the constructor's congruence lemma in the head position but other things like the subsitution operation use other terms in head position *)
 let traversal
     s sort nameF underscore_pattern ?(no_args=fun s -> app1_ eq_refl_ s) args
     var_case_body ?(sem=fun _ cname positions -> app_fix (congr_ cname) positions) funsem =
@@ -119,20 +121,32 @@ let traversal
   in
   (* Computes the branch for a constructor *)
   let mk_constr_pattern { cparameters; cname; cpositions; } =
-    let ss = getPattern "s" cpositions in
-    let rec arg_map bs head = match head with
+    let extra_arg_list = function
+      | None -> []
+      | Some s -> [s] in
+    let rec arg_map bs extra_arg head = match head with
       | Atom y ->
         let* b = hasArgs y in
         let* args = a_map (castUpSubst sort bs y) args in
-        pure (if b then app_ref (nameF y) (List.(concat (map sty_terms args)))
-              else abs_ref "x" (no_args (ref_ "x")))
+        if b
+        then pure (app_ref (nameF y)
+                     (List.(concat (map sty_terms args))
+                      @ extra_arg_list extra_arg))
+        else
+          (* In the case there are no args we have to take extra care. TODO better documentation. need this because of recursion in the FunApp case. Otherwise we would have nothing to apply the no_args function to *)
+          pure (match extra_arg with
+              | None -> abs_ref "x" (no_args (ref_ "x"))
+              | Some s -> no_args s)
       | FunApp (f, p, xs) ->
-        let* res = a_map (arg_map bs) xs in
-        pure (funsem f res) in
-    let* positions = a_map2_exn (fun s { binders; head; } -> map2 app_
-                                    (arg_map binders head) (pure @@ [ref_ s]))
+        let* res = a_map (arg_map bs None) xs in
+        pure (funsem f (res @ extra_arg_list extra_arg)) in
+    let ss = getPattern "s" cpositions in
+    let* positions = a_map2_exn
+        (fun s { binders; head; } ->
+           arg_map binders (Some (ref_ s)) head)
         ss cpositions in
-    pure (branch_ cname (underscore_pattern @ List.map fst cparameters @ ss)
+    pure (branch_ cname
+            (underscore_pattern @ List.map fst cparameters @ ss)
             (sem (List.map fst cparameters) cname positions))
   in
   let* constr_pattern = a_map mk_constr_pattern cs in
@@ -149,10 +163,11 @@ let genUpRen (binder, sort) =
   let m' = succ_ m sort binder in
   let n' = succ_ n sort binder in
   let defBody = definitionBody sort binder
-      (app_ref "up_ren" [xi], xi)
+      (up_ren_ xi, xi)
       (fun m _ -> app_ref "upRen_p" [ref_ m; xi], xi) in
   pure @@ lemma_ ~opaque:false (upRen_ sort binder) (bpms @ scopeBinders) (renT m' n') defBody
 
+(* TODO move to tactics and make same name as in MetaCoq *)
 let genMatchVar (sort: L.tId) (scope: substScope) =
   let s = VarState.tfresh "s" in
   (s, [binder1_ ~btype:(app_sort sort scope) s])
@@ -267,6 +282,35 @@ let genSubstitutions sorts =
    * If we just check the head we can force wrong code generation if the head sort is not an argument of itself (e.g. if we move vl to be the first defined sort in SysF_cbv) *)
   let* is_rec = isRecursive sorts in
   pure @@ fixpoint_ ~is_rec fs
+
+(* UpAllfv in sort x by the binder *)
+let genUpAllfv (binder, sort) =
+  let (p, bps) = genPredS "p" sort in
+  (** register upRen for unfolding *)
+  let defBody = definitionBody sort binder
+      (up_allfv_ p, p)
+      (* TODO nto used atm *)
+      (fun m _ -> ref_ "unimplemented", ref_ "unimplemented") in
+  pure @@ lemma_ ~opaque:false (upAllfvName sort binder) bps predT defBody
+
+let rec mk_conjs = function
+  | [] -> true_
+  | [p] -> p
+  | p::ps -> and_ p (mk_conjs ps)
+
+let genAllfv sort =
+  let* (ms, bms) = introScopeVar "m" sort in
+  let* (ps, bps) = genPred "p" sort ms in
+  let (s, bs) = genMatchVar sort ms in
+  let type_ = prop_ in
+  (** body *)
+  let* body = traversal s sort allfvName (mk_underscore_pattern ms) ~no_args:(fun s -> true_) [ps]
+      (fun s ->
+         let* toVarT = toVar sort ps in
+         pure (app1_ toVarT s))
+      ~sem:(fun pms cname positions -> mk_conjs positions)
+      map_ in
+  pure @@ fixpointBody_ (allfvName sort) (bms @ bps @ bs) type_ body s
 
 let genUpId (binder, sort) =
   let* (ms, bms) = introScopeVar "m" sort in

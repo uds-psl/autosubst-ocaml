@@ -149,6 +149,8 @@ Proof.
   apply H.
 Qed.
 
+(** ** Generic lifting of an allfv predicate *)
+Definition up_allfv (p: nat -> Prop) : nat -> Prop := scons True p.
 
 (** ** Notations for unscoped syntax *)
 Module UnscopedNotations.

@@ -35,6 +35,8 @@ let substT m ns sort = match !S.scope_type with
   | S.Unscoped -> arr1_ nat_ (ref_ sort)
   | S.WellScoped -> arr1_ (fin_ m) (app_sort sort ns)
 
+let predT = arr1_ nat_ prop_
+
 (** Create an extensional equivalence between unary functions s & t
  ** forall x, s x = t x *)
 let equiv_ s t =
@@ -85,6 +87,8 @@ let upRen x bs xs = ups x (fun z b xi -> app_ref (upRen_ z b) (fst (bparameters 
 
 let upScope x bs terms = ups x (fun z b n -> succ_ n z b) terms bs
 
+let upPred x bs pred_names = ups x (fun z b p -> app_ref (upAllfvName z b) [p]) pred_names bs
+
 let upSubstS x bs xs = ups x (fun z b xi -> app_ref (up_ z b) (fst (bparameters b) @ [xi])) xs bs
 
 let up' x f n b =
@@ -100,6 +104,7 @@ let upSubst x bs = function
   | SubstRen xs -> map (fun xs -> SubstRen xs) (upRen x bs xs)
   | SubstSubst xs -> map (fun xs -> SubstSubst xs) (upSubstS x bs xs)
   | SubstEq (xs, f) -> map (fun xs -> SubstEq (xs, f)) (upEq x bs xs f)
+  | SubstPred xs -> map (fun xs -> SubstPred xs) (upPred x bs xs)
 
 let cast x y xs =
   let* arg_x = substOf x in
@@ -115,6 +120,7 @@ let castSubst x y = function
   | SubstRen xs -> map (fun xs -> SubstRen xs) (cast x y xs)
   | SubstSubst xs -> map (fun xs -> SubstSubst xs) (cast x y xs)
   | SubstEq (xs, f) -> map (fun xs -> SubstEq (xs, f)) (cast x y xs)
+  | SubstPred xs -> map (fun xs -> SubstPred xs) (cast x y xs)
 
 let castUpSubstScope sort bs y arg =
   let* arg' = castSubstScope sort y arg in
@@ -145,6 +151,10 @@ let genRenS name (m, n) =
 let genSubstS name (m, ns) sort =
   let name = VarState.tfresh name in
   (ref_ name, [binder1_ ~btype:(substT m ns sort) name])
+
+let genPredS name sort =
+  let name = VarState.tfresh name in
+  (ref_ name, [binder1_ ~btype:predT name])
 
 (** Create multiple scope variables and their binders. One for each substituting sort of the given sort
  ** Example: { m_ty : nat } { m_vl : nat } *)
@@ -185,6 +195,15 @@ let genSubst sort name (ms, ns) =
       substSorts (ss_terms_all ms) in
   pure @@ (
     SubstSubst (mk_refs names),
+    List.map2 (fun n t -> binder1_ ~btype:t n) names types
+  )
+
+let genPred name sort ms =
+  let* substSorts = substOf sort in
+  let names = List.map (sep name) substSorts in
+  let types = List.map (const predT) substSorts in
+  pure @@ (
+    SubstPred (mk_refs names),
     List.map2 (fun n t -> binder1_ ~btype:t n) names types
   )
 

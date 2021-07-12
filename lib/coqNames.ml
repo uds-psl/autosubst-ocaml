@@ -49,6 +49,7 @@ let upExtRen_ = upNameGen upExtRen__
 let upExt_ = upNameGen upExt__
 let upId_ = upNameGen upId__
 let up_rinstInst_ = upNameGen "rinstInst_up"
+let upAllfvName = upNameGen "upAllfv"
 
 let varLFun_ x = sepd ["varL"; x]
 let varL'Fun_ x = sepd ["varL'"; x]
@@ -63,6 +64,7 @@ let rinstIdFun_ x = sepd ["rinstId"; x]
 let rinstId'Fun_ x = sepd ["rinstId'"; x]
 let up_class_ x = sepd ["up"; x]
 let up_inst_ y x = sepd ["up"; y; x]
+let allfvName x = sep "allfv" x
 
 let ext_ x = sepd ["ext"; x]
 let extRen_ x = sepd ["extRen"; x]

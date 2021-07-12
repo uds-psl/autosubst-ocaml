@@ -5,6 +5,8 @@ open Language
 
 val type_ : constr_expr
 val nat_ : constr_expr
+val true_ : constr_expr
+val trueProof_ : constr_expr
 val none_ : constr_expr
 val some_ : constr_expr
 val suc_ : constr_expr
@@ -15,12 +17,15 @@ val var_zero_ : constr_expr
 val underscore_ : constr_expr
 val id_ : constr_expr
 val shift_p_ : constr_expr
-
 val eq_refl_ : constr_expr
+
+val and_ : constr_expr -> constr_expr -> constr_expr
 val eqSym_ : constr_expr -> constr_expr
 val eqTrans_ : constr_expr -> constr_expr -> constr_expr
 val ap_ : constr_expr -> constr_expr -> constr_expr
 val app_id_ : constr_expr -> constr_expr
+val up_ren_ : constr_expr -> constr_expr
+val up_allfv_ : constr_expr -> constr_expr
 val fin_ : constr_expr -> constr_expr
 val fext_ : constr_expr -> constr_expr
 
