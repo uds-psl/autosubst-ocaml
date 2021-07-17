@@ -44,7 +44,6 @@ val app_sort : identifier -> substScope -> constr_expr
 val app_constr : identifier -> substScope -> constr_expr list -> constr_expr
 val app_var_constr : identifier -> substScope -> constr_expr
 val app_fix : ?expl:bool -> identifier -> ?sscopes:substScope list -> ?scopes:substTy list -> constr_expr list -> constr_expr
-val mk_underscore_pattern : substScope -> identifier list
 
 val (==>) : constr_expr list -> constr_expr -> constr_expr
 

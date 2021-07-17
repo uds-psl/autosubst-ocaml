@@ -1,4 +1,3 @@
-open Util
 open GallinaGen
 open CoqNames
 open CoqSyntax
@@ -70,7 +69,6 @@ let app_fix ?expl cname ?(sscopes=[]) ?(scopes=[]) rest =
                        |> map sty_terms
                        |> concat) in
   app_ref ?expl cname (sscope_ts @ scope_ts @ rest)
-let mk_underscore_pattern scope = List.map (const "_") (ss_terms scope)
 
 let (==>) s t = List.fold_right (fun s t -> arr1_ s t) s t
 

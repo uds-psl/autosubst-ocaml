@@ -106,9 +106,12 @@ let genCongruences sort =
  ** no_args: used when an argument of a constructor does not have a substitution vector. E.g. ty in stlc does not have a substitution vector.
  ** sem: used to calculate the branch of a non-variable constructor. Most lemmas use the constructor's congruence lemma in the head position but other things like the subsitution operation use other terms in head position *)
 let traversal
-    s sort nameF underscore_pattern ?(no_args=fun s -> app1_ eq_refl_ s) args
+    s sort nameF ?(no_args=fun s -> app1_ eq_refl_ s) args
     var_case_body ?(sem=fun _ cname positions -> app_fix (congr_ cname) positions) funsem =
   let open L in
+  let* substSorts = substOf sort in
+  (* the underscore pattern is used when constructing the branches to ignore the scope variables. Could also construct a dummy SusbtScope instead of matching the scope_type *)
+  let underscore_pattern = List.map (const "_") (match !S.scope_type with | S.Unscoped -> [] | S.WellScoped -> substSorts) in
   let* cs = constructors sort in
   let* open_x = isOpen sort in
   (* Only create the variable branch if the sort is open *)
@@ -190,7 +193,7 @@ let genRenaming sort =
   let (s, bs) = genMatchVar sort ms in
   let type_ = app_sort sort ns in
   (** body *)
-  let* body = traversal s sort ren_ (mk_underscore_pattern ms) ~no_args:id [xis]
+  let* body = traversal s sort ren_ ~no_args:id [xis]
       (fun s ->
          let* toVarT = toVar sort xis in
          pure @@ app1_ (app_var_constr sort ns) (app1_ toVarT s))
@@ -264,7 +267,7 @@ let genSubstitution sort =
   let (s, bs) = genMatchVar sort ms in
   let type_ = app_sort sort ns in
   (** body *)
-  let* body = traversal s sort subst_ (mk_underscore_pattern ms) ~no_args:id [sigmas]
+  let* body = traversal s sort subst_ ~no_args:id [sigmas]
       (mk_var_case_body sort sigmas)
       ~sem:(fun pms cname positions -> app_constr cname ns (mk_refs pms @ positions))
       map_ in
@@ -306,7 +309,7 @@ let genAllfv sort =
   let (s, bs) = genMatchVar sort ms in
   let type_ = prop_ in
   (** body *)
-  let* body = traversal s sort allfvName (mk_underscore_pattern ms) ~no_args:(fun s -> true_) [ps]
+  let* body = traversal s sort allfvName ~no_args:(fun s -> true_) [ps]
       (fun s ->
          let* toVarT = toVar sort ps in
          pure (app1_ toVarT s))
@@ -353,7 +356,7 @@ let genAllfvTriv sort =
   let type_ = app_ref (allfvName sort) (sty_terms ps @ [ref_ s]) in
   (** body *)
   (* TODO is the args argument correct here? *)
-  let* body = traversal s sort allfvTrivName (mk_underscore_pattern ms) [ps; hs]
+  let* body = traversal s sort allfvTrivName [ps; hs]
       (mk_var_case_body sort hs)
       ~sem:(fun _ _ positions -> mk_conjs positions)
       map_ in
@@ -391,7 +394,7 @@ let genIdLemma sort =
   let (s, bs) = genMatchVar sort ms in
   let type_ = eq_ (app_fix (subst_ sort) ~scopes:[sigmas] [ref_ s]) (ref_ s) in
   (** body *)
-  let* body = traversal s sort idSubst_ (mk_underscore_pattern ms) [sigmas; eqs]
+  let* body = traversal s sort idSubst_ [sigmas; eqs]
       (mk_var_case_body sort eqs)
       mapId_ in
   pure @@ fixpointBody_ (idSubst_ sort) (scopeBinders @ beqs @ bs) type_ body s
@@ -426,7 +429,7 @@ let genExtRen sort =
       (app_fix (ren_ sort) ~scopes:[xis] [ref_ s])
       (app_fix (ren_ sort) ~scopes:[zetas] [ref_ s]) in
   (** body *)
-  let* body = traversal s sort extRen_ (mk_underscore_pattern ms) [xis; zetas; eqs]
+  let* body = traversal s sort extRen_ [xis; zetas; eqs]
       (fun s ->
          let* toVarT = toVar sort eqs in
          pure @@ ap_ (app_var_constr sort ns) (app1_ toVarT s))
@@ -465,7 +468,7 @@ let genExt sort =
       (app_fix (subst_ sort) ~scopes:[sigmas] [ref_ s])
       (app_fix (subst_ sort) ~scopes:[taus] [ref_ s]) in
   (** body *)
-  let* body = traversal s sort ext_ (mk_underscore_pattern ms) [sigmas; taus; eqs]
+  let* body = traversal s sort ext_ [sigmas; taus; eqs]
       (mk_var_case_body sort eqs)
       mapExt_ in
   pure @@ fixpointBody_ (ext_ sort) (scopeBinders @ beqs @ bs) type_ body s
@@ -504,7 +507,7 @@ let genCompRenRen sort =
                             @ [ app_ref (ren_ sort) (sty_terms xis @ [ref_ s]) ]))
       (app_ref (ren_ sort) (sty_terms rhos @ [ref_ s])) in
   (** body *)
-  let* body = traversal s sort compRenRen_ (mk_underscore_pattern ms) [xis; zetas; rhos; eqs]
+  let* body = traversal s sort compRenRen_ [xis; zetas; rhos; eqs]
       (fun s ->
          let* toVarT = toVar sort eqs in
          pure (ap_ (app_var_constr sort ls) (app1_ toVarT s)))
@@ -551,7 +554,7 @@ let genCompRenSubst sort =
       (app_ref (subst_ sort) (sty_terms taus @ [app_ref (ren_ sort) (sty_terms xis @ [ref_ s])]))
       (app_ref (subst_ sort) (sty_terms thetas @ [ref_ s])) in
   (** body *)
-  let* body = traversal s sort compRenSubst_ (mk_underscore_pattern ms) [xis; taus; thetas; eqs]
+  let* body = traversal s sort compRenSubst_ [xis; taus; thetas; eqs]
       (mk_var_case_body sort eqs)
       mapComp_ in
   pure @@ fixpointBody_ (compRenSubst_ sort) (scopeBinders @ beqs @ bs) type_ body s
@@ -626,7 +629,7 @@ let genCompSubstRen sort =
                             @ [app_ref (subst_ sort) (sty_terms sigmas @ [ref_ s])]))
       (app_ref (subst_ sort) (sty_terms thetas @ [ref_ s])) in
   (** body *)
-  let* body = traversal s sort compSubstRen_ (mk_underscore_pattern ms) [sigmas; zetas; thetas; eqs]
+  let* body = traversal s sort compSubstRen_ [sigmas; zetas; thetas; eqs]
       (mk_var_case_body sort eqs)
       mapComp_ in
   pure @@ fixpointBody_ (compSubstRen_ sort) (scopeBinders @ beqs @ bs) type_ body s
@@ -707,7 +710,7 @@ let genCompSubstSubst sort =
                               @ [app_ref (subst_ sort) (sty_terms sigmas @ [ref_ s])]))
       (app_ref (subst_ sort) (sty_terms thetas @ [ref_ s])) in
   (** body *)
-  let* body = traversal s sort compSubstSubst_ (mk_underscore_pattern ms) [sigmas; taus; thetas; eqs]
+  let* body = traversal s sort compSubstSubst_ [sigmas; taus; thetas; eqs]
       (mk_var_case_body sort eqs)
       mapComp_ in
   pure @@ fixpointBody_ (compSubstSubst_ sort) (scopeBinders @ beqs @ bs) type_ body s
@@ -810,7 +813,7 @@ let genRinstInst sort =
       (app_ref (ren_ sort) (sty_terms xis @ [ref_ s]))
       (app_ref (subst_ sort) (sty_terms sigmas @ [ref_ s])) in
   (** body *)
-  let* body = traversal s sort rinstInst_ (mk_underscore_pattern ms) [xis; sigmas; eqs]
+  let* body = traversal s sort rinstInst_ [xis; sigmas; eqs]
       (mk_var_case_body sort eqs)
       mapExt_ in
   pure @@ fixpointBody_ (rinstInst_ sort) (scopeBinders @ beqs @ bs) type_ body s
