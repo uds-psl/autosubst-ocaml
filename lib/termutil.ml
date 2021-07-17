@@ -24,6 +24,7 @@ let shift_p_ = ref_ "shift_p"
 let eq_refl_ = ref_ "eq_refl"
 
 let and_ x y = app_ref "and" [x; y]
+let conj_ x y = app_ref "conj" [x; y]
 let eqSym_ s = app_ref "eq_sym" [s]
 let eqTrans_ s t = app_ref "eq_trans" [s; t]
 let ap_ s t = app_ref "ap" [s; t]

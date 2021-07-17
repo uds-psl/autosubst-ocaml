@@ -1,4 +1,5 @@
 (** This module contains own definitions for some monads *)
+open Util
 
 module M = Monadic
 module L = Language
@@ -58,6 +59,10 @@ module ExtraFunctionsList (MON: M.Monad.MONAD) = struct
   open Fun
   open Infix.Syntax
   open MON
+
+  let m_guard mb l =
+    let* b = mb in
+    pure (guard b l)
 
   let a_split_map f a =
     let* bs = a_map f a in

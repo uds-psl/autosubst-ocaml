@@ -12,6 +12,7 @@ type substTy = SubstRen of CG.constr_exprs
              | SubstSubst of CG.constr_exprs
              | SubstEq of CG.constr_exprs * (L.tId -> L.binder -> CG.constr_expr -> CG.constr_expr RWEM.t)
              | SubstPred of CG.constr_exprs
+             | SubstAllfvH of CG.constr_exprs * (L.tId -> L.binder -> CG.constr_expr -> CG.constr_expr RWEM.t)
 
 let ss_terms = function
   | SubstScope (_, xs) ->
@@ -28,5 +29,6 @@ let ss_names = function
 let sty_terms = function
   | SubstRen xs -> xs
   | SubstSubst xs -> xs
-  | SubstEq (xs,_) -> xs
+  | SubstEq (xs, _) -> xs
   | SubstPred xs -> xs
+  | SubstAllfvH (xs, _) -> xs

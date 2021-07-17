@@ -278,20 +278,27 @@ let genSubstitution sort =
  *   let* is_rec = isRecursive sorts in
  *   pure @@ fixpoint_ ~is_rec fs *)
 
+let allfv_def_body_functor =
+  (* TODO not used atm *)
+  (fun m _ -> ref_ "unimplemented", ref_ "unimplemented")
+
 (* UpAllfv in sort x by the binder *)
 let genUpAllfv (binder, sort) =
   let (p, bps) = genPredS "p" sort in
-  (** register upRen for unfolding *)
   let defBody = definitionBody sort binder
       (up_allfv_ p, p)
-      (* TODO nto used atm *)
-      (fun m _ -> ref_ "unimplemented", ref_ "unimplemented") in
+      allfv_def_body_functor in
   pure @@ lemma_ ~opaque:false (upAllfvName sort binder) bps predT defBody
+
+let rec mk_ands = function
+  | [] -> true_
+  | [p] -> p
+  | p::ps -> and_ p (mk_ands ps)
 
 let rec mk_conjs = function
   | [] -> true_
   | [p] -> p
-  | p::ps -> and_ p (mk_conjs ps)
+  | p::ps -> conj_ p (mk_conjs ps)
 
 let genAllfv sort =
   let* (ms, bms) = introScopeVar "m" sort in
@@ -303,9 +310,55 @@ let genAllfv sort =
       (fun s ->
          let* toVarT = toVar sort ps in
          pure (app1_ toVarT s))
-      ~sem:(fun pms cname positions -> mk_conjs positions)
+      ~sem:(fun pms cname positions -> mk_ands positions)
       map_ in
   pure @@ fixpointBody_ (allfvName sort) (bms @ bps @ bs) type_ body s
+
+let introUntypedVar ?btype name =
+  let name = VarState.tfresh name in
+  (name, [binder1_ ?btype name])
+
+let genUpAllfvTriv (binder, sort) =
+  let (p, bps) = genPredS "p" sort in
+  let (x, bxs) = introUntypedVar "x" in
+  let (h, bhs) = introUntypedVar ~btype:(forall_ bxs (app1_ p (ref_ x))) "H" in
+  (* type *)
+  let type_ = forall_ bxs (app1_ (app_ref (upAllfvName sort binder) [p]) (ref_ x)) in
+  (* body *)
+  let body = definitionBody sort binder
+      (matchFin_ (ref_ x) (fun x -> app1_ (ref_ h) x) trueProof_, app1_ (ref_ h) (ref_ x))
+      allfv_def_body_functor in
+  pure @@ lemma_ (upAllfvTrivName sort binder) (bps @ bhs) type_ (lambda_ bxs body)
+
+let genAllfvH name sort ps typeF f =
+  let* substSorts = substOf sort in
+  let names = List.map (sep name) substSorts in
+  let types = List.map typeF (sty_terms ps) in
+  pure (
+    SubstAllfvH (mk_refs names, f),
+    List.map2 (fun n t -> binder1_ ~btype:t n) names types
+  )
+  
+let genAllfvTriv sort =
+  let* (ms, bms) = introScopeVar "m" sort in
+  let* (ps, bps) = genPred "p" sort ms in
+  let (x, bxs) = introUntypedVar "x" in
+  let* (hs, bhs) = genAllfvH "H" sort ps
+      (fun p -> forall_ bxs (app1_ p (ref_ x)))
+      (fun substSort binder h_subst ->
+         pure (app_ref (upAllfvTrivName substSort binder) [underscore_; h_subst]))
+  in
+  (** type *)
+  let (s, bs) = genMatchVar sort ms in
+  let type_ = app_ref (allfvName sort) (sty_terms ps @ [ref_ s]) in
+  (** body *)
+  (* TODO is the args argument correct here? *)
+  let* body = traversal s sort allfvTrivName (mk_underscore_pattern ms) [ps; hs]
+      (mk_var_case_body sort hs)
+      ~sem:(fun _ _ positions -> mk_conjs positions)
+      map_ in
+  pure @@ fixpointBody_ (allfvTrivName sort) (bps @ bhs @ bs) type_ body s
+
 
 let genUpId (binder, sort) =
   let* (ms, bms) = introScopeVar "m" sort in
@@ -1128,6 +1181,8 @@ let gen_code sorts upList =
     (* Code for Allfv *)
     let* upAllfv = a_map genUpAllfv upList in
     let* allfvs = a_map genAllfv sorts in
+    let* upAllfvTriv = a_map genUpAllfvTriv upList in
+    let* allfvTriv = a_map genAllfvTriv sorts in
     (* put the code in the respective modules *)
     let* gen_allfv = is_gen_allfv in
     let* gen_fext = is_gen_fext in
@@ -1147,7 +1202,8 @@ let gen_code sorts upList =
                              lemmaRenSubst @
                              lemmaInstId @ lemmaRinstId @
                              lemmaVarL @ lemmaVarLRen;
-           allfv_units = guard gen_allfv (upAllfv @ mk_fixpoint allfvs);
+           allfv_units = guard gen_allfv (upAllfv @ mk_fixpoint allfvs @
+                                          upAllfvTriv @ mk_fixpoint allfvTriv);
            fext_units = guard gen_fext (lemmaRenSubst_fext @
                                         lemmaInstId_fext @ lemmaRinstId_fext @
                                         lemmaVarL_fext @ lemmaVarLRen_fext @

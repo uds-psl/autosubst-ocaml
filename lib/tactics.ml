@@ -97,6 +97,7 @@ let up' x f n b =
 
 (* this (and the up') is finally responsible for calling the function contained in the SubstEq *)
 let upEq x bs xs f = m_fold (up' x f) xs bs
+let upAllfvH x bs xs f = m_fold (up' x f) xs bs
 
 let upSubstScope x bs = function
   | SubstScope (ns, xs) -> map (fun xs -> SubstScope (ns, xs)) (upScope x bs xs)
@@ -105,6 +106,7 @@ let upSubst x bs = function
   | SubstSubst xs -> map (fun xs -> SubstSubst xs) (upSubstS x bs xs)
   | SubstEq (xs, f) -> map (fun xs -> SubstEq (xs, f)) (upEq x bs xs f)
   | SubstPred xs -> map (fun xs -> SubstPred xs) (upPred x bs xs)
+  | SubstAllfvH (xs, f) -> map (fun xs -> SubstEq (xs, f)) (upAllfvH x bs xs f)
 
 let cast x y xs =
   let* arg_x = substOf x in
@@ -121,6 +123,7 @@ let castSubst x y = function
   | SubstSubst xs -> map (fun xs -> SubstSubst xs) (cast x y xs)
   | SubstEq (xs, f) -> map (fun xs -> SubstEq (xs, f)) (cast x y xs)
   | SubstPred xs -> map (fun xs -> SubstPred xs) (cast x y xs)
+  | SubstAllfvH (xs, f) -> map (fun xs -> SubstAllfvH (xs, f)) (cast x y xs)
 
 let castUpSubstScope sort bs y arg =
   let* arg' = castSubstScope sort y arg in

@@ -20,6 +20,7 @@ val shift_p_ : constr_expr
 val eq_refl_ : constr_expr
 
 val and_ : constr_expr -> constr_expr -> constr_expr
+val conj_ : constr_expr -> constr_expr -> constr_expr
 val eqSym_ : constr_expr -> constr_expr
 val eqTrans_ : constr_expr -> constr_expr -> constr_expr
 val ap_ : constr_expr -> constr_expr -> constr_expr
