@@ -56,6 +56,11 @@ let genCode components =
   let open RWEM.Syntax in
   let open RWEM in
   let open VG in
+  (* prepare the exports contained in the interface module *)
+  let* gen_allfv = is_gen_allfv in
+  let initial_modules = if gen_allfv then { initial_modules with interface_units = initial_modules.interface_units @ [export_ "allfv"] } else initial_modules in
+  let* gen_fext = is_gen_fext in
+  let initial_modules = if gen_fext then { initial_modules with interface_units = initial_modules.interface_units @ [export_ "fext"] } else initial_modules in
   let* (_, as_modules) = m_fold (fun (done_ups, as_modules) component ->
       let* substSorts = substOf (List.hd component) in
       let new_ups = getUps substSorts in
@@ -66,34 +71,25 @@ let genCode components =
   pure as_modules
 
 let make_file preamble VG.{ ren_subst_units; allfv_units; fext_units; interface_units } =
-  let pp_code = VG.pr_vernac_units ren_subst_units in
-  let pp_allfv = VG.pr_vernac_units allfv_units in
-  let pp_fext = VG.pr_vernac_units fext_units in
-  let pp_interface = VG.pr_vernac_units interface_units in
-  let text = Pp.(string_of_ppcmds (pp_code ++ pp_allfv ++ pp_fext ++ pp_interface)) in
+  let open VG in
+  let pp_code = VG.pr_vernac_units (module_ "renSubst" ren_subst_units) in
+  let pp_allfv = VG.pr_vernac_units (module_ "allfv" ~imports:[ "renSubst" ] allfv_units) in
+  let pp_fext = VG.pr_vernac_units (module_ "fext" ~imports:[ "renSubst" ] fext_units) in
+  let pp_interface = VG.pr_vernac_units (module_ "interface" interface_units) in
+  let pp_export = VG.pr_vernac_unit (export_ "interface") in
+  let text = Pp.(string_of_ppcmds (pp_code ++ pp_allfv ++ pp_fext ++ pp_interface ++ pp_export)) in
   preamble ^ text
 
 (** Generate the Coq file. Here we convert the Coq AST to pretty print expressions and then to strings. *)
 let genFile () =
   let open RWEM.Syntax in
   let open RWEM in
-  let open VG in
   let* preamble = get_preamble () in
   let* components = getComponents in
-  let* { ren_subst_units = code
-       ; allfv_units = allfv_code
-       ; fext_units = fext_code
-       ; interface_units = interface_code } = genCode components in
-  let* { ren_subst_units = automation
-       ; allfv_units = _
-       ; fext_units = fext_automation
-       ; interface_units = interface_automation } = AutomationGenerator.gen_automation () in
-  pure (make_file preamble
-          { ren_subst_units = module_ "renSubst" (code @ automation)
-          ; allfv_units = module_ "allfv" allfv_code
-          ; fext_units = module_ "fext" (fext_code @ fext_automation)
-          ; interface_units = (module_ "interface" (interface_code @ interface_automation))
-                              @ [ export_ "interface" ] })
+  let* code = genCode components in
+  let* automation = AutomationGenerator.gen_automation () in
+  pure (make_file preamble (VG.append_modules code automation))
+
 
 (** Run the computation constructed by genFile *)
 let run_gen_code hsig gen_allfv gen_fext = RWEM.rwe_run (genFile ()) (hsig, gen_allfv, gen_fext) AG.initial

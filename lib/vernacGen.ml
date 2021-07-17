@@ -112,6 +112,10 @@ let impl_arguments_ name args =
       }) args in
   Vernac [ VernacArguments (qname, impl_args, [], []) ]
 
+let import_ name =
+  Vernac [ VernacImport (false, [ (qualid_ name, ImportAll) ]) ]
+let export_ name =
+  Vernac [ VernacImport (true, [ (qualid_ name, ImportAll) ]) ]
 
 let start_module_ name =
   Vernac [ VernacDefineModule (None, lident_ name, [], Declaremods.Check [], []) ]
@@ -119,23 +123,20 @@ let start_module_ name =
 let end_module_ name =
   Vernac [ VernacEndSegment (lident_ name) ]
 
-let module_ name contents =
+let module_ name ?(imports=[]) contents =
+  let imports = List.map import_ imports in
   if list_empty contents
   then []
   else
     [ start_module_ name ]
-    @ contents
+    @ imports @ contents
     @ [ end_module_ name ]
-
-let import_ ?(export=false) name =
-  Vernac [ VernacImport (export, [ (qualid_ name, ImportAll) ]) ]
-let export_ name = import_ ~export:true name
 
 let initial_modules =
   { ren_subst_units = []
-  ; allfv_units = [ import_ "renSubst" ]
-  ; fext_units = [ import_ "renSubst" ]
-  ; interface_units = [ export_ "renSubst"; export_ "allfv"; export_ "fext" ] }
+  ; allfv_units = []
+  ; fext_units = []
+  ; interface_units = [ export_ "renSubst" ] }
 
 
 (* disable unused warning *)

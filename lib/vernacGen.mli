@@ -33,7 +33,8 @@ val ex_instance_ : string -> vernac_unit
 
 val notation_ : string -> Vernacexpr.syntax_modifier list -> ?scope:Vernacexpr.scope_name -> constr_expr -> vernac_unit
 
-val module_ : string -> vernac_unit list -> vernac_unit list
+val module_ : string -> ?imports:(string list) -> vernac_unit list -> vernac_unit list
+val import_ : string -> vernac_unit
 val export_ : string -> vernac_unit
 
 (** create command to set implicit arguments
