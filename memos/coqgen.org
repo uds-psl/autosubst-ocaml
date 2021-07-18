@@ -44,7 +44,7 @@ Proof.
 #+end_src
 instead.
 Further exceptions are the `Ltac _ := _` and `Tactic Notation _ := _` commands because they are defined as extensions and are thus not part of the primitive AST in vernacexpr.ml. So we defined our own ad-hoc AST wrapping the normal vernac_expr AST for these two cases (in lib/vernacGen.ml).
-Also, initially we did not find the printing for typeclasses and used structures + the "Existing Instance" command instead but apparently typeclasses are also printed with the command for inductive types.
+Also, initially we did not find the printing for typeclasses & instances and used structures & definitions and the "Existing Class/Instance" command instead. But you can actually print both.
 ** Important files in the Coq library
 - vernac/ppvernac.ml
 - vernac/vernacexpr.ml

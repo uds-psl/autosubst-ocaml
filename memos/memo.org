@@ -1,0 +1,295 @@
+A memo about various topics that came up duirng my Bachelor seminar.
+Mostly in English, sometimes in German and the subsections for a topic are sometimes in an arbitrary order or consist of bullet points that are not cleaned up.
+* Autosubst-OCaml
+** Maintenance
+*** Autosubst in der coq ci?
+Dann waelzt man Verantwortung auf die Leute die pull requests fuer coq machen ab.
+Also falls sich mal der AST aendern, muesste der Programmierer dann auch Autosubst anpassen.
+*** Documentation
+Some functions are commented, some important ones not like traversal or the (cast)up functions.
+Generally we need
+1) a high level overview of what the function does/returns
+2) where it is used in the code
+3) where it's output appears in the generated code (if applicable)
+4) an example output
+*** Dependencies
+After ACP I still had dependencies on coq-equations and the OCaml libraries lwt, core and stdio that I wanted to remove.
+For maintaiablity we want to restrict our usage of libraries.
+- coq-equations
+  turned out to be completely unnecessary because it was used for modular code so we could just remove it.
+- lwt & stdio
+  They were used just for interacting with the file system when we write out the generated code. I was able to rewrite that part to use just the standard library.
+- core
+  was used as a replacement for the standard library but was not really necessary. There were ca. 2-3 simple functions I had to implement myself when using the normal standard library.
+** INPROGRESS Der erzeugte Code sollte lesbar sein
+Die lemmas mit apostroph (zb compComp'_term) verwenden alle funext. Now they are placed into their own module. I also tried putting them in a separate file but that complicated things too much (have to compute a fresh file name and require the original file for which we would need to know the logical path)
+*** TODO Kann man Kommentare vor einem Lemma generieren?
+Coq has a function to print comments but it's not exported in the interface so we have to write our own. But we would want that anyways because the implementation is lacking since it only prints comments on a single line.
+The function itself is not hard. The hard thing would be to write the comments themselves for each of the lemma-generating functions.
+*** DONE id function in subst_tm of stlc. why is it generated?
+Concretely, sometimes reducible terms are generated like this `(fun x => x) s0` or `(fun x => eq_refl x) s0`.
+It was generated because the traversal function put a default function there. When I refactored the traversal function I also fixed this. Now the generated terms are normal.
+** Performance
+*** Implizite Variablen
+Kann man eine gross genuge Sprache finden, fuer die kompilation nicht trivial ist? Um zu schauen ob implizite Argumente es weiter verlangsamen. ist wahrscheinlich irrelevant.
+*** Gibt es pathologische Sprachen
+Bei denen mit linear wachsenden HOAS definitionen ein exponentiell groesserer Coq term erzeugt wird?
+Yes, they exist, some signatures are in test-slow
+*** Warum sind bestimmte Sachen Lemmas oder Definitionen?
+Because of vos compilation (disregard proof terms during compilation to make it faster) it would be better to use lemmas.
+In order to test what gets erased we can generate terms for a big language and compare file sizes between the vo and vos files. I compared the file sizes and it turns out almost nothing is erased in but we're not sure why this is the case. Probably because the biggest terms are in Fixpoints and they are transparent.
+*** Fixpoints without {struct x} annotation
+Compilation becomes very slow when there are mutually inductive fixpoints because inferring the structurally decreasing argument is exponential in the number of mutually recursive bodies and arguments. So we added the annotation.
+austesten ob der guardedness checker schuld an den langsamen fixpoints ist.
+***** schon bei 6 sorts ist es merklich langsamer (30s) und bei 9 unbenutzbar (100m)
+Es war nicht der guardedness checker. Es war auch nicht eine reduktion. Was fehlte war die Info welches Argument strukturell kleiner wird. Wenn ich es hinzufuege wird selbst der test_9_1 Fall nur noch 3.5s (vorher 100 minuten).
+Habe das auf zulip geschrieben. Dann noch getestet was passiert wenn die position dieses Argument geandert wird (leicht schneller wenn es am anfang steht) und wenn man den fixpoint unrollt (keine aenderung)
+pretyping/pretyping.ml probiert einfach alle Kombinationen aus von structurally decreasing arguments aus aber ohne die Implementation viel komplizierter zu machen scheint das die beste Moeglichkeit.
+** Support different Coq versions
+There is a difference between supporting the Autosubst OCaml implementation for different Coq versions and supporting the generated code for different Coq versions.
+The first one is harder since some OCaml function signatures change between versions which I already noticed when porting from 8.12 to 8.13. Instead we first focus on the second aspect which is much easier because the concrete Syntax of Gallina/Vernacular commands changes much less.
+** Input
+We use the parsec-inspired parser-combinator library angstrom to implement a HOAS parser for our input.
+The implementation is pretty straightforward. Since angstrom does not support line numbers we just print the whole line if there is an error although that sometimes is not the place where the real error is.
+An improvement over the Haskell implementation is that we allow more valid Coq identifiers, concretely ones that contain an apostrophe or underscore.
+We don't support non-ascii utf-8 though which is a limitation of angstrom.
+** Variable Generation DSL
+In most generation functions we had the same boilerplate for generating the terms for arguments like scope variables and substitutions.
+I wrote a little DSL to handle this boilerplate. It uses OCamls polymorphic variants feature.
+TODO add an example of how much typing it saves.
+** SubstTy
+This datatype is used to contain terms that can be lifted or cast.
+We cast argument when we call a function from a sort with a smaller substitution vector (e.g. when we call subst_ty from subst_tm in System F, we only pass on the sigma for type variables and filter out the one for value variables).
+We lift an argument when we pass it to a recursive call that happens under a binder (e.g. under the lambda constructor in System F)
+2021 July: Ich habe es mir nochmal angeschaut und die SubstScope (das was nur fuer die scope variablen zustaendig ist) rausgezogen in seinen eigenen Typen. Es war nicht schwer da wir SubstScope und die anderen Subst* nicht mischen (also wir haben zb keine listen in deinen beides vorkommt was es etwas erschweren wuerde, bzw es gab nur eine Liste bei meiner Variablengenerations-DSL aber es war nicht schwer es zu aendern)
+My gripe with the SubstTy datatype is the weird function argument to SubstEq but since we do need this function in the `up` function when we construct the lifted argument for a recursive call. So I don't see a better way. When implementing the allfv lemmas I needed to add additional cass to SubstTy and some of them also needed an analogous function so it is a natural design.
+** DONE die statischen Dateien sollten veraendert werden
+*** DONE es gibt oft Require Export
+   konnte man auch immer entfernen. Stattdessen nur ein Modul mehr importieren in den generierten Dateien.
+*** DONE Notations in a separate Module
+Analogous to the ListNotations module. Makes things cleaner.
+*** DONE Remove usage of omega
+It was used to prove size induction but can easily proved without it. But size induction was only used in header_extensible which is used for modular syntax which we don't support so we could remove it completely.
+** DONE Typeclass Instances printen
+Tyepclass instance parameter bereiten Kopfschmerzen
+Um die Instanz zu printen brauchen wir die binder (m_ty n_ty : nat) und einfach nur die namen (m_ty n_ty) um sie als argumente zu uebergeben. Eigentlich koennte man das Ergebnis von genVariables verwenden, aber da sind alle binder schon zu einer Liste collapsed.
+Deswegen habe ich ein wenig herumgehackt und speichere noch die Namen der Variables in SubstScope und ziehe sie mir an der passenden Stelle wieder heraus.
+Generell ist diese vorgehen ein Argument dafuer, die automation komplett independent zu generieren und nicht von den infos bei der code generation abhaengig zu machen.
+Was ich auch machen koennte: genVariables so veraendern, dass die binder nicht zu einer Liste collapsed sind und sie dann passend uebergeben.
+*** DONE Definition printen
+*** DONE Existing Instance printen
+*** DONE Von Autosubst generieren lassen
+:LOGBOOK:
+CLOCK: [2021-05-21 Fri 21:00]--[2021-05-21 Fri 23:30] =>  2:30
+CLOCK: [2021-05-20 Thu 12:05]--[2021-05-20 Thu 13:45] =>  1:40
+:END:
+braucht noch parameter fuer scoped syntax
+** DONE Notations printen
+Described in a separate [[file:coqgen.org][memo]].
+*** DONE maybe a bug in original Autosubst.
+#+begin_src
+Class Up_ty X Y := up_ty : ( X ) -> Y.
+Global Instance Up_vl_ty   : Up_ty (_) (_) := @up_vl_ty   .
+Notation "↑__ty" := (up_ty) (only printing) : subst_scope.
+Notation "↑__vl" := (up_vl_ty) (only printing) : subst_scope.
+#+end_src
+I don't think these two notation commands make sense.
+Yes, Kathrin confirmed that this is a bug.
+* Autosubst-MetaCoq
+** Scheme Equality issue
+The `Scheme Equality` command fails for some inductive types.
+Das Problem war, dass ich den Record mit primitive projections definiert habe. Dann existiert kein match und Scheme Equality failt.
+Ohne primitive projections geht es aber auch nicht, da Scheme Equality keine Typkonstruktoren applied auf konkrete Typen haben moechte (zb wenn ein Feld mit einem Typen wie list nat gibt)
+Dazu existiert schon ein issue von Jason Gross
+https://github.com/coq/coq/issues/11952
+** Monad Library
+Yannick said in a meeting he does not know of any library implementing monads and I did not find one focused on evaluation (there's monae but that has a lot of dependencies on mathcomp which I don't want to use).
+The easiest solution was then to write my own implementation containing Reader, Writer, State and Error.
+** Performance
+** Implicit Arguments
+For some definitions we want to declare some arguments as implicit (e.g. the scope arguments for most lemmas and the constructors). In OCaml we could print definitions with curly braces to denote implicit arguments and use underscores to pass inferrable arguments to other lemmas. And in the end we can even set more arguments implicit using the "Arguments" command.
+In MetaCoq however, we can't do most of that. Which arguments are implicit is not part of the internal AST so when we e.g. construct a lemma we can't define which arguments are implicit. This is no problem if we can pass underscores in place of the arguments we want to be implicit.
+Also, we cannot trigger an "Argument" command form the TemplateMonad. The solution for that would be to print the commands to the user so that they copy them. But Yannick said in theory it's easy to implement extra commands for the TemplateMonad by copy-pasting the OCaml implementation.
+There is also an argument for Coq that infers implicit arguments but we probably don't want to use something like that to be more precise.
+Passing underscores for implicit arguments was a bit harder than initially thought. I talked with Yannick about it and we suspected we could use nHole (part of the MetaCoq AST which represents evars) which should be equivalent to using underscores in concrete syntax.
+There is a problem with unquoting terms containg nHole's however. The normal unquote `tmQuote` does not work because it also infers a type for the term. Inferring both the type of the term and the evars inside the term does not work. Instead, in a later meeting with Kathrin and Joomy we found out that you cna use the tmUnquoteTyped function. This also receives the type of the term as an argument and Coq is able to infer the holes.
+This way it was possible to write a function that receives both a quoted type and term and unquotes the term with the unquoted type.
+#+begin_src coq
+Definition tmTypedDefinition (lem: string * term * term) : TemplateMonad unit :=
+  let '(name, typ_q, t_q) := lem in
+  typ <- tmUnquoteTyped Type typ_q;;
+  t <- tmUnquoteTyped typ t_q;;
+  @tmDefinitionRed name (Some TemplateMonad.Common.hnf) typ t;;
+  tmReturn tt.
+#+end_src
+** Input
+*** parametric HOAS als moeglichkeit
+[[http://adam.chlipala.net/papers/PhoasICFP08/PhoasICFP08.pdf][Paper by Adam Chlipala]]
+Da man in Coq die Induktiven Datentypen nicht wie in HOAS hinschreiben kann (strict positivity), bietet es sich an, PHOAS zu verwenden. Dabei wird jeder Datentyp mit einem Typ von Variablen parametrisiert wodurch ein Datentyp nicht mehr rekursiv in negativer position steht.
+Das reine parametrisieren eines Datentypen heisst "weak HOAS". PHOAS ist dann, wenn die sorts die man verwendet dann ueber alle Variablentypen quantifizieren (RealTy := forall Var, Ty Var).
+Da es uns um die reine Notation geht, verwenden wir also nur weak HOAS.
+Da man herausfinden muss, welcher Datentyp nun an die ersetzte Stelle muss, wenn man weider HOAS haben will, kann man ein paar Dinge festlegen.
++ Die erste nicht verwendete Var gehoert zum aktuellen Typen
++ Man schreibt nur die Var hin bei einem Konstruktor von dem Typen selbst. Wenn man den gleichen Typen woanders verwendet, kann man den Typconstruktor direkt nehmen.
+  Das fuehrt zu einer etwas irregulaeren Notation aber waere viel einfacher.
+**** uebersetzung zu dem internen Datentypen
+*** HOAS parsing mit Coq Notations
+Pures HOAS kann man ganz gut parsen. Es ist etwas nervig, dass man ueberall strings verwenden muss (koennte sich loesen lassen, indem man ein coq plugin schreibt und den parser dort verwendet).
+Sogar varaidic binders und parameter sind moeglich, auch wenn die Syntax dann komplexer wird.
+Habe die graphanalyse auch daran angeschlossen. Funktioniert soweit.
+*** HOAS parsing mit custom entries
+Nach dem experience report scheint das eine sehr gute meoglichkeit.
+Es ist einfacher die Syntax von Coq zu wiederverwenden aber es gibt immer noch ein paar Sachen, die ich nicht verstehe.
+zb warum ich an manchen Stellen ein "x at next level" einfuegen muss und wie ich am besten normale Klammern fuer die Parameterdeklaration verwende.
+*** Nur einen Induktive Datentypen einlesen mit MetaCoq
+daraus dann die specification bauen
+Man kann aber recht einfach mit MetaCoq ein Inductive quoten.
+#+begin_src coq
+Inductive Foo (X:Type) := Bar : X -> Foo X.
+MetaCoq Quote Recursively Definition f := Foo.
+#+end_src
+Der PHOAS Ansatz waere aber aehnlich.
+*** Ressourcen zu inductive types in general
+Vllt findet man dort noch etwas interessantes, was fuer eine Inputsyntax man verwendne kann.
+- [[https://link.springer.com/chapter/10.1007%2F3-540-52335-9_47][Inductively Defined Types]]
+- [[https://www.sciencedirect.com/science/article/pii/S0049237X08711200][An Intoduction To Inductive Definitions]]
+- Yves Bertot hat in dem Type Theory for All Podcast #5 erwaehnt, dass er in einem Buch eine Repraesentation von Inductive Types mit higher order logic beschreibt. Aber nicht in welchem Buch das ist (soll erst noch rauskommen)
+- Aaron Stump von Cedille redet oft ueber lambda encodings von Induktiven Datentypen aber es scheint eher theoretische Vorteile zu haben, das eigentliche encoding is syntaktisch nicht sehr nett und daher ungeeignet fuer unseren Fall.
+*** DONE Yannick fragen, was die Nachteile von der `bind tm in tm` syntax sind
+Gab es wohl nicht inherent. Das Problem war eher die Implementation in Ltac.
+** Datenstrukturen
+Wieder signature wie in OCaml. spontan faellt mir nur ein Ort ein, wo es vllt zu nicht-struktureller Rekursion kommt.
+*** wie gut kann Coq mit maps umgehen
+Es gibt verschiedene Bibliotheken mit finite maps.
+- mathcomp finmaps gehen zwar wenn man eine canonical structure fuer strings als enumerable type definiert, aber man kann nicht gut mit ihnen computen. In dem testfile mathcomp_finmap.v bekomme ich nach 30 min einen OOME wenn ich versuche einen key einer trivialen map zu suchen.
+- laut [[https://coq.zulipchat.com/#narrow/stream/237977-Coq-users/topic/About.20Finite.20Sets.20in.20coq-contribs.20and.20stdlib/near/198187095][zulip diskussion]] can man mit den stdpp finmaps auch nicht gut computen.
+- Die aus der Coq stdlib gehen ganz gut, aber es soll schwer sein, damit Dinge zu beweisen. Ich probiere es mal damit aus.
+  Zumindest haben sie ein paar Beweise die praktisch sein koennen. (add k v gibt einen Beweis In k, und mit In k kann man dann das find k zu Some v umschreiben. Das erspart matchen auf den result und die Verwendung einer error Monaden).
+- Es gibt noch eine experimentelle library, die die finmaps der stdlib erneuert [[https://github.com/letouzey/coq-mmaps/][MMaps]]
+*** implement spec
+**** TODO nicht-leere listen an ein paar stellen
+Da ich wohl eh viele Funktionen selbst definieren muss, kann ich auch gleich nonempty lists in der signatur verwenden. Das wuerde an ein paar Steller Aerger ersparen, wenn ich den head nehme.
+*** DONE Graphbibliothek um spec zu analysieren
+- coq-community/graph-theory
+  Hat anscheinend gar keine Implementation von Graphen, nur lemmas ueber Graphen
+- coq-contribs/graph-basics
+  Hat eine Implementation in form eines Induktiven Datentypen, die sehr schwer zu benutzen scheint,
+Die beste moeglichkeit scheint auch hier zu sein, dass ich es selbst implementiere.
+**** DONE selbst graphen implementieren
+Habe mich dazu entschieden die vertices selbst mit strings anstatt mit ints zu labeln und den Graphen als finite map [string -> list string] zu definieren. Der Wert an einem vertex ist eine Adjazenzliste.
+Ich brauche hauptsaechlich
+- neue edge addieren
+- checken ob edge existiert
+- (reflexive) transitive closure bilden
+- strongly connected components finden
+Alles ausser SCC war mit finite maps einfach zu implementieren. 
+Wenn man die Notation mit den Coq Datentypen verwendet, muss man allerdings keine SCC finden, da man sie schon geliefert bekommt (jeder mutual inductive datatype ist ein SCC)
+***** DONE SCC implementieren
+Es gibt ein [[https://scholar.google.com/scholar?cites=11808166987637897866&as_sdt=2005&sciodt=0,5&hl=de][paar paper]] dazu wo auch die Korrektheit bewiesen wird. In [[https://hal.archives-ouvertes.fr/hal-01095533v2/document][diesem]] scheint der Algorithmus (Kosaraju) auch tatsaechlich ausfuehrbar zu sein.
+Nach Andrejs Tip war es recht einfach zu implementieren. Die o.g. Algorithmen fokussieren sich darauf lineare Laufzeit zu haben. Da man fuer die SCC aber nur die Liste aller vertices partitionieren muss, kann man auch einen komplett naiven algorithmus verwenden, der dann quadratisch ist.
+*** DONE closed finite maps
+Ich verwende finite maps um informationen ueber die sorts zu verwalten. Wenn ich versuche informationen aus der finmap zu bekommen, liefert sie immer ein option. Da man bei einer Programmausfuehrung am Anfang alle sorts deklariert, koennte man stattdessen auch einen dependent type definieren, der genau diese sorts beinhaelt um dann eine art closed finmap zu schreiben, dessen retrieval funktion zwingend eine definierte sort nimmt und dann kein option liefern muss.
+Stattdessen muss man sie mit einem Beweis aufrufen, dass sich der string darin befindet.
+Testversion is implementiert aber ist schwerer zu benutzen als ich erwartet habe. Ich kann es mir spaeter nochmal anschauen, hat aber gerade keine hohe Prioritaet.
+** Code Generation
+*** DONE [#A] einen Typ und einen Term generieren
+easy enough if you just use the constructors of the Ast.term type. It's probably best if I have a separate file where I quote all the primitives I need (mostly = and +)
+**** DONE how do I keep track of the definitions that are already defined and that I want to use in a later definition?
+I always know their name as a string, so I can use tmLocate from the TemplateMonad to search for it and build a tConst or tInd.
+I decided to use an environment approach where everytime I'm in the TemplateMonad
+*** DONE [#B] ein Lemma generieren
+Wenn man in MetaCoq ein Lemma direkt mit proof term generieren moechte, muss man wohl stattdessen eine Definition generieren, da ein Lemma eine obligation erstellt, die man ggf mit "Next Obligation." interaktiv loesen muss.
+Marcel hat es in seiner Arbeit soweit ich sehen kann auch so gemacht um ein Lemma zu generieren.
+**** Kann man den typ festsetzen?
+Im Moment schaffe ich es nur ihn implizit zu lassen und tmDefinition einen term zu geben, da anscheiend nicht auf convertibility gecheckt wird.
+Ja, ich hatte tmUnquote falsch benutzt. Was ich stattdessen brauce ist tmUnquoteTyped. Mit dieser Funktion ist es einfach den Typen zu bestimmen. Naeheres dazu in den Sektion zu [[*Implicit Arguments][impliziten Argumenten]]
+**** DONE In Marcel's code nachschauen, ob er irgendwie implizite Argumente in den induktionslemmas erstellt.
+Es ist etwas schwierig zu kompilieren. Musste auf einen frueheren commit zurueckgehen, bevor er es an coq 8.12 angepasst hatte. Aber man sieht, dass die Lemmas, die er erzeugt keine impliziten Argumente haben. Aber das haben Induktionslemmas wohl standardmaessig nicht.
+*** DONE ein Inductive generieren
+das sollte aehnlich funktionieren wie in ocaml. Man baut einen minductive_definition Objekt und metacoq kann es unquoten. Ein Problem ist die Verwendung von debruijn indices zur Bezeichnung des Typen selbst, in seinen Konstruktoren.
+*** DONE Ein Fixpunkt generieren
+Geht anscheinend nur per definiiton mit tFix ast node.
+Es funktioniert aber auch hier braucht man debruijn indices. Der Rest ist ziemlich aehnlich zu der Art wie ich es in OCaml generiere. Die Reihenfolge ist
+- m + n = erster mutual inductive fixpoint
+- ...
+- S m = letzter mutual inductive fixpoint
+- m = argument des aussersten lambdas
+- ...
+- 0 = argument des innersten lambdas
+Und es ist ein wenig nervig, dass man zu allem immer die typen angeben muss. Das kann vllt erheblich mehr aufwand sein.
+**** DONE Aber wie funktioniert das mit mutual fixpoints?
+Eine tFix node bekommt eine liste an termen und einen index darin. Man kann dann anscheinend mehrere definitionen machen waehrend man durch die liste der mutual fixpoints iteriert.
+*** TODO ein Kommando, das MetaCoq code triggert
+Man eine Notation deklariern, die fuer einen Funktionsuafruf steht (zb Derive Autosubst for X) wobei X eine beschreibung meiner Sprache ist. Die Funktion liefert dann einen TemplateMonad wert, sodass "MetaCoq Run Derive Autosubst for X" dann diese computation ausfuehrt.
+*** Ast.term und PCUIC.term verwendet locally nameless
+Wie kann man gut terme im locally nameless Format bauen?
+- immer nur mit (Rel n) arbeiten
+  dann muesste man sich immer merken unter wie vielen bindern man ist
+  Hier waere eine state monade auch ganz schoen.
+  + Yannick favorisiert diese Methode, da sie am einfachsten ist.
+- einen Separaten term typen bauen und uebersetzen
+  Etwas konzeptionell unschoen aber ich bin im Moment bei dieser Loesung angekommen weil es vor allem bei higher-order functions schwer ist zu tracken unter wie vielen binders man sich befindet. Deswegen war es um einiges einfacher einen term in meinem custom type zu bauen und ihn dann am Ende in den MetaCoq Ast zu uebersetzen.
+- Sich ein mapping "string -> nat" merken damit man ein (Rel (bruijn_map "x")) bauen kann
+  Diese map, kann dann vllt mit den Funktionen in PCUICLiftSubst.v bearbeitet werden
+  Hier waere eine state monade auch ganz schoen.
+*** Immer mehr stubs implementieren
+**** DONE Congruence lemmas
+sollten einfach sein, da sie nur aus applikation von eq_trans bestehen
+Falsch gedacht. Wegen den debruijn terms und da ich alle impliziten argumente (zb der typ von eq) generieren muss, ist das immernoch viel code.
+Funktioniert soweit und Infrastruktur zur weiteren Lemmageneration ist auch vorhanden, aber wahrscheinlich noch nicht ausgereift. Mehr dazu im git commit.
+** Recursive Functions
+Most recursive functions from OCaml were strictly structurally recursive (or used recursion nested in list) so it was easy to port them to MetaCoq.
+One function used some unconventional recursion but it was actually possible to rewrite this function to use no recursion at all by precomputing all values when we analyze the language graph.
+Therefore, all recursive functions could be ported to MetaCoq.
+* Removing Functional Extensionality
+A separate [[file:funext.org][Memo]] to collect my thoughts.
+** About the order in which rewrites happen
+Since the rewriting system is (supposed to be) confluent, the order in which we do rewrites does not matter for completeness. But there might be performance differences.
+For lambda calculus for example we have leftmost-outermost and rightmost-innermost where the forst one is the "best" reduction.
+For Autosubst with multiple sorts you even have multiple redices (one for each kind of substitution/renaming operation). Still, leftmost-outermost is probaly the most performant because we could throw away some inner redices.
+** Requiring the List/Arith module changes semantics of rewrite
+* Infrastructure
+** OCaml implementation dependencies
+- ocaml-variants.4.11.1+flambda
+- coq.8.13.1
+- angstrom.0.15.0
+- ocamlgraph.2.0.0
+- ppx_deriving.5.2.1
+- monadic (git hash 697fa65, fixed a small bug)
+** MetaCoq imlementation dependencies
+- ocaml-base-compiler.4.09.1
+- coq.8.13.0
+- coq-metacoq.1.0~beta2+8.13
+*** TODO write a Readme for the MetaCoq project to build it
+** Website for Autosubst
+Github.io can only serve static pages so not useful for our case. But with heroku one can deploy arbitrary docker images (found a blog post describing deploying an OCaml container to heroku).
+The website itself would be pretty simple. We need one textinput for the HOAS description of the language and some toggles for flags. On the server we just call the autosubst binary and send the result to the browser.
+* Additional Lemmas
+** Allfv
+*** use case fuer allfv in undec library
+https://github.com/uds-psl/coq-library-undecidability/pull/116
+** Dinge die Andrej auch in seiner neuen Entwicklung oft braucht, aber teil von Autosubst sein koennten.
+Lemma upRen_term_term_id x : upRen_term_term id x = x.
+Lemma shift_up_term_term sigma x : (shift >> up_term_term sigma) x = (sigma >> ren_term shift) x.
+Lemma ren_id : ren_term id P = P
+extRen_tm : es waere besser zu benutzen, wenn man zusaetzlich noch ein s = t argument bekommt, damit man es auf syntaktisch verschiedene Argumente andwenden kann und danach ihre Gleichheit beweist.
+** Dinge, die Andrej noch in die unscoped.v hinzugefuegt hat.
+https://github.com/mrhaandi/coq-library-undecidability/blob/SysF_omega/theories/SemiUnification/autosubst/unscoped_more.v
+Dort sind auch unter allfv_more.v die ganzen free variables lemmas (besinders wichtig Zeile 177 ext_allfv_subsst_term)
+Ebenfalls pts_more.v sollte vllt von autosubst erzeugt werden.
+* Case Studies
+** TODO Fallstudie: Church Rosser fuer pts von SystemF, er hat es bis jetzt noch nicht gemacht. Ich koennte es dann fuer meine Arbeit implementieren
+** Small case study
+I made a small case study of using Autosubst for System F for an exercise from "Types and Programming Languages". Even though the whole exercise is probably not easily solvable in Coq (lot's of mathematical reasoning that's easy on paper but hard to mechanize) it was easy enough to prove progress/preservation using my generated code for System F and solve a subexercise.
+
+** Kann ich Mark Kochs's FOL-Sprache mit Autosubst erzeugen?
+Das mit den arity functions sollte schon supported sein wenn wir parameter verwenden.
+und hat er allfv lemmas?
+** Andrej's SystemF omega
+- mit Autosubst erzeugen
+- starke Normalisierung auf Typebene (das gleiche wie starke Normalisierung bei STLC)
+- starke Normalisierung auf Termebene (angepasster Beweis aus der undec library fuer System F)
+  gibt es dazu schon Implementierungen in Coq?
+** Andrej'S SystemF
+standard entscheidungsproblem in der typtheorie. checken ob ein term ein typ hat.
+die Lemmas, die ein Praedikat auf allen freien Variablen auswerten. Kann man vllt erzeugen.
