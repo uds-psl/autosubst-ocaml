@@ -1,5 +1,6 @@
 A memo about various topics that came up duirng my Bachelor seminar.
 Mostly in English, sometimes in German and the subsections for a topic are sometimes in an arbitrary order or consist of bullet points that are not cleaned up.
+The document is best viewed in emacs's org-modeas github's rendering is not very legible.
 * Autosubst-OCaml
 ** Maintenance
 *** Autosubst in der coq ci?
