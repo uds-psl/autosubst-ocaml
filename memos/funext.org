@@ -59,6 +59,16 @@ Also we completely unfold function composition as discussed in the next section.
 We unfold it because setoid rewrite needs a syntactic match to start the rewrite (i.e. if we rewrite with something of type `f x = g x`, then we need f applied to x somewhere in the term, and `f >> g` unfolded contains such a subterm.)
 This is a bit unsatisfactory because the morphism for subst ((forall x, f x = g x) -> s[f] = s[g]) already gives you such a subterm but setoid rewrite needs `f x` before it even thinks about using that morphism.
 There is also another point in favor of unfolding function composition. There are cases where setoid rewrite fails if the term contains too many function compositions (even though a morphism exists). There should be an instance in the coq-setoid-asimpl copy of Kathrin's case study.
+*** TODO Suggestion by Yannick
+In my second bachelor seminar talk Yannick saif it might be possible to circumvent this issue by stating the type of an extensional equality using some relation instead of the explicit "equality of functions applied to arguments". So we would have something like this.
+#+begin_src coq
+H: ext_equal f g.
+
+s[h >> f] = s[h >> g]
+#+end_src
+Here setoid rewriting should be smart enough to start because we have a syntactic match for f.
+We would then have to reformulate the types of our generated lemmas (or maybe do a small wrapper first to check feasibility `forall f g, (forall x, f x = g x) -> ext_equal f g`) and a morphism for function composition.
+This would make the asimpl tactic more straightforward because we don't have this special case.
 ** Problem with eta-expanded functions
 A description is in the [[file:../case-studies/kathrin/coq-setoid/Chapter9/testbench.v][source code]] in the MWE module. The heuristics used by setoid rewriting apparently does not lile rewriting under eta-expanded functions.
 This is however not a problem since we can eta-reduce these functions to be able to proceed with rewriting.
