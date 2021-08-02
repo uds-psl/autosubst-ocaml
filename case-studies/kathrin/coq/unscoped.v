@@ -139,11 +139,11 @@ Lemma scons_comp' (T: Type) {U} (s: T) (sigma: nat -> T) (tau: T -> U ) (x: nat)
 Proof. destruct x; reflexivity. Qed.
 
 (* Morphism for Setoid Rewriting. The only morphism that can be defined statically. *)
-Instance scons_morphism {X: Type} (t: X) :
-  Proper (pointwise_relation _ eq ==> pointwise_relation _ eq) (fun f => (@scons X t f)).
+Instance scons_morphism {X: Type}:
+  Proper (eq ==> pointwise_relation _ eq ==> pointwise_relation _ eq) (@scons X).
 Proof.
   cbv - [scons].
-  intros sigma tau H.
+  intros t t' -> sigma tau H.
   intros [|x].
   cbn. reflexivity.
   apply H.
@@ -198,7 +198,8 @@ Ltac fsimpl :=
          | [|- context[var_zero]] =>  change var_zero with 0
          | [|- context[?x2 .: (fun x => ?f (shift x))]] => change (scons x2 (fun x => f (shift x))) with (fun x => (scons (f var_zero) (fun x => f (shift x))) x); setoid_rewrite (@scons_eta' _ _ f)
          | [|- context[?f var_zero .: ?g]] => change (scons (f var_zero) g) with (fun x => (scons (f var_zero) (fun x => f (shift x))) x); rewrite scons_eta'
-         | [|- context[fun x => ?tau (scons ?s ?sigma x)]] => setoid_rewrite scons_comp'; eta_reduce
+         (* TODO had to put an underscore as the last argument to scons. This might be an argument against unfolding funcomp *)
+         | [|- context[fun x => ?tau (scons ?s ?sigma _)]] => setoid_rewrite scons_comp'; eta_reduce
          | [|- context[scons var_zero shift]] => change (scons var_zero shift) with (fun x => (scons var_zero shift) x); setoid_rewrite scons_eta_id'; eta_reduce
                         end.
 

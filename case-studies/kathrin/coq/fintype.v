@@ -248,7 +248,7 @@ Proof.
 Qed.
 
 Lemma scons_p_comp' X Y m n (f : fin m -> X) (g : fin n -> X) (h : X -> Y) x:
- h (scons_p  f g x)  = scons_p (f >> h) (g >> h) x.
+ h (scons_p  f g x)  = scons_p (fun x => h (f x)) (fun x => h (g x)) x.
 Proof.
   destruct (destruct_fin x) as [[x' ->]|[x' ->]].
   - now rewrite !scons_p_head'.
@@ -358,6 +358,7 @@ Ltac fsimpl :=
          (* |[|- _ =  ?h (?f ?s)] => change (h (f s)) with ((f >> h) s) *)
          (* |[|-  ?h (?f ?s) = _] => change (h (f s)) with ((f >> h) s) *)
          | [|- context[fun x => ?tau (scons ?s ?sigma x)]] => setoid_rewrite scons_comp'; eta_reduce
+         | [|- context[fun x => ?h (scons_p ?f ?g _)]] => setoid_rewrite scons_p_comp'; eta_reduce
          | [|- context[scons (@var_zero ?n) shift]] => change (scons (@var_zero n) shift) with (fun x => (scons (@var_zero n) shift) x); setoid_rewrite scons_eta_id'; eta_reduce
          | _ => progress autorewrite with FunctorInstances
          end.
