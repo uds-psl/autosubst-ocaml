@@ -42,7 +42,7 @@ let gen_asimpl' () =
   let asimpl_rewrite_base = info.asimpl_rewrite_base in
   let asimpl_cbn_functions = info.asimpl_cbn_functions in
   let asimpl_unfold_functions = info.asimpl_unfold_functions in
-  let rewrites = List.concat_map (fun t -> [ progress_ (setoid_rewrite_ t); progress_ (rewrite_ t) ]) (asimpl_rewrite_base @ asimpl_rewrite_no_fext) in
+  let rewrites = List.(concat (map (fun t -> [ progress_ (setoid_rewrite_ t); progress_ (rewrite_ t) ]) (asimpl_rewrite_base @ asimpl_rewrite_no_fext))) in
   let tac = repeat_ (first_ (rewrites @
                              [ progress_ (unfold_ asimpl_unfold_functions)
                              ; progress_ (cbn_ asimpl_cbn_functions)
@@ -209,7 +209,7 @@ let gen_instances () =
   in
   (* TODO better way to chain actions? *)
   let* _ = sequence (List.map register_instance_unfolds instances) in
-  let instance_definitions = List.concat_map (fun (inst_type, sort, params) -> [ gen_instance inst_type sort params ]) instances in
+  let instance_definitions = List.(concat (map (fun (inst_type, sort, params) -> [ gen_instance inst_type sort params ]) instances)) in
   pure instance_definitions
 
 let gen_notations () =

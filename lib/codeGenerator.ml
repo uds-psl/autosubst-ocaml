@@ -653,6 +653,7 @@ let genUpSubstSubst (binder, sort) =
   let* substSorts = substOf sort in
   (* TODO document *)
   let* pat' = comp_ren_or_subst sort (SubstRen pat) taus in
+  (* TODO there are some repeated code segments in this and other functions. abstract them out *)
   let t n = eqTrans_
       (app_ref (compRenSubst_ sort) (pat @ sty_terms taus'
                                      @ List.map2 (>>>) pat (sty_terms taus')
@@ -1009,12 +1010,12 @@ let genLemmaCompSubstRen sort =
   let [@warning "-8"] [], [ ks; ls; ms ], [ sigmas; zetas ], scopeBinders = v in
   let* substSorts = substOf sort in
   let s = VarState.tfresh "s" in
-  let* sigmazeta = comp_ren_or_subst sort zetas sigmas in
+  let* sigmazetas = comp_ren_or_subst sort zetas sigmas in
   let ret = eq_
       (app_ref (ren_ sort) (sty_terms zetas
                             @ [ app_ref (subst_ sort) (sty_terms sigmas
                                                        @ [ ref_ s ]) ]))
-      (app_ref (subst_ sort) (sigmazeta @ [ ref_ s ])) in
+      (app_ref (subst_ sort) (sigmazetas @ [ ref_ s ])) in
   let proof = app_ref (compSubstRen_ sort) (sty_terms sigmas
                                             @ sty_terms zetas
                                             @ List.map (const underscore_) substSorts
@@ -1022,7 +1023,7 @@ let genLemmaCompSubstRen sort =
                                             @ [ ref_ s ]) in
   let ret' = eq_
       (app_ref (subst_ sort) (sty_terms sigmas) >>> app_ref (ren_ sort) (sty_terms zetas))
-      (app_ref (subst_ sort) sigmazeta) in
+      (app_ref (subst_ sort) sigmazetas) in
   let proof' = fext_ (abs_ref "n"
                         (app_ref (substRen_ sort)
                            (sty_terms sigmas
@@ -1040,13 +1041,13 @@ let genLemmaCompRenSubst sort =
   let* v = V.genVariables sort [ `KS; `LS; `MS; `XIS (`MS, `KS); `TAUS (`KS, `LS) ] in
   let [@warning "-8"] [], [ ks; ls; ms ], [ xis; taus ], scopeBinders = v in
   let* substSorts = substOf sort in
-  let sigmazeta =  xis <<>> taus in
+  let xitaus =  xis <<>> taus in
   let s = VarState.tfresh "s" in
   let ret = eq_
       (app_ref (subst_ sort) (sty_terms taus
                               @ [ app_ref (ren_ sort) (sty_terms xis
                                                        @ [ref_ s])]))
-      (app_ref (subst_ sort) (sigmazeta @ [ref_ s])) in
+      (app_ref (subst_ sort) (xitaus @ [ref_ s])) in
   let proof = app_ref (compRenSubst_ sort) (sty_terms xis
                                             @ sty_terms taus
                                             @ List.map (const underscore_) substSorts
@@ -1054,7 +1055,7 @@ let genLemmaCompRenSubst sort =
                                             @ [ref_ s]) in
   let ret' = eq_
       (app_ref (ren_ sort) (sty_terms xis) >>> (app_ref (subst_ sort) (sty_terms taus)))
-      (app_ref (subst_ sort) sigmazeta) in
+      (app_ref (subst_ sort) xitaus) in
   let proof' = fext_ (abs_ref "n"
                         (app_ref (renSubst_ sort)
                            (sty_terms xis
