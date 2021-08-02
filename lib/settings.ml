@@ -31,7 +31,7 @@ type args = {
   scope : scope;
   gen_allfv : bool;
   gen_fext : bool;
-  generate_static_files : bool;
+  gen_static_files : bool;
   force_overwrite : bool;
   version : coq_version;
 }
