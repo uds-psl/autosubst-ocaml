@@ -2013,7 +2013,32 @@ Ltac auto_unfold := repeat unfold subst1,  subst2,  Subst1,  Subst2,  ids,  ren1
 
 Tactic Notation "auto_unfold" "in" "*" := repeat unfold subst1,  subst2,  Subst1,  Subst2,  ids,  ren1,  ren2,  Ren1,  Ren2,  Subst_ty,  Subst_pat,  Subst_tm,  Ren_ty,  Ren_pat,  Ren_tm,  VarInstance_ty,  VarInstance_tm in *.
 
-Ltac asimpl' := repeat first [progress rewrite ?instId_ty| progress rewrite ?compComp_ty| progress rewrite ?compComp'_ty| progress rewrite ?instId_pat| progress rewrite ?compComp_pat| progress rewrite ?compComp'_pat| progress rewrite ?instId_tm| progress rewrite ?compComp_tm| progress rewrite ?compComp'_tm| progress rewrite ?rinstId_ty| progress rewrite ?compRen_ty| progress rewrite ?compRen'_ty| progress rewrite ?renComp_ty| progress rewrite ?renComp'_ty| progress rewrite ?renRen_ty| progress rewrite ?renRen'_ty| progress rewrite ?rinstId_pat| progress rewrite ?compRen_pat| progress rewrite ?compRen'_pat| progress rewrite ?renComp_pat| progress rewrite ?renComp'_pat| progress rewrite ?renRen_pat| progress rewrite ?renRen'_pat| progress rewrite ?rinstId_tm| progress rewrite ?compRen_tm| progress rewrite ?compRen'_tm| progress rewrite ?renComp_tm| progress rewrite ?renComp'_tm| progress rewrite ?renRen_tm| progress rewrite ?renRen'_tm| progress rewrite ?varL_ty| progress rewrite ?varL_tm| progress rewrite ?varLRen_ty| progress rewrite ?varLRen_tm| progress (unfold up_ren, upRen_ty_ty, upRen_list_ty_ty, upRen_ty_tm, upRen_tm_ty, upRen_tm_tm, upRen_list_ty_tm, upRen_list_tm_ty, upRen_list_tm_tm, up_ty_ty, up_list_ty_ty, up_ty_tm, up_tm_ty, up_tm_tm, up_list_ty_tm, up_list_tm_ty, up_list_tm_tm)| progress (cbn [subst_ty subst_pat subst_tm ren_ty ren_pat ren_tm])| fsimpl].
+Ltac asimpl' := repeat first [
+                         progress rewrite ?instId_ty
+                       | progress rewrite ?compComp_ty
+                       | progress rewrite ?compComp'_ty
+                       | progress rewrite ?instId_pat
+                       | progress rewrite ?compComp_pat
+                       | progress rewrite ?compComp'_pat
+                       | progress rewrite ?instId_tm
+                       | progress rewrite ?compComp_tm
+                       | progress rewrite ?compComp'_tm
+                       | progress rewrite ?rinstId_ty
+                       | progress rewrite ?compRen_ty
+                       | progress rewrite ?compRen'_ty
+                       | progress rewrite ?renComp_ty
+                       | progress rewrite ?renComp'_ty
+                       | progress rewrite ?renRen_ty
+                       | progress rewrite ?renRen'_ty
+                       | progress rewrite ?rinstId_pat
+                       | progress rewrite ?compRen_pat
+                       | progress rewrite ?compRen'_pat| progress rewrite ?renComp_pat| progress rewrite ?renComp'_pat| progress rewrite ?renRen_pat| progress rewrite ?renRen'_pat| progress rewrite ?rinstId_tm| progress rewrite ?compRen_tm| progress rewrite ?compRen'_tm| progress rewrite ?renComp_tm| progress rewrite ?renComp'_tm| progress rewrite ?renRen_tm| progress rewrite ?renRen'_tm
+                       | progress rewrite ?varL_ty
+                       | progress rewrite ?varL_tm
+                       | progress rewrite ?varLRen_ty
+                       | progress rewrite ?varLRen_tm
+                       | progress (unfold up_ren, upRen_ty_ty, upRen_list_ty_ty, upRen_ty_tm, upRen_tm_ty, upRen_tm_tm, upRen_list_ty_tm, upRen_list_tm_ty, upRen_list_tm_tm, up_ty_ty, up_list_ty_ty, up_ty_tm, up_tm_ty, up_tm_tm, up_list_ty_tm, up_list_tm_ty, up_list_tm_tm)
+                       | progress (cbn [subst_ty subst_pat subst_tm ren_ty ren_pat ren_tm])| fsimpl].
 
 Ltac asimpl := repeat try unfold_funcomp; auto_unfold in *; asimpl'; repeat try unfold_funcomp.
 

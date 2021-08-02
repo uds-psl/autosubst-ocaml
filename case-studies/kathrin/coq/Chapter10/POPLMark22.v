@@ -150,6 +150,14 @@ where "'SUB' Delta |- A <: B" := (sub Delta A B).
 
 Hint Constructors sub.
 
+
+Require Import Setoid Morphisms.
+Instance sub_morphism {n}:
+  Proper (pointwise_relation _ eq ==> eq ==> eq ==> Basics.impl) (@sub n).
+Proof.
+    (* TODO I think here I actually need a stronger induction lemma though I'm not sure how to do it with two lists. Marcel's Bachelor thesis can probably help *)
+Admitted.
+
 Lemma sub_rec :  forall P : forall n : nat, ctx n -> ty n -> ty n -> Prop,
        (forall (n : nat) (Delta : ctx n) (A : ty n), P n Delta A top) ->
        (forall (n : nat) (Delta : ctx n) (x : fin n), P n Delta (var_ty x) (var_ty x)) ->
@@ -242,7 +250,8 @@ Proof with asimpl;eauto.
   - constructor; eauto.
     eapply IHHH2.
     + auto_case; try apply sub_refl.
-      eapply sub_weak; try reflexivity. eapply H. now asimpl.
+      eapply sub_weak; try reflexivity.
+      2: intros x; reflexivity. apply H.
     + auto_case. destruct (H' f);  eauto using transitivity_ren.
       rewrite H0. now left.
   - econstructor; eauto. intros l T' HH.
@@ -260,12 +269,12 @@ Proof with asimpl;eauto.
   - depind H... depind H1...
     econstructor... clear IHsub0 IHsub3 IHsub1 IHsub2.
     eapply IHB2; eauto.
-    + asimpl in *. eapply sub_narrow; try eapply H0.
+    + asimpl. eapply sub_narrow; try eapply H0.
       * auto_case.
         eapply sub_weak with (xi := ↑); try reflexivity; eauto.
         (* adrian: as of 7b3472c the goal is already solved by eauto
          TODO find out why *)
-        (* now asimpl. *)
+        now asimpl.
       * intros [x|]; try cbn; eauto. right. apply transitivity_ren. apply transitivity_ren. eauto.
     + asimpl in H1_0. auto.
   - depind H0... depind H3...
@@ -293,6 +302,7 @@ Proof.
     auto_case; asimpl; cbn; eauto using sub_refl.
     eapply sub_weak; try reflexivity. eapply eq.
     all: try now asimpl.
+    (* asimpl in H0. *)
   - intros. asimpl. econstructor; eauto. intros. rewrite in_map_iff in H2. destruct H2 as ((?&?)&?&?).
     inv H2. destruct (H _ _ H3) as (T&?&?&?).
     exists (T[sigma]). split; eauto. apply in_map. eauto.
@@ -304,6 +314,13 @@ Qed.
 Variable pat_ty : forall {m} (p: nat), pat m -> ty m ->  (fin p -> (ty m)) -> Prop.
 Variable pat_eval : forall {m n} p, pat m -> tm m n -> (fin p -> (tm m n)) -> Prop.
 Variable pat_ty_subst: forall {m n} (sigma: fin m -> ty n) p pt A Gamma, pat_ty m p pt A Gamma -> pat_ty n p (pt[sigma]) (A[sigma]) (Gamma >>  subst_ty sigma).
+
+
+Instance pat_ty_morphism {m p} :
+  Proper (eq ==> eq ==> pointwise_relation _ eq ==> Basics.impl) (@pat_ty m p).
+Proof.
+Admitted.
+
 
 Inductive value {m n}: tm m n -> Prop :=
 | Value_abs A s : value(abs A s)
@@ -332,6 +349,11 @@ Inductive has_ty {m n} (Delta : ctx m) (Gamma : dctx  n m) : tm m n -> ty m -> P
     TY Delta;Gamma |- s : B
 where "'TY' Delta ; Gamma |- s : A" := (has_ty Delta Gamma s A).
 
+Instance has_ty_morphism {m n} :
+  Proper (pointwise_relation _ eq ==> pointwise_relation _ eq ==> eq ==> eq ==> Basics.impl) (@has_ty m n).
+Proof.
+Admitted.
+
 Lemma T_Var' {m n} (Delta : ctx m) (Gamma : dctx n m) x :
   forall A, A = Gamma x -> TY Delta;Gamma |- var_tm x : A.
 Proof. intros A ->. now econstructor. Qed.
@@ -356,6 +378,11 @@ Inductive eval {m n} : tm m n -> tm m n -> Prop :=
 | E_Proj s s' j : EV s => s' -> EV (proj s j) => (proj s' j)
 | E_Rec l ts t t' : EV t => t' -> In (l,t) ts -> EV (rectm ts) => rectm (update ts l t')                  | E_LetL p pt s s' t : EV s => s' -> EV (letpat p pt s t) => (letpat p pt s'  t)
 where "'EV' s => t" := (eval s t).
+
+Instance eval_morphism {m n}:
+  Proper (eq ==> eq ==> Basics.impl) (@eval m n).
+Proof.
+Admitted.
 
 (** Assumptions of progress and typing on patterns. *)
 Variable pat_progress : forall p pt s A Gamma, TY empty; empty |- s : A -> pat_ty _ p pt A Gamma -> exists sigma, pat_eval _ _ p pt s sigma.
@@ -432,14 +459,28 @@ Qed.
 
 (** Preservation *)
 
+Instance scons_p_morphism {X: Type} {m n:nat}:
+  Proper (pointwise_relation _ eq ==> pointwise_relation _ eq ==> pointwise_relation _ eq) (@scons_p X m n).
+Proof.
+  intros sigma sigma' Hsigma tau tau' Htau.
+  induction m as [|m] in n, sigma, tau, sigma', tau', Hsigma, Htau |- *.
+  - cbn. apply Htau.
+  - cbn. intros [x|].
+    + cbn. apply IHm.
+      intros y.
+      apply (Hsigma (Some y)).
+      apply Htau.
+    + cbn. apply (Hsigma var_zero).
+Qed.
+
 Lemma context_renaming_lemma m m' n n' (Delta: ctx m') (Gamma: dctx n' m')                                                   (s: tm m n) A (xi : fin m -> fin m') (zeta: fin n -> fin n') Delta' (Gamma' : dctx n m):
   (forall x, (Delta' x)⟨xi⟩ = Delta (xi x)) ->
   (forall (x: fin n) , (Gamma' x)⟨xi⟩ =  (Gamma (zeta x))) ->
   TY Delta'; Gamma' |- s : A -> TY Delta; Gamma |- s⟨xi;zeta⟩ : A⟨xi⟩.
 Proof.
   intros H H' ty. autorevert ty.
-  depind ty; intros; asimpl in *; subst; try now (econstructor; eauto).
-  - rewrite H'. constructor.
+  depind ty; asimpl; intros; subst; try now (econstructor; eauto).
+  - rewrite H0. constructor.
   - constructor. eapply IHty; eauto.
     auto_case; asimpl.
   - cbn. econstructor. apply IHty; eauto.
@@ -455,12 +496,22 @@ Proof.
       eapply H3; eassumption.
   - cbn. econstructor; eauto. now apply in_map.
   - cbn. asimpl. apply letpat_ty  with (A0 := A⟨xi⟩) (Gamma'0 := Gamma' >> ⟨xi⟩); eauto.
-    + substify. eauto.
-    + asimpl. eapply IHty2; eauto; asimpl.
+    + substify.
+      (* TODO subsitfy does not work under funcomp *)
+      change (Gamma' >> ren_ty xi) with (fun y => ren_ty xi (Gamma' y)).
+      setoid_rewrite rinstInst'_ty.
+      eauto.
+    + asimpl.
+      Hint Opaque subst_ty : rewrite.
+      eapply IHty2; eauto; asimpl.
       * intros z.
         (* adrian: had to add the following line to make it compile.*)
         unfold dctx in Gamma, Gamma0. unfold upRen_p.
-        asimpl. f_equal. fext. eauto.
+        (* TODO setoid-asimpl does not work with scons_p yet *)
+        asimpl_fext.
+        (* unfold funcomp. *)
+        (* setoid_rewrite scons_p_comp'. *)
+        f_equal. fext. eauto.
   - econstructor. eauto. eapply sub_weak; eauto.
 Qed.
 
@@ -511,7 +562,11 @@ Proof.
         destruct (destruct_fin x) as [[x' ->] |[x' ->]]; asimpl; eauto.
         -- eapply T_Var'. now asimpl.
         -- eapply context_renaming_lemma'; try eapply eq2; try now asimpl.
-           intros z. now asimpl.  }
+           intros z.
+           now asimpl.
+           (* TODO setoid-asimpl does not work with scons_p yet *)
+           intros x. now asimpl_fext.
+     } 
   - econstructor.
     + eapply IHty; eauto.
     + eapply sub_substitution; eauto.
@@ -604,7 +659,8 @@ Proof.
         -- auto_case; asimpl; eauto using sub_refl.
         -- intros x. asimpl. constructor.
       * pose proof (ty_inv_tabs _ H_ty H) as (?&?&?&?).
-        eapply T_Sub.  asimpl in *.
+        eapply T_Sub.  asimpl.
+        (* asimpl in * *)
         eapply context_morphism_lemma; eauto.
         -- auto_case; asimpl; eauto.
         -- intros z. asimpl. constructor.
@@ -622,8 +678,9 @@ Proof.
       eapply context_morphism_lemma; try now apply H_ty2.
       * intros. asimpl. constructor. now apply sub_refl.
       * intros. destruct (destruct_fin x) as [[]|[]]; subst.
-        -- asimpl. eapply pat_ty_eval; eauto.
-        -- asimpl. constructor.
+        (* TODO why did I have to do `exact Gamma'` here twice? *)
+        -- asimpl. eapply pat_ty_eval; eauto. exact Gamma'.
+        -- asimpl. constructor. exact Gamma'.
     + eapply T_Sub; eauto.
   - depind H_ty; [|eapply T_Sub; eauto].
     econstructor; eauto.

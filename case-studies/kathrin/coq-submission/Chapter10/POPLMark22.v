@@ -453,7 +453,74 @@ Proof.
       * intros z.
         (* adrian: had to add the following line to make it compile.*)
         unfold dctx in Gamma, Gamma0. unfold upRen_p.
-        asimpl. f_equal. fext. eauto.
+        auto_unfold.
+        rewrite (scons_p_comp' Gamma' Gamma (ren_ty xi) z).
+        (* change (zeta >> shift_p p) with (fun x => shift_p p (zeta x)). *)
+        (* rewrite scons_p_tail'. *)
+        change (scons_p p (Gamma' >> ⟨xi⟩) Gamma0
+                        (scons_p p (zero_p p) (zeta >> shift_p p) z)) with
+            (scons_p p (Gamma' >> (ren_ty xi)) (zeta >> Gamma0) z).
+  match goal with
+         (* | [|- context[id >> ?f]] => change (id >> f) with f (* AsimplCompIdL *) *)
+         (* | [|- context[?f >> id]] => change (f >> id) with f (* AsimplCompIdR *) *)
+         (* | [|- context [id ?s]] => change (id s) with s *)
+         (* | [|- context[comp ?f ?g]] => change (comp f g) with (g >> f) (* AsimplCompIdL *) *)
+         | [|- context[(?f >> ?g) >> ?h]] =>
+           change ((f >> g) >> h) with (f >> (g >> h)) (* AsimplComp *)
+
+         | [|- zero_p >> scons_p ?f ?g] => rewrite scons_p_head
+
+         | [|- context[(?s.:?sigma) var_zero]] => change ((s.:sigma) var_zero) with s
+         | [|- context[(?s.:?sigma) (shift ?m)]] => change ((s.:sigma) (shift m)) with (sigma m)
+
+         | [|- context[idren >> ?f]] => change (idren >> f) with f
+         | [|- context[?f >> idren]] => change (f >> idren) with f
+         | [|- context[?f >> (?x .: ?g)]] => change (f >> (x .: g)) with g
+         | [|- context[?x2 .: shift >> ?f]] => change x2 with (f var_zero); rewrite (@scons_eta _ _ f)
+         | [|- context[?f var_zero .: ?g]] => change g with (shift >> f); rewrite scons_eta
+
+         |[|- _ =  ?h (?f ?s)] => change (h (f s)) with ((f >> h) s)
+         |[|-  ?h (?f ?s) = _] => change (h (f s)) with ((f >> h) s)
+
+         | _ => first [progress (rewrite scons_comp) |  progress (rewrite scons_eta_id) | progress (autorewrite with FunctorInstances)]
+         end.
+  
+  match goal with
+         | [|- context[id >> ?f]] => change (id >> f) with f (* AsimplCompIdL *)
+         | [|- context[?f >> id]] => change (f >> id) with f (* AsimplCompIdR *)
+         | [|- context [id ?s]] => change (id s) with s
+         | [|- context[comp ?f ?g]] => change (comp f g) with (g >> f) (* AsimplCompIdL *)
+         | [|- context[(?f >> ?g) >> ?h]] =>
+           change ((f >> g) >> h) with (f >> (g >> h)) (* AsimplComp *)
+
+         | [|- zero_p >> scons_p ?f ?g] => rewrite scons_p_head
+
+         | [|- context[(?s.:?sigma) var_zero]] => change ((s.:sigma) var_zero) with s
+         | [|- context[(?s.:?sigma) (shift ?m)]] => change ((s.:sigma) (shift m)) with (sigma m)
+
+         | [|- context[idren >> ?f]] => change (idren >> f) with f
+         | [|- context[?f >> idren]] => change (f >> idren) with f
+         | [|- context[?f >> (?x .: ?g)]] => change (f >> (x .: g)) with g
+         | [|- context[?x2 .: shift >> ?f]] => change x2 with (f var_zero); rewrite (@scons_eta _ _ f)
+         | [|- context[?f var_zero .: ?g]] => change g with (shift >> f); rewrite scons_eta
+
+         |[|- _ =  ?h (?f ?s)] => change (h (f s)) with ((f >> h) s)
+         |[|-  ?h (?f ?s) = _] => change (h (f s)) with ((f >> h) s)
+
+         | _ => first [progress (rewrite scons_comp) |  progress (rewrite scons_eta_id) | progress (autorewrite with FunctorInstances)]
+         end.
+
+  match goal with
+         | [|- context[(?f >> ?g) >> ?h]] =>
+           change ((f >> g) >> h) with (f >> (g >> h)) (* AsimplComp *)
+         end.
+  change (shift_p p >> scons_p p (Gamma' >> (ren_ty xi)) Gamma0)
+    with (fun x => scons_p p (Gamma' >> (ren_ty xi)) Gamma0 (shift_p p x)).
+  setoid_rewrite scons_p_tail'.
+
+
+        Info 3 fsimpl.
+        Info 3 asimpl. f_equal. fext. eauto.
   - econstructor. eauto. eapply sub_weak; eauto.
 Qed.
 
