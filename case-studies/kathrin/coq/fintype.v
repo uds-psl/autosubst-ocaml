@@ -337,7 +337,7 @@ Tactic Notation "auto_case" tactic(t) :=  (match goal with
                                            end).
 
 (** Functor instances which can be added later on. *)
-Hint Rewrite @scons_p_head' @scons_p_tail' : FunctorInstances.
+Hint Rewrite @scons_p_comp' @scons_p_head' @scons_p_tail' : FunctorInstances.
 
 (** Generic fsimpl tactic: simplifies the above primitives in a goal. *)
 Ltac fsimpl :=
