@@ -1,6 +1,6 @@
 Require Export Coq.Lists.List.
 Require Import Coq.Program.Equality.
-Require Import core core_axioms fintype fintype_axioms.
+Require Import core (* core_axioms *) fintype (* fintype_axioms *).
 Import ScopedNotations.
 From Chapter10 Require Export sysf_pat.
 Require Import Coq.Program.Tactics.
@@ -218,6 +218,8 @@ Proof.
   intros H. autorevert H. induction H using @sub_rec; intros; subst; asimpl; cbn; econstructor; eauto.
   - eapply IHsub2; try reflexivity.
     auto_case; eauto. rewrite <- H1. now asimpl.
+    (* TODO auto_case problems *)
+    now asimpl.
   - intros l T' HH. rewrite in_map_iff in HH. destruct HH as ([]&HH&?).
     inv HH. destruct (H _ _ H3) as (?&?&?&?).
     exists (x⟨xi⟩). split; eauto. apply in_map; eauto.
@@ -274,7 +276,7 @@ Proof with asimpl;eauto.
         eapply sub_weak with (xi := ↑); try reflexivity; eauto.
         (* adrian: as of 7b3472c the goal is already solved by eauto
          TODO find out why *)
-        now asimpl.
+        (* now asimpl. *)
       * intros [x|]; try cbn; eauto. right. apply transitivity_ren. apply transitivity_ren. eauto.
     + asimpl in H1_0. auto.
   - depind H0... depind H3...
@@ -565,11 +567,14 @@ Qed.
 (*       intros z. *)
 (*       unfold dctx in Gamma, Gamma0. unfold upRen_p. *)
 (*       fsimpl. *)
-(*       now setoid_rewrite H'. *)
+(*       unfold funcomp. *)
+(*       Hint Transparent scons_p : rewrite. *)
+(*       Set Typeclasses Debug. *)
+(*       try rewrite_strat innermost H'. *)
 
-(*       (* TODO somehow the approach of wrapping it in id or AW does nto work with scons_p_comp here *)
-(*        * but a rewrite strat does help *)
-(*        * but the rewrite_strat with subterms works well *) *)
+(*       (* TODO somehow the approach of wrapping it in id or AW does nto work with scons_p_comp here *) *)
+(* (*        * but a rewrite strat does help *) *)
+(* (*        * but the rewrite_strat with subterms works well *) *)
 (*       (* rewrite_strat scons_p_comp'. *) *)
 (*       (* rewrite_strat subterms scons_p_comp'. *) *)
 (*       (* setoid_rewrite scons_p_head'. *) *)
@@ -577,9 +582,9 @@ Qed.
 (*       (* setoid_rewrite H'. *) *)
 (*       (* reflexivity. *) *)
 
-(*       (* TODO this rewrites too eagerly and also uses the eq that is applied to the scons_p *)
-(*        * If I don't unfold funcomp this would not be a problem *)
-(*        * But I'm wondering why this happens here but not in the other file with just scons?*) *)
+(*       (* TODO this rewrites too eagerly and also uses the eq that is applied to the scons_p *) *)
+(* (*        * If I don't unfold funcomp this would not be a problem *) *)
+(* (*        * But I'm wondering why this happens here but not in the other file with just scons?*) *)
 (*       (* rewrite scons_p_comp'. *) *)
 (*       (* Set Printing All. *) *)
 (*       (* Fail setoid_rewrite scons_p_comp'. *) *)
@@ -606,10 +611,10 @@ Qed.
 (*   (*     (* unfold funcomp. *) *) *)
 (*   (*     (* setoid_rewrite scons_p_comp'. *) *) *)
 (*   (*     unfold funcomp. *) *)
-(*   (*     (* DONE why does it not use the morphism? *) *)
-(*   (*      * because my scons_p morphism had (pointwise_relation) in the conclusion (because scons_p returns a function) *) *)
-(*   (*      * but here we want to solve an equality so we need eq in the conclusion. *) *)
-(*   (*      * therefore we need to inline the extensional equality in the morphism's signature by taking another eq argument and returning an eq of the results *) *) *)
+(*   (*     (* DONE why does it not use the morphism? *) *) *)
+(* (*   (*      * because my scons_p morphism had (pointwise_relation) in the conclusion (because scons_p returns a function) *) *) *)
+(* (*   (*      * but here we want to solve an equality so we need eq in the conclusion. *) *) *)
+(* (*   (*      * therefore we need to inline the extensional equality in the morphism's signature by taking another eq argument and returning an eq of the results *) *) *)
 (*   (*     setoid_rewrite H'. *) *)
 (*   (*     reflexivity. *) *)
 (* Qed. *)
@@ -636,10 +641,22 @@ Proof.
       eapply in_map_iff in H6. destruct H6 as ([j A']&?&?). inv H5.
       eapply H3; eassumption.
   - cbn. econstructor; eauto. now apply in_map.
-  - intros z.
-    unfold dctx in Gamma, Gamma0. unfold upRen_p.
-    fsimpl.
-    now setoid_rewrite H'.
+  - cbn. asimpl. apply letpat_ty  with (A0 := A⟨xi⟩) (Gamma'0 := Gamma' >> ⟨xi⟩); eauto.
+    + unfold funcomp.
+      (* TODO the unfold funcomp should not be necessary anymore when I use Yannicks appraoch *)
+      substify.
+      eauto.
+    + asimpl.
+      (* Hint Opaque scons_p : rewrite. *)
+      (* Hint Opaque subst_ty : rewrite. *)
+      eapply IHty2. eauto.
+      * intros z.
+        unfold dctx in Gamma, Gamma0. unfold upRen_p.
+        (* asimpl. *)
+        fsimpl.
+        unfold funcomp.
+        simple apply scons_p_morphism; [reflexivity|].
+        now setoid_rewrite H'.
     (* apply (crl0 m n p pt s t A B m' n' Delta Gamma Delta0 Gamma0 xi zeta Gamma' H ty1 ty2 IHty1 IHty2 H0 H'). *)
   - econstructor. eauto. eapply sub_weak; eauto.
 Qed.
@@ -809,8 +826,8 @@ Proof.
       * intros. asimpl. constructor. now apply sub_refl.
       * intros. destruct (destruct_fin x) as [[]|[]]; subst.
         (* TODO why did I have to do `exact Gamma'` here twice? *)
-        -- asimpl. eapply pat_ty_eval; eauto. exact Gamma'.
-        -- asimpl. constructor. exact Gamma'.
+        -- asimpl. eapply pat_ty_eval; eauto. (* exact Gamma'. *)
+        -- asimpl. constructor. (* exact Gamma'. *)
     + eapply T_Sub; eauto.
   - depind H_ty; [|eapply T_Sub; eauto].
     econstructor; eauto.

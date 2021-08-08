@@ -30,7 +30,7 @@ module TacGen = struct
   let calltacTac_ name tac =
     TacArg (CAst.make (TacCall (CAst.make (qualid_ name, [ Tacexp tac ]))))
   let setoid_rewrite_ ?(to_left=false) name =
-    calltacArgs_ "setoid_rewrite" [ name ]
+    calltacArgs_ ("setoid_rewrite" ^ if to_left then "_left" else "") [ name ]
   let then1_ tactic1 tactic2 = TacThen (tactic1, tactic2)
   let then_ = function
     | [] -> idtac_

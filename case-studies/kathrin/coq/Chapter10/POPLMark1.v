@@ -80,6 +80,8 @@ Proof.
   intros H. autorevert H. induction H; intros; subst; asimpl; econstructor; eauto.
   - eapply IHsub2; try reflexivity.
     auto_case. rewrite <- H1. now asimpl.
+    (* TODO auto_case should call asimpl on this goal. and asimpl directly solves this. so why is it still here? *)
+    now asimpl.
 Qed.
 
 Lemma sub_weak1 n (Delta : ctx n) A A' B B' C :
@@ -129,8 +131,9 @@ Proof with asimpl;eauto.
         eapply sub_weak with (xi := ↑); try reflexivity; eauto.
         (* adrian: as of 7b3472c the goal is already solved by eauto
          TODO find out why
-         as of dd2f061 it's not solved anymore *)
-        now asimpl.
+         as of dd2f061 it's not solved anymore
+         as of now it's solved again *)
+        (* now asimpl. *)
       * intros [x|]; try cbn; eauto. right. apply transitivity_ren. apply transitivity_ren. eauto.
     + asimpl in H1_0. auto.
 Qed.
@@ -388,8 +391,9 @@ Proof.
         eapply context_morphism_lemma; try eapply H_ty; eauto.
         -- auto_case.
            ++ asimpl. constructor. apply sub_refl.
-        (* a.d. TODO why is this already solved? *)
-           (* ++ now asimpl. *)
+        (* a.d. TODO why is this already solved?
+         now it's not solved anymore *)
+           ++ now asimpl.
         -- intros x. asimpl. constructor.
       * pose proof (ty_inv_tabs _ H_ty H) as (?&?&?&?).
         eapply T_Sub; eauto. asimpl.

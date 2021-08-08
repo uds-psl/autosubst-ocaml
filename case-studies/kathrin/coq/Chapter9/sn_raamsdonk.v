@@ -196,7 +196,8 @@ Proof.
   - inv HeqMp.
   - inv H.
     + apply SAbs. eapply anti_rename. exact H0.
-      instantiate (1 := p..). substify. now asimpl.
+      instantiate (1 := p..). substify.
+      now asimpl.
     + eapply SRed. exact H. eapply IHSN. reflexivity.
 Qed.
 

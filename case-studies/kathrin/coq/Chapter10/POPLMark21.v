@@ -210,6 +210,8 @@ Proof.
   intros H. autorevert H. induction H using @sub_rec; intros; subst; asimpl; cbn; econstructor; eauto.
   - eapply IHsub2; try reflexivity.
     auto_case; eauto. rewrite <- H1. now asimpl.
+    (* TODO same here as in Popl1. auto_case should call asimpl which direclty solves the goal, so why isn't it solved *)
+    now asimpl.
   - intros l T' HH. rewrite in_map_iff in HH. destruct HH as ([]&HH&?).
     inv HH. destruct (H _ _ H3) as (?&?&?&?).
     exists (x⟨xi⟩). split; eauto. apply in_map; eauto.
@@ -267,9 +269,9 @@ Proof with asimpl;eauto.
         eapply sub_weak with (xi := ↑); try reflexivity; eauto.
         (* adrian: as of 7b3472c the goal is already solved by eauto
          TODO find out why
-         as of dd2f061 it's not solved anymore
-         *)
-        now asimpl.
+         as of dd2f061 it's not solved anymore *)
+        (* ad of now it's solved again         *)
+        (* now asimpl. *)
       * intros [x|]; try cbn; eauto. right. apply transitivity_ren. apply transitivity_ren. eauto.
   (* but as of dd2f061 this is already solved *)
     (* + asimpl in H1_0. auto. *)
@@ -469,7 +471,7 @@ Proof.
   intros pat0 pat1 -> T0 T1 -> f f' Hf.
   intros x.
 Admitted.
-Require Import core_axioms fintype_axioms.
+(* Require Import core_axioms fintype_axioms. *)
 
 Lemma context_renaming_lemma m m' n n' (Delta: ctx m') (Gamma: dctx n' m')                                                   (s: tm m n) A (xi : fin m -> fin m') (zeta: fin n -> fin n') Delta' (Gamma' : dctx n m):
   (forall x, (Delta' x)⟨xi⟩ = Delta (xi x)) ->
@@ -494,9 +496,10 @@ Proof.
       eapply H3; eassumption.
   - cbn. econstructor; eauto. now apply in_map.
   - cbn. asimpl. apply letpat_ty  with (A0 := A⟨xi⟩) (Gamma'0 := Gamma' >> ⟨xi⟩); eauto.
-    +  substify.
-       (* TODO a.d. in this case substify should use setoid_rewrite instead of normal rewrite *)
-      unfold funcomp. setoid_rewrite rinstInst'_ty. eauto.
+    +  unfold funcomp. substify.
+       (* DONE a.d. in this case substify should use setoid_rewrite instead of normal rewrite *)
+      (* unfold funcomp. setoid_rewrite rinstInst'_ty. eauto. *)
+       eauto.
     (* a.d. TODO the following only works with fext asimpl *)
     + asimpl. eapply IHty2; eauto.
       (* auto_unfold. *)
@@ -508,7 +511,7 @@ Proof.
        Although I still don't understand where tha actual rewrite then happens b/c subst_ty does not appear in the goal.
        But we can fix this behavior by making either scons_p or subst_ty opaque for setoid rewriting. *)
       (* Hint Opaque scons_p : rewrite. *)
-      Hint Opaque subst_ty : rewrite.
+      (* Hint Opaque subst_ty : rewrite. *)
       (* Print HintDb rewrite. *)
       Fail setoid_rewrite varL'_ty.
       Info 2 asimpl.
@@ -516,9 +519,13 @@ Proof.
         (* adrian: had to add the following line to make it compile.*)
         unfold dctx in Gamma, Gamma0. unfold upRen_p.
         (* https://coq.zulipchat.com/#narrow/stream/237656-Coq-devs.20.26.20plugin.20devs/topic/Change.20of.20case.20representation/near/220411671 *)
-        Info 3 asimpl_fext.
-        (* TODO actually I did not have to use fext here since the goal compates the output of scons_p and we have a morphism *)
-        apply scons_p_morphism; easy.
+        (* TODO why does setoid_rewrite H' fail even though it works when I just apply the morphism *)
+        apply scons_p_morphism; [reflexivity|].
+        unfold funcomp.
+        now setoid_rewrite H'.
+        (* Info 3 asimpl_fext. *)
+        (* (* TODO actually I did not have to use fext here since the goal compates the output of scons_p and we have a morphism *) *)
+        (* apply scons_p_morphism; easy. *)
         (* f_equal. fext. eauto. *)
   - econstructor. eauto. eapply sub_weak; eauto.
 Qed.
@@ -687,9 +694,9 @@ Proof.
       * intros. destruct (destruct_fin x) as [[]|[]]; subst.
         -- asimpl. eapply pat_ty_eval; eauto.
            (* a.d. TODO had to exact Gamma' twice below. Apparenly it's not inferred somewhere *)
-           exact Gamma'.
+           (* exact Gamma'. *)
         -- asimpl. constructor.
-           exact Gamma'.
+           (* exact Gamma'. *)
     + eapply T_Sub; eauto.
   - depind H_ty; [|eapply T_Sub; eauto].
     econstructor; eauto.

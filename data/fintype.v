@@ -51,6 +51,7 @@ Definition scons {X : Type} {n : nat} (x : X) (f : fin n -> X) (m : fin (S n)) :
   | Some i => f i
   end.
 
+Hint Opaque scons : rewrite.
 
 (** ** Type Class Instances for Notation *)
 
@@ -198,6 +199,8 @@ Proof.
       * exact g.
 Defined.
 
+Hint Opaque scons_p : rewrite.
+
 Instance scons_p_morphism {X: Type} {m n:nat} :
   Proper (pointwise_relation _ eq ==> pointwise_relation _ eq ==> pointwise_relation _ eq) (@scons_p X m n).
 Proof.
@@ -336,6 +339,8 @@ Tactic Notation "auto_case" tactic(t) :=  (match goal with
                                            | [|- forall (i : fin (S _)), _] =>  intros [?|]; t
                                            end).
 
+Hint Rewrite @scons_p_head' @scons_p_tail' : FunctorInstances.
+
 (** Generic fsimpl tactic: simplifies the above primitives in a goal. *)
 Ltac fsimpl :=
   repeat match goal with
@@ -355,9 +360,10 @@ Ltac fsimpl :=
          (* |[|- _ =  ?h (?f ?s)] => change (h (f s)) with ((f >> h) s) *)
          (* |[|-  ?h (?f ?s) = _] => change (h (f s)) with ((f >> h) s) *)
          | [|- context[fun x => ?tau (scons ?s ?sigma x)]] => setoid_rewrite scons_comp'; eta_reduce
-         | [|- context[?tau (scons_p ?p ?f ?g _)]] => (rewrite_strat subterms scons_p_comp'); eta_reduce
+         | [|- context[?tau (scons_p ?p ?f ?g _)]] => (rewrite_strat innermost scons_p_comp'); eta_reduce
          | [|- context[scons (@var_zero ?n) shift]] => change (scons (@var_zero n) shift) with (fun x => (scons (@var_zero n) shift) x); setoid_rewrite scons_eta_id'; eta_reduce
-         | _ => first [progress setoid_rewrite scons_p_head' | progress setoid_rewrite scons_p_tail' ]
+         | _ => progress autorewrite with FunctorInstances
+         (* | _ => first [progress setoid_rewrite scons_p_head' | progress setoid_rewrite scons_p_tail' ] *)
          end.
 
 (** Generic fsimpl tactic: simplifies the above primitives in the context *)

@@ -89,3 +89,6 @@ Ltac minimize :=
          | [|- context[fun x => ?f x]] => change (fun x => f x) with f (* eta reduction *)
          | [|- context[fun x => ?g (?f x)]] => change (fun x => g (f x)) with (funcomp g f) (* funcomp folding *)
          end.
+
+(* had to add this tactic abbreviation because I could not print a setoid_rewrite with the arrow *)
+Ltac setoid_rewrite_left t := setoid_rewrite <- t.
