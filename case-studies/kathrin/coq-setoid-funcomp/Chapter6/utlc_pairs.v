@@ -8,7 +8,9 @@ Module renSubst.
 Inductive tm (n_tm : nat) : Type :=
   | var_tm : fin n_tm -> tm n_tm
   | app : tm n_tm -> tm n_tm -> tm n_tm
-  | lam : tm (S n_tm) -> tm n_tm.
+  | lam : tm (S n_tm) -> tm n_tm
+  | pair : tm n_tm -> tm n_tm -> tm n_tm
+  | matchpair : tm n_tm -> tm (S (S n_tm)) -> tm n_tm.
 
 Lemma congr_app {m_tm : nat} {s0 : tm m_tm} {s1 : tm m_tm} {t0 : tm m_tm}
   {t1 : tm m_tm} (H0 : s0 = t0) (H1 : s1 = t1) :
@@ -22,6 +24,22 @@ Lemma congr_lam {m_tm : nat} {s0 : tm (S m_tm)} {t0 : tm (S m_tm)}
   (H0 : s0 = t0) : lam m_tm s0 = lam m_tm t0.
 Proof.
 exact (eq_trans eq_refl (ap (fun x => lam m_tm x) H0)).
+Qed.
+
+Lemma congr_pair {m_tm : nat} {s0 : tm m_tm} {s1 : tm m_tm} {t0 : tm m_tm}
+  {t1 : tm m_tm} (H0 : s0 = t0) (H1 : s1 = t1) :
+  pair m_tm s0 s1 = pair m_tm t0 t1.
+Proof.
+exact (eq_trans (eq_trans eq_refl (ap (fun x => pair m_tm x s1) H0))
+         (ap (fun x => pair m_tm t0 x) H1)).
+Qed.
+
+Lemma congr_matchpair {m_tm : nat} {s0 : tm m_tm} {s1 : tm (S (S m_tm))}
+  {t0 : tm m_tm} {t1 : tm (S (S m_tm))} (H0 : s0 = t0) (H1 : s1 = t1) :
+  matchpair m_tm s0 s1 = matchpair m_tm t0 t1.
+Proof.
+exact (eq_trans (eq_trans eq_refl (ap (fun x => matchpair m_tm x s1) H0))
+         (ap (fun x => matchpair m_tm t0 x) H1)).
 Qed.
 
 Lemma upRen_tm_tm {m : nat} {n : nat} (xi : fin m -> fin n) :
@@ -42,6 +60,10 @@ Fixpoint ren_tm {m_tm : nat} {n_tm : nat} (xi_tm : fin m_tm -> fin n_tm)
   | var_tm _ s0 => var_tm n_tm (xi_tm s0)
   | app _ s0 s1 => app n_tm (ren_tm xi_tm s0) (ren_tm xi_tm s1)
   | lam _ s0 => lam n_tm (ren_tm (upRen_tm_tm xi_tm) s0)
+  | pair _ s0 s1 => pair n_tm (ren_tm xi_tm s0) (ren_tm xi_tm s1)
+  | matchpair _ s0 s1 =>
+      matchpair n_tm (ren_tm xi_tm s0)
+        (ren_tm (upRen_tm_tm (upRen_tm_tm xi_tm)) s1)
   end.
 
 Lemma up_tm_tm {m : nat} {n_tm : nat} (sigma : fin m -> tm n_tm) :
@@ -63,6 +85,10 @@ Fixpoint subst_tm {m_tm : nat} {n_tm : nat} (sigma_tm : fin m_tm -> tm n_tm)
   | var_tm _ s0 => sigma_tm s0
   | app _ s0 s1 => app n_tm (subst_tm sigma_tm s0) (subst_tm sigma_tm s1)
   | lam _ s0 => lam n_tm (subst_tm (up_tm_tm sigma_tm) s0)
+  | pair _ s0 s1 => pair n_tm (subst_tm sigma_tm s0) (subst_tm sigma_tm s1)
+  | matchpair _ s0 s1 =>
+      matchpair n_tm (subst_tm sigma_tm s0)
+        (subst_tm (up_tm_tm (up_tm_tm sigma_tm)) s1)
   end.
 
 Lemma upId_tm_tm {m_tm : nat} (sigma : fin m_tm -> tm m_tm)
@@ -94,6 +120,13 @@ subst_tm sigma_tm s = s :=
       congr_app (idSubst_tm sigma_tm Eq_tm s0) (idSubst_tm sigma_tm Eq_tm s1)
   | lam _ s0 =>
       congr_lam (idSubst_tm (up_tm_tm sigma_tm) (upId_tm_tm _ Eq_tm) s0)
+  | pair _ s0 s1 =>
+      congr_pair (idSubst_tm sigma_tm Eq_tm s0)
+        (idSubst_tm sigma_tm Eq_tm s1)
+  | matchpair _ s0 s1 =>
+      congr_matchpair (idSubst_tm sigma_tm Eq_tm s0)
+        (idSubst_tm (up_tm_tm (up_tm_tm sigma_tm))
+           (upId_tm_tm _ (upId_tm_tm _ Eq_tm)) s1)
   end.
 
 Lemma upExtRen_tm_tm {m : nat} {n : nat} (xi : fin m -> fin n)
@@ -127,6 +160,14 @@ Fixpoint extRen_tm {m_tm : nat} {n_tm : nat} (xi_tm : fin m_tm -> fin n_tm)
       congr_lam
         (extRen_tm (upRen_tm_tm xi_tm) (upRen_tm_tm zeta_tm)
            (upExtRen_tm_tm _ _ Eq_tm) s0)
+  | pair _ s0 s1 =>
+      congr_pair (extRen_tm xi_tm zeta_tm Eq_tm s0)
+        (extRen_tm xi_tm zeta_tm Eq_tm s1)
+  | matchpair _ s0 s1 =>
+      congr_matchpair (extRen_tm xi_tm zeta_tm Eq_tm s0)
+        (extRen_tm (upRen_tm_tm (upRen_tm_tm xi_tm))
+           (upRen_tm_tm (upRen_tm_tm zeta_tm))
+           (upExtRen_tm_tm _ _ (upExtRen_tm_tm _ _ Eq_tm)) s1)
   end.
 
 Lemma upExt_tm_tm {m : nat} {n_tm : nat} (sigma : fin m -> tm n_tm)
@@ -162,6 +203,13 @@ Fixpoint ext_tm {m_tm : nat} {n_tm : nat} (sigma_tm : fin m_tm -> tm n_tm)
       congr_lam
         (ext_tm (up_tm_tm sigma_tm) (up_tm_tm tau_tm) (upExt_tm_tm _ _ Eq_tm)
            s0)
+  | pair _ s0 s1 =>
+      congr_pair (ext_tm sigma_tm tau_tm Eq_tm s0)
+        (ext_tm sigma_tm tau_tm Eq_tm s1)
+  | matchpair _ s0 s1 =>
+      congr_matchpair (ext_tm sigma_tm tau_tm Eq_tm s0)
+        (ext_tm (up_tm_tm (up_tm_tm sigma_tm)) (up_tm_tm (up_tm_tm tau_tm))
+           (upExt_tm_tm _ _ (upExt_tm_tm _ _ Eq_tm)) s1)
   end.
 
 Lemma up_ren_ren_tm_tm {k : nat} {l : nat} {m : nat} (xi : fin k -> fin l)
@@ -196,6 +244,15 @@ Fixpoint compRenRen_tm {k_tm : nat} {l_tm : nat} {m_tm : nat}
       congr_lam
         (compRenRen_tm (upRen_tm_tm xi_tm) (upRen_tm_tm zeta_tm)
            (upRen_tm_tm rho_tm) (up_ren_ren _ _ _ Eq_tm) s0)
+  | pair _ s0 s1 =>
+      congr_pair (compRenRen_tm xi_tm zeta_tm rho_tm Eq_tm s0)
+        (compRenRen_tm xi_tm zeta_tm rho_tm Eq_tm s1)
+  | matchpair _ s0 s1 =>
+      congr_matchpair (compRenRen_tm xi_tm zeta_tm rho_tm Eq_tm s0)
+        (compRenRen_tm (upRen_tm_tm (upRen_tm_tm xi_tm))
+           (upRen_tm_tm (upRen_tm_tm zeta_tm))
+           (upRen_tm_tm (upRen_tm_tm rho_tm))
+           (up_ren_ren _ _ _ (up_ren_ren _ _ _ Eq_tm)) s1)
   end.
 
 Lemma up_ren_subst_tm_tm {k : nat} {l : nat} {m_tm : nat}
@@ -239,6 +296,14 @@ Fixpoint compRenSubst_tm {k_tm : nat} {l_tm : nat} {m_tm : nat}
       congr_lam
         (compRenSubst_tm (upRen_tm_tm xi_tm) (up_tm_tm tau_tm)
            (up_tm_tm theta_tm) (up_ren_subst_tm_tm _ _ _ Eq_tm) s0)
+  | pair _ s0 s1 =>
+      congr_pair (compRenSubst_tm xi_tm tau_tm theta_tm Eq_tm s0)
+        (compRenSubst_tm xi_tm tau_tm theta_tm Eq_tm s1)
+  | matchpair _ s0 s1 =>
+      congr_matchpair (compRenSubst_tm xi_tm tau_tm theta_tm Eq_tm s0)
+        (compRenSubst_tm (upRen_tm_tm (upRen_tm_tm xi_tm))
+           (up_tm_tm (up_tm_tm tau_tm)) (up_tm_tm (up_tm_tm theta_tm))
+           (up_ren_subst_tm_tm _ _ _ (up_ren_subst_tm_tm _ _ _ Eq_tm)) s1)
   end.
 
 Lemma up_subst_ren_tm_tm {k : nat} {l_tm : nat} {m_tm : nat}
@@ -303,6 +368,14 @@ ren_tm zeta_tm (subst_tm sigma_tm s) = subst_tm theta_tm s :=
       congr_lam
         (compSubstRen_tm (up_tm_tm sigma_tm) (upRen_tm_tm zeta_tm)
            (up_tm_tm theta_tm) (up_subst_ren_tm_tm _ _ _ Eq_tm) s0)
+  | pair _ s0 s1 =>
+      congr_pair (compSubstRen_tm sigma_tm zeta_tm theta_tm Eq_tm s0)
+        (compSubstRen_tm sigma_tm zeta_tm theta_tm Eq_tm s1)
+  | matchpair _ s0 s1 =>
+      congr_matchpair (compSubstRen_tm sigma_tm zeta_tm theta_tm Eq_tm s0)
+        (compSubstRen_tm (up_tm_tm (up_tm_tm sigma_tm))
+           (upRen_tm_tm (upRen_tm_tm zeta_tm)) (up_tm_tm (up_tm_tm theta_tm))
+           (up_subst_ren_tm_tm _ _ _ (up_subst_ren_tm_tm _ _ _ Eq_tm)) s1)
   end.
 
 Lemma up_subst_subst_tm_tm {k : nat} {l_tm : nat} {m_tm : nat}
@@ -368,6 +441,14 @@ subst_tm tau_tm (subst_tm sigma_tm s) = subst_tm theta_tm s :=
       congr_lam
         (compSubstSubst_tm (up_tm_tm sigma_tm) (up_tm_tm tau_tm)
            (up_tm_tm theta_tm) (up_subst_subst_tm_tm _ _ _ Eq_tm) s0)
+  | pair _ s0 s1 =>
+      congr_pair (compSubstSubst_tm sigma_tm tau_tm theta_tm Eq_tm s0)
+        (compSubstSubst_tm sigma_tm tau_tm theta_tm Eq_tm s1)
+  | matchpair _ s0 s1 =>
+      congr_matchpair (compSubstSubst_tm sigma_tm tau_tm theta_tm Eq_tm s0)
+        (compSubstSubst_tm (up_tm_tm (up_tm_tm sigma_tm))
+           (up_tm_tm (up_tm_tm tau_tm)) (up_tm_tm (up_tm_tm theta_tm))
+           (up_subst_subst_tm_tm _ _ _ (up_subst_subst_tm_tm _ _ _ Eq_tm)) s1)
   end.
 
 Lemma rinstInst_up_tm_tm {m : nat} {n_tm : nat} (xi : fin m -> fin n_tm)
@@ -408,6 +489,14 @@ Fixpoint rinst_inst_tm {m_tm : nat} {n_tm : nat}
       congr_lam
         (rinst_inst_tm (upRen_tm_tm xi_tm) (up_tm_tm sigma_tm)
            (rinstInst_up_tm_tm _ _ Eq_tm) s0)
+  | pair _ s0 s1 =>
+      congr_pair (rinst_inst_tm xi_tm sigma_tm Eq_tm s0)
+        (rinst_inst_tm xi_tm sigma_tm Eq_tm s1)
+  | matchpair _ s0 s1 =>
+      congr_matchpair (rinst_inst_tm xi_tm sigma_tm Eq_tm s0)
+        (rinst_inst_tm (upRen_tm_tm (upRen_tm_tm xi_tm))
+           (up_tm_tm (up_tm_tm sigma_tm))
+           (rinstInst_up_tm_tm _ _ (rinstInst_up_tm_tm _ _ Eq_tm)) s1)
   end.
 
 Lemma renRen_tm {k_tm : nat} {l_tm : nat} {m_tm : nat}
@@ -684,6 +773,10 @@ Export renSubst.
 
 Export
 fext.
+
+Arguments matchpair {n_tm}.
+
+Arguments pair {n_tm}.
 
 Arguments lam {n_tm}.
 

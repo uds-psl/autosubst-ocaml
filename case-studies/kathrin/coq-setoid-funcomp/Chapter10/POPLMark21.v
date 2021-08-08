@@ -1,6 +1,6 @@
 Require Export Coq.Lists.List.
 Require Import Coq.Program.Equality.
-Require Import core core_axioms fintype fintype_axioms.
+Require Import core fintype.
 Import ScopedNotations.
 From Chapter10 Require Export sysf_pat.
 Require Import Coq.Program.Tactics.
@@ -242,7 +242,9 @@ Proof with asimpl;eauto.
   - constructor; eauto.
     eapply IHHH2.
     + auto_case; try apply sub_refl.
-      eapply sub_weak; try reflexivity. eapply H. now asimpl.
+      eapply sub_weak; try reflexivity. eapply H.
+    (* a.d. TODO another instance of a goal already solved before asimpl *)
+    (* now asimpl. *)
     + auto_case. destruct (H' f);  eauto using transitivity_ren.
       rewrite H0. now left.
   - econstructor; eauto. intros l T' HH.
@@ -260,14 +262,17 @@ Proof with asimpl;eauto.
   - depind H... depind H1...
     econstructor... clear IHsub0 IHsub3 IHsub1 IHsub2.
     eapply IHB2; eauto.
-    + asimpl in *. eapply sub_narrow; try eapply H0.
+    + asimpl. eapply sub_narrow; try eapply H0.
       * auto_case.
         eapply sub_weak with (xi := ↑); try reflexivity; eauto.
         (* adrian: as of 7b3472c the goal is already solved by eauto
-         TODO find out why *)
-        (* now asimpl. *)
+         TODO find out why
+         as of dd2f061 it's not solved anymore
+         *)
+        now asimpl.
       * intros [x|]; try cbn; eauto. right. apply transitivity_ren. apply transitivity_ren. eauto.
-    + asimpl in H1_0. auto.
+  (* but as of dd2f061 this is already solved *)
+    (* + asimpl in H1_0. auto. *)
   - depind H0... depind H3...
     econstructor; eauto. intros.
     destruct (H5 _ _ H6) as (T&?&?). rewrite in_map_iff in H7.
@@ -281,6 +286,30 @@ Corollary sub_trans n (Delta  : ctx n) A B C:
   SUB Delta |- A <: B -> SUB Delta |- B <: C -> SUB Delta |- A <: C.
 Proof. eauto using sub_trans'. Qed.
 
+
+Require Import Setoid Morphisms.
+Instance sub_morphism {n}:
+  Proper (pointwise_relation _ eq ==> eq ==> eq ==> Basics.impl) (@sub n).
+Proof.
+  intros Gamma Gamma' HGamma T T' -> t t' ->.
+  intros H. induction H in Gamma', HGamma |- *.
+  - constructor.
+  - constructor.
+  - constructor. rewrite <- HGamma. apply IHsub. apply HGamma.
+  - constructor.
+    apply IHsub1, HGamma.
+    apply IHsub2, HGamma.
+  - constructor.
+    apply IHsub1, HGamma.
+    apply IHsub2.
+    intros [|]. cbn. rewrite HGamma. reflexivity.
+    cbn. reflexivity.
+  - constructor; try assumption. intros.
+    specialize (H l T' H2) as (T & HT0 & HT1 ).
+    exists T. split. assumption. 
+    admit. 
+Admitted.
+
 Lemma sub_substitution m m' (sigma : fin m -> ty m') Delta (Delta': ctx m') A B:
    (forall x ,  SUB Delta' |- sigma x <: (Delta x)[sigma] ) ->
    SUB Delta |- A <: B -> SUB Delta' |- subst_ty sigma A <: subst_ty sigma B.
@@ -293,6 +322,7 @@ Proof.
     auto_case; asimpl; cbn; eauto using sub_refl.
     eapply sub_weak; try reflexivity. eapply eq.
     all: try now asimpl.
+    
   - intros. asimpl. econstructor; eauto. intros. rewrite in_map_iff in H2. destruct H2 as ((?&?)&?&?).
     inv H2. destruct (H _ _ H3) as (T&?&?&?).
     exists (T[sigma]). split; eauto. apply in_map. eauto.
@@ -432,14 +462,23 @@ Qed.
 
 (** Preservation *)
 
+(* a.d. apparently need the following setoid morphism *)
+Instance pat_ty_morphism {m p:nat} :
+  Proper (eq ==> eq ==> pointwise_relation _ eq ==> Basics.flip Basics.impl) (pat_ty m p).
+Proof.
+  intros pat0 pat1 -> T0 T1 -> f f' Hf.
+  intros x.
+Admitted.
+Require Import core_axioms fintype_axioms.
+
 Lemma context_renaming_lemma m m' n n' (Delta: ctx m') (Gamma: dctx n' m')                                                   (s: tm m n) A (xi : fin m -> fin m') (zeta: fin n -> fin n') Delta' (Gamma' : dctx n m):
   (forall x, (Delta' x)⟨xi⟩ = Delta (xi x)) ->
   (forall (x: fin n) , (Gamma' x)⟨xi⟩ =  (Gamma (zeta x))) ->
   TY Delta'; Gamma' |- s : A -> TY Delta; Gamma |- s⟨xi;zeta⟩ : A⟨xi⟩.
 Proof.
   intros H H' ty. autorevert ty.
-  depind ty; intros; asimpl in *; subst; try now (econstructor; eauto).
-  - rewrite H'. constructor.
+  depind ty; asimpl; intros; subst; try now (econstructor; eauto).
+  - rewrite H0. constructor.
   - constructor. eapply IHty; eauto.
     auto_case; asimpl.
   - cbn. econstructor. apply IHty; eauto.
@@ -455,12 +494,32 @@ Proof.
       eapply H3; eassumption.
   - cbn. econstructor; eauto. now apply in_map.
   - cbn. asimpl. apply letpat_ty  with (A0 := A⟨xi⟩) (Gamma'0 := Gamma' >> ⟨xi⟩); eauto.
-    + substify. eauto.
-    + asimpl. eapply IHty2; eauto; asimpl.
+    +  substify.
+       (* TODO a.d. in this case substify should use setoid_rewrite instead of normal rewrite *)
+      unfold funcomp. setoid_rewrite rinstInst'_ty. eauto.
+    (* a.d. TODO the following only works with fext asimpl *)
+    + asimpl. eapply IHty2; eauto.
+      (* auto_unfold. *)
+      (* unfold upRen_p.  *)
+      (* Unset Printing Notations. *)
+      (* this setoid rewrite unfold scons_p but I don't know why.
+       the varL'_ty lemma is an equality with subst_ty and scons_p does not use subst_ty in its definition *)
+      (* the problem seems to be that varL'_ty holds directly by voncertibility and the setoid rewrite also evaluates the lhs of varL'_ty which is then just subst_ty x = subst_ty x.
+       Although I still don't understand where tha actual rewrite then happens b/c subst_ty does not appear in the goal.
+       But we can fix this behavior by making either scons_p or subst_ty opaque for setoid rewriting. *)
+      (* Hint Opaque scons_p : rewrite. *)
+      Hint Opaque subst_ty : rewrite.
+      (* Print HintDb rewrite. *)
+      Fail setoid_rewrite varL'_ty.
+      Info 2 asimpl.
       * intros z.
         (* adrian: had to add the following line to make it compile.*)
         unfold dctx in Gamma, Gamma0. unfold upRen_p.
-        asimpl. f_equal. fext. eauto.
+        (* https://coq.zulipchat.com/#narrow/stream/237656-Coq-devs.20.26.20plugin.20devs/topic/Change.20of.20case.20representation/near/220411671 *)
+        Info 3 asimpl_fext.
+        (* TODO actually I did not have to use fext here since the goal compates the output of scons_p and we have a morphism *)
+        apply scons_p_morphism; easy.
+        (* f_equal. fext. eauto. *)
   - econstructor. eauto. eapply sub_weak; eauto.
 Qed.
 
@@ -511,7 +570,11 @@ Proof.
         destruct (destruct_fin x) as [[x' ->] |[x' ->]]; asimpl; eauto.
         -- eapply T_Var'. now asimpl.
         -- eapply context_renaming_lemma'; try eapply eq2; try now asimpl.
-           intros z. now asimpl.  }
+           intros z. now asimpl.
+           (* a.d. TODO got one more goal left from context_renaming_lemma' *)
+           intros x. now asimpl.
+     }
+     
   - econstructor.
     + eapply IHty; eauto.
     + eapply sub_substitution; eauto.
@@ -604,7 +667,7 @@ Proof.
         -- auto_case; asimpl; eauto using sub_refl.
         -- intros x. asimpl. constructor.
       * pose proof (ty_inv_tabs _ H_ty H) as (?&?&?&?).
-        eapply T_Sub.  asimpl in *.
+        eapply T_Sub.  asimpl.
         eapply context_morphism_lemma; eauto.
         -- auto_case; asimpl; eauto.
         -- intros z. asimpl. constructor.
@@ -623,7 +686,10 @@ Proof.
       * intros. asimpl. constructor. now apply sub_refl.
       * intros. destruct (destruct_fin x) as [[]|[]]; subst.
         -- asimpl. eapply pat_ty_eval; eauto.
+           (* a.d. TODO had to exact Gamma' twice below. Apparenly it's not inferred somewhere *)
+           exact Gamma'.
         -- asimpl. constructor.
+           exact Gamma'.
     + eapply T_Sub; eauto.
   - depind H_ty; [|eapply T_Sub; eauto].
     econstructor; eauto.

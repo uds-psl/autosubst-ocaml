@@ -1,4 +1,4 @@
-Require Import core core_axioms fintype fintype_axioms.
+Require Import core fintype.
 Import ScopedNotations.
 From Chapter9 Require Export wn.
 
@@ -78,13 +78,6 @@ Proof.
   destruct s;  eauto.
 Qed.
 
-Require Import Setoid Morphisms.
-
-Instance G_strong_morphism {k m} (Gamma : ctx k) :
-  Proper (pointwise_relation _ eq ==> Basics.impl) (@G_strong k m Gamma).
-Proof.
-Admitted.
-
 Lemma sn_fundamental m Gamma (s: tm m) A :
   has_type Gamma s A -> has_ty_sem_strong Gamma s A.
 Proof.
@@ -99,10 +92,7 @@ Proof.
     remember (subst_tm (up_tm_tm sigma) s) as s'.
     unfold has_ty_sem_strong in IH.
     assert (forall m (tau : fin (S k) -> tm m), G_strong (A .: Gamma) (up_tm_tm sigma >> subst_tm tau) -> E_strong B (subst_tm tau s')).
-    { intros. rewrite Heqs'. revert H1. asimpl. eauto.
-      (* TODO adrian here we would want to rewrite with scons_comp' in H' but it does not work since G_strong was not declared as a morphism *)
-      (* intros H'. apply IH. asimpl in H'. *)
-      (* eauto. *)  }
+    { intros. rewrite Heqs'. revert H1. asimpl.  eauto.  }
     clear Heqs'.
     induction H0. constructor.
     + intros V m . intros. apply H1.

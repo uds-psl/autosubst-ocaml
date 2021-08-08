@@ -7,21 +7,21 @@ Module renSubst.
 
 Inductive tm (n_tm : nat) : Type :=
   | var_tm : fin n_tm -> tm n_tm
-  | app : tm n_tm -> tm n_tm -> tm n_tm
-  | lam : tm (S n_tm) -> tm n_tm.
+  | app : forall p : nat, tm n_tm -> cod (fin p) (tm n_tm) -> tm n_tm
+  | lam : forall p : nat, tm (plus p n_tm) -> tm n_tm.
 
-Lemma congr_app {m_tm : nat} {s0 : tm m_tm} {s1 : tm m_tm} {t0 : tm m_tm}
-  {t1 : tm m_tm} (H0 : s0 = t0) (H1 : s1 = t1) :
-  app m_tm s0 s1 = app m_tm t0 t1.
+Lemma congr_app {p : nat} {m_tm : nat} {s0 : tm m_tm}
+  {s1 : cod (fin p) (tm m_tm)} {t0 : tm m_tm} {t1 : cod (fin p) (tm m_tm)}
+  (H0 : s0 = t0) (H1 : s1 = t1) : app m_tm p s0 s1 = app m_tm p t0 t1.
 Proof.
-exact (eq_trans (eq_trans eq_refl (ap (fun x => app m_tm x s1) H0))
-         (ap (fun x => app m_tm t0 x) H1)).
+exact (eq_trans (eq_trans eq_refl (ap (fun x => app m_tm p x s1) H0))
+         (ap (fun x => app m_tm p t0 x) H1)).
 Qed.
 
-Lemma congr_lam {m_tm : nat} {s0 : tm (S m_tm)} {t0 : tm (S m_tm)}
-  (H0 : s0 = t0) : lam m_tm s0 = lam m_tm t0.
+Lemma congr_lam {p : nat} {m_tm : nat} {s0 : tm (plus p m_tm)}
+  {t0 : tm (plus p m_tm)} (H0 : s0 = t0) : lam m_tm p s0 = lam m_tm p t0.
 Proof.
-exact (eq_trans eq_refl (ap (fun x => lam m_tm x) H0)).
+exact (eq_trans eq_refl (ap (fun x => lam m_tm p x) H0)).
 Qed.
 
 Lemma upRen_tm_tm {m : nat} {n : nat} (xi : fin m -> fin n) :
@@ -40,8 +40,8 @@ Fixpoint ren_tm {m_tm : nat} {n_tm : nat} (xi_tm : fin m_tm -> fin n_tm)
 (s : tm m_tm) {struct s} : tm n_tm :=
   match s with
   | var_tm _ s0 => var_tm n_tm (xi_tm s0)
-  | app _ s0 s1 => app n_tm (ren_tm xi_tm s0) (ren_tm xi_tm s1)
-  | lam _ s0 => lam n_tm (ren_tm (upRen_tm_tm xi_tm) s0)
+  | app _ p s0 s1 => app n_tm p (ren_tm xi_tm s0) (cod_map (ren_tm xi_tm) s1)
+  | lam _ p s0 => lam n_tm p (ren_tm (upRen_list_tm_tm p xi_tm) s0)
   end.
 
 Lemma up_tm_tm {m : nat} {n_tm : nat} (sigma : fin m -> tm n_tm) :
@@ -61,8 +61,9 @@ Fixpoint subst_tm {m_tm : nat} {n_tm : nat} (sigma_tm : fin m_tm -> tm n_tm)
 (s : tm m_tm) {struct s} : tm n_tm :=
   match s with
   | var_tm _ s0 => sigma_tm s0
-  | app _ s0 s1 => app n_tm (subst_tm sigma_tm s0) (subst_tm sigma_tm s1)
-  | lam _ s0 => lam n_tm (subst_tm (up_tm_tm sigma_tm) s0)
+  | app _ p s0 s1 =>
+      app n_tm p (subst_tm sigma_tm s0) (cod_map (subst_tm sigma_tm) s1)
+  | lam _ p s0 => lam n_tm p (subst_tm (up_list_tm_tm p sigma_tm) s0)
   end.
 
 Lemma upId_tm_tm {m_tm : nat} (sigma : fin m_tm -> tm m_tm)
@@ -90,10 +91,12 @@ Fixpoint idSubst_tm {m_tm : nat} (sigma_tm : fin m_tm -> tm m_tm)
 subst_tm sigma_tm s = s :=
   match s with
   | var_tm _ s0 => Eq_tm s0
-  | app _ s0 s1 =>
-      congr_app (idSubst_tm sigma_tm Eq_tm s0) (idSubst_tm sigma_tm Eq_tm s1)
-  | lam _ s0 =>
-      congr_lam (idSubst_tm (up_tm_tm sigma_tm) (upId_tm_tm _ Eq_tm) s0)
+  | app _ p s0 s1 =>
+      congr_app (idSubst_tm sigma_tm Eq_tm s0)
+        (cod_id (idSubst_tm sigma_tm Eq_tm) s1)
+  | lam _ p s0 =>
+      congr_lam
+        (idSubst_tm (up_list_tm_tm p sigma_tm) (upId_list_tm_tm _ Eq_tm) s0)
   end.
 
 Lemma upExtRen_tm_tm {m : nat} {n : nat} (xi : fin m -> fin n)
@@ -120,13 +123,13 @@ Fixpoint extRen_tm {m_tm : nat} {n_tm : nat} (xi_tm : fin m_tm -> fin n_tm)
 (s : tm m_tm) {struct s} : ren_tm xi_tm s = ren_tm zeta_tm s :=
   match s with
   | var_tm _ s0 => ap (var_tm n_tm) (Eq_tm s0)
-  | app _ s0 s1 =>
+  | app _ p s0 s1 =>
       congr_app (extRen_tm xi_tm zeta_tm Eq_tm s0)
-        (extRen_tm xi_tm zeta_tm Eq_tm s1)
-  | lam _ s0 =>
+        (cod_ext (extRen_tm xi_tm zeta_tm Eq_tm) s1)
+  | lam _ p s0 =>
       congr_lam
-        (extRen_tm (upRen_tm_tm xi_tm) (upRen_tm_tm zeta_tm)
-           (upExtRen_tm_tm _ _ Eq_tm) s0)
+        (extRen_tm (upRen_list_tm_tm p xi_tm) (upRen_list_tm_tm p zeta_tm)
+           (upExtRen_list_tm_tm _ _ Eq_tm) s0)
   end.
 
 Lemma upExt_tm_tm {m : nat} {n_tm : nat} (sigma : fin m -> tm n_tm)
@@ -155,13 +158,13 @@ Fixpoint ext_tm {m_tm : nat} {n_tm : nat} (sigma_tm : fin m_tm -> tm n_tm)
 (s : tm m_tm) {struct s} : subst_tm sigma_tm s = subst_tm tau_tm s :=
   match s with
   | var_tm _ s0 => Eq_tm s0
-  | app _ s0 s1 =>
+  | app _ p s0 s1 =>
       congr_app (ext_tm sigma_tm tau_tm Eq_tm s0)
-        (ext_tm sigma_tm tau_tm Eq_tm s1)
-  | lam _ s0 =>
+        (cod_ext (ext_tm sigma_tm tau_tm Eq_tm) s1)
+  | lam _ p s0 =>
       congr_lam
-        (ext_tm (up_tm_tm sigma_tm) (up_tm_tm tau_tm) (upExt_tm_tm _ _ Eq_tm)
-           s0)
+        (ext_tm (up_list_tm_tm p sigma_tm) (up_list_tm_tm p tau_tm)
+           (upExt_list_tm_tm _ _ Eq_tm) s0)
   end.
 
 Lemma up_ren_ren_tm_tm {k : nat} {l : nat} {m : nat} (xi : fin k -> fin l)
@@ -189,13 +192,14 @@ Fixpoint compRenRen_tm {k_tm : nat} {l_tm : nat} {m_tm : nat}
  s} : ren_tm zeta_tm (ren_tm xi_tm s) = ren_tm rho_tm s :=
   match s with
   | var_tm _ s0 => ap (var_tm l_tm) (Eq_tm s0)
-  | app _ s0 s1 =>
+  | app _ p s0 s1 =>
       congr_app (compRenRen_tm xi_tm zeta_tm rho_tm Eq_tm s0)
-        (compRenRen_tm xi_tm zeta_tm rho_tm Eq_tm s1)
-  | lam _ s0 =>
+        (cod_comp (compRenRen_tm xi_tm zeta_tm rho_tm Eq_tm) s1)
+  | lam _ p s0 =>
       congr_lam
-        (compRenRen_tm (upRen_tm_tm xi_tm) (upRen_tm_tm zeta_tm)
-           (upRen_tm_tm rho_tm) (up_ren_ren _ _ _ Eq_tm) s0)
+        (compRenRen_tm (upRen_list_tm_tm p xi_tm)
+           (upRen_list_tm_tm p zeta_tm) (upRen_list_tm_tm p rho_tm)
+           (up_ren_ren_p Eq_tm) s0)
   end.
 
 Lemma up_ren_subst_tm_tm {k : nat} {l : nat} {m_tm : nat}
@@ -232,13 +236,14 @@ Fixpoint compRenSubst_tm {k_tm : nat} {l_tm : nat} {m_tm : nat}
  s} : subst_tm tau_tm (ren_tm xi_tm s) = subst_tm theta_tm s :=
   match s with
   | var_tm _ s0 => Eq_tm s0
-  | app _ s0 s1 =>
+  | app _ p s0 s1 =>
       congr_app (compRenSubst_tm xi_tm tau_tm theta_tm Eq_tm s0)
-        (compRenSubst_tm xi_tm tau_tm theta_tm Eq_tm s1)
-  | lam _ s0 =>
+        (cod_comp (compRenSubst_tm xi_tm tau_tm theta_tm Eq_tm) s1)
+  | lam _ p s0 =>
       congr_lam
-        (compRenSubst_tm (upRen_tm_tm xi_tm) (up_tm_tm tau_tm)
-           (up_tm_tm theta_tm) (up_ren_subst_tm_tm _ _ _ Eq_tm) s0)
+        (compRenSubst_tm (upRen_list_tm_tm p xi_tm) (up_list_tm_tm p tau_tm)
+           (up_list_tm_tm p theta_tm) (up_ren_subst_list_tm_tm _ _ _ Eq_tm)
+           s0)
   end.
 
 Lemma up_subst_ren_tm_tm {k : nat} {l_tm : nat} {m_tm : nat}
@@ -296,13 +301,14 @@ Fixpoint compSubstRen_tm {k_tm : nat} {l_tm : nat} {m_tm : nat}
 ren_tm zeta_tm (subst_tm sigma_tm s) = subst_tm theta_tm s :=
   match s with
   | var_tm _ s0 => Eq_tm s0
-  | app _ s0 s1 =>
+  | app _ p s0 s1 =>
       congr_app (compSubstRen_tm sigma_tm zeta_tm theta_tm Eq_tm s0)
-        (compSubstRen_tm sigma_tm zeta_tm theta_tm Eq_tm s1)
-  | lam _ s0 =>
+        (cod_comp (compSubstRen_tm sigma_tm zeta_tm theta_tm Eq_tm) s1)
+  | lam _ p s0 =>
       congr_lam
-        (compSubstRen_tm (up_tm_tm sigma_tm) (upRen_tm_tm zeta_tm)
-           (up_tm_tm theta_tm) (up_subst_ren_tm_tm _ _ _ Eq_tm) s0)
+        (compSubstRen_tm (up_list_tm_tm p sigma_tm)
+           (upRen_list_tm_tm p zeta_tm) (up_list_tm_tm p theta_tm)
+           (up_subst_ren_list_tm_tm _ _ _ Eq_tm) s0)
   end.
 
 Lemma up_subst_subst_tm_tm {k : nat} {l_tm : nat} {m_tm : nat}
@@ -361,13 +367,14 @@ Fixpoint compSubstSubst_tm {k_tm : nat} {l_tm : nat} {m_tm : nat}
 subst_tm tau_tm (subst_tm sigma_tm s) = subst_tm theta_tm s :=
   match s with
   | var_tm _ s0 => Eq_tm s0
-  | app _ s0 s1 =>
+  | app _ p s0 s1 =>
       congr_app (compSubstSubst_tm sigma_tm tau_tm theta_tm Eq_tm s0)
-        (compSubstSubst_tm sigma_tm tau_tm theta_tm Eq_tm s1)
-  | lam _ s0 =>
+        (cod_comp (compSubstSubst_tm sigma_tm tau_tm theta_tm Eq_tm) s1)
+  | lam _ p s0 =>
       congr_lam
-        (compSubstSubst_tm (up_tm_tm sigma_tm) (up_tm_tm tau_tm)
-           (up_tm_tm theta_tm) (up_subst_subst_tm_tm _ _ _ Eq_tm) s0)
+        (compSubstSubst_tm (up_list_tm_tm p sigma_tm)
+           (up_list_tm_tm p tau_tm) (up_list_tm_tm p theta_tm)
+           (up_subst_subst_list_tm_tm _ _ _ Eq_tm) s0)
   end.
 
 Lemma rinstInst_up_tm_tm {m : nat} {n_tm : nat} (xi : fin m -> fin n_tm)
@@ -401,13 +408,13 @@ Fixpoint rinst_inst_tm {m_tm : nat} {n_tm : nat}
 {struct s} : ren_tm xi_tm s = subst_tm sigma_tm s :=
   match s with
   | var_tm _ s0 => Eq_tm s0
-  | app _ s0 s1 =>
+  | app _ p s0 s1 =>
       congr_app (rinst_inst_tm xi_tm sigma_tm Eq_tm s0)
-        (rinst_inst_tm xi_tm sigma_tm Eq_tm s1)
-  | lam _ s0 =>
+        (cod_ext (rinst_inst_tm xi_tm sigma_tm Eq_tm) s1)
+  | lam _ p s0 =>
       congr_lam
-        (rinst_inst_tm (upRen_tm_tm xi_tm) (up_tm_tm sigma_tm)
-           (rinstInst_up_tm_tm _ _ Eq_tm) s0)
+        (rinst_inst_tm (upRen_list_tm_tm p xi_tm) (up_list_tm_tm p sigma_tm)
+           (rinstInst_up_list_tm_tm _ _ Eq_tm) s0)
   end.
 
 Lemma renRen_tm {k_tm : nat} {l_tm : nat} {m_tm : nat}

@@ -1,7 +1,7 @@
 (** ** Raamsdonk's Characterisation *)
 
-  Require Import core core_axioms fintype fintype_axioms.
-  Import ScopedNotations.
+Require Import core fintype.
+Import ScopedNotations.
 From Chapter9 Require Export reduction.
 
 Lemma sn_mstep {n} (s t : tm n):
@@ -163,9 +163,8 @@ Lemma anti_rename:
  /\ (forall n (M: tm n), SNe M -> forall n' M' (R: fin n' -> fin n), M = ren_tm R M' -> SNe M')
  /\ (forall n (M N: tm n), SNRed M N -> forall n' (R: fin n' -> fin n) M', M = ren_tm R M' -> exists N', N = ren_tm R N' /\ SNRed M' N').
 Proof.
-  apply SN_multind; intros; repeat invTm; subst; eauto.
-  (* TODO asimpl * does not exist anymore. was not needed here anyways *)
-    (* asimpl in *; subst; eauto. *)
+  apply SN_multind; intros; repeat invTm; (* asimpl in *; *) subst; eauto.
+  (* a.d. asimpl * does not exist anymore. was not needed here anyways *)
   - destruct (H0 _ _ _ (eq_refl _)) as (M''&->&?).
     eapply SRed; eauto.
   - asimpl in H.
@@ -182,7 +181,7 @@ Lemma rename :
   /\   (forall n (M: tm n),  SNe M -> forall n' (R: fin n -> fin n'), SNe (ren_tm R M))
   /\ (forall n (M N: tm n), SNRed M N -> forall n' (R: fin n -> fin n'), SNRed (ren_tm R M) (ren_tm R N)).
 Proof.
-  (* apply SN_multind; intros; asimpl in *; eauto. *)
+  (* a.d. moved asimpl before intros to remove the `in *` *)
   apply SN_multind; asimpl; intros; eauto.
   - constructor.
   - intros. subst. constructor. auto. now asimpl.
@@ -245,11 +244,6 @@ Proof. apply cr, SVar. Qed.
 
 From Chapter9 Require Export preservation.
 
-(* Require Import Setoid Morphisms. *)
-(* Instance Red_morphism {n} : *)
-(*   Proper (eq ==> eq ==> eq) (@Red n). *)
-(* Admitted. *)
-
 Lemma main_lemma n (M: tm n)  A Gamma:
   Gamma |- M : A ->  forall n' (S: fin n -> tm n'), RedS S Gamma  -> Red A (subst_tm S M).
 Proof.
@@ -260,24 +254,11 @@ Proof.
     + cbn. econstructor.
       * eapply cr; eauto.
       * reflexivity.
-    +
-      (* oldasimpl. *)
-      (* TODO I don't know why my asimpl with funcomp fails here. probably missing some parts where funcomp should be unfolded. The setoid rewriting version that aggressively unfolds funcomp works. *)
-      asimpl.
-      eapply IHhas_type. intros [|]; eauto.
+    + asimpl. eapply IHhas_type. intros [|]; eauto.
       * cbn. unfold funcomp.
-        (* adrian: had to insert the following line *)
+        (* a.d. had to insert the following line *) 
         change (fun x : fin n' => @var_tm m (R x)) with (funcomp var_tm R).
-        (* change ((var_zero .: (fun x => shift (R x))) (shift x)) with (shift (R x)). *)
-        (* match goal with *)
-        (*  | [ |- context[(?s .: ?sigma) (?sf ?m)]] => change ((s .: sigma) (sf m)) with (sigma m) *)
-        (* end. *)
-        cbn.
-        match goal with
-        | [ |- context[fun x => ?f (?g x)]] => change (fun x => f (g x)) with (g >> f)
-        end.
-        renamify.
-       
+       renamify. 
         apply rename_red. eauto.
   - cbn.  specialize (IHhas_type2 _ _ H1).
     specialize (IHhas_type1  _ _ H1 n' id _ IHhas_type2).
