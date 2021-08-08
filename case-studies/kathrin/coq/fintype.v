@@ -336,9 +336,6 @@ Tactic Notation "auto_case" tactic(t) :=  (match goal with
                                            | [|- forall (i : fin (S _)), _] =>  intros [?|]; t
                                            end).
 
-(** Functor instances which can be added later on. *)
-Hint Rewrite @scons_p_comp' @scons_p_head' @scons_p_tail' : FunctorInstances.
-
 (** Generic fsimpl tactic: simplifies the above primitives in a goal. *)
 Ltac fsimpl :=
   repeat match goal with
@@ -358,8 +355,9 @@ Ltac fsimpl :=
          (* |[|- _ =  ?h (?f ?s)] => change (h (f s)) with ((f >> h) s) *)
          (* |[|-  ?h (?f ?s) = _] => change (h (f s)) with ((f >> h) s) *)
          | [|- context[fun x => ?tau (scons ?s ?sigma x)]] => setoid_rewrite scons_comp'; eta_reduce
+         | [|- context[?tau (scons_p ?p ?f ?g _)]] => (rewrite_strat subterms scons_p_comp'); eta_reduce
          | [|- context[scons (@var_zero ?n) shift]] => change (scons (@var_zero n) shift) with (fun x => (scons (@var_zero n) shift) x); setoid_rewrite scons_eta_id'; eta_reduce
-         | _ => progress autorewrite with FunctorInstances
+         | _ => first [progress setoid_rewrite scons_p_head' | progress setoid_rewrite scons_p_tail' ]
          end.
 
 (** Generic fsimpl tactic: simplifies the above primitives in the context *)

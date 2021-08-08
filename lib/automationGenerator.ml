@@ -118,7 +118,7 @@ let gen_substify_fext () =
 
 let gen_substify () =
   let* substify_lemmas = gets substify_lemmas in
-  let rewrites = List.map (fun t -> try_ (repeat_ (rewrite_ ~with_evars:true t))) substify_lemmas in
+  let rewrites = List.map (fun t -> try_ (setoid_rewrite_ t)) substify_lemmas in
   let tac = then_ (calltac_ "auto_unfold" :: rewrites) in
   pure @@ TacticLtac ("substify", tac)
 
@@ -130,7 +130,7 @@ let gen_renamify_fext () =
 
 let gen_renamify () =
   let* substify_lemmas = gets substify_lemmas in
-  let rewrites = List.map (fun t -> try_ (repeat_ (rewrite_ ~with_evars:true ~to_left:true t))) substify_lemmas in
+  let rewrites = List.map (fun t -> try_ (setoid_rewrite_ ~to_left:true t)) substify_lemmas in
   let tac = then_ (calltac_ "auto_unfold" :: rewrites) in
   pure @@ TacticLtac ("renamify", tac)
 
