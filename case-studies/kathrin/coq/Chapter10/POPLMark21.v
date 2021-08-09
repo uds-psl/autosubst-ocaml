@@ -487,7 +487,9 @@ Proof.
     + auto_case; try now asimpl. rewrite <- H. now asimpl.
     + intros. asimpl. rewrite <- H'. now asimpl.
   - cbn. eapply T_Tapp with (A0 := A⟨xi⟩) .
-    asimpl in IHty. eapply IHty; eauto.
+    Unshelve.
+    4: exact (ren_ty (upRen_ty_ty xi) B).
+    eapply IHty; eauto. 
     eapply sub_weak; eauto. now asimpl.
   - econstructor; eauto.
     + intros.
@@ -520,9 +522,14 @@ Proof.
         unfold dctx in Gamma, Gamma0. unfold upRen_p.
         (* https://coq.zulipchat.com/#narrow/stream/237656-Coq-devs.20.26.20plugin.20devs/topic/Change.20of.20case.20representation/near/220411671 *)
         (* TODO why does setoid_rewrite H' fail even though it works when I just apply the morphism *)
-        apply scons_p_morphism; [reflexivity|].
+        (* TODO why does setoid_rewrite scons_p_head' fail? but it works when I apply the morphism *)
         unfold funcomp.
-        now setoid_rewrite H'.
+        (* Set Typeclasses Debug. *)
+        (* try setoid_rewrite scons_p_tail'. *)
+        (* asimpl. *)
+        simple apply scons_p_morphism.
+        -- now setoid_rewrite scons_p_head'.
+        -- setoid_rewrite scons_p_tail'. now setoid_rewrite H'.
         (* Info 3 asimpl_fext. *)
         (* (* TODO actually I did not have to use fext here since the goal compates the output of scons_p and we have a morphism *) *)
         (* apply scons_p_morphism; easy. *)
@@ -576,8 +583,13 @@ Proof.
       * intros x.
         destruct (destruct_fin x) as [[x' ->] |[x' ->]]; asimpl; eauto.
         -- eapply T_Var'. now asimpl.
-        -- eapply context_renaming_lemma'; try eapply eq2; try now asimpl.
-           intros z. now asimpl.
+        -- eapply context_renaming_lemma' with (Delta':=Delta'); try eapply eq2.
+           try now asimpl.
+           intros z.
+           Unshelve.
+           5: exact x'.
+           4: exact id.
+           now asimpl.
            (* a.d. TODO got one more goal left from context_renaming_lemma' *)
            intros x. now asimpl.
      }
@@ -705,3 +717,5 @@ Proof.
 Qed.
 
 End Pattern.
+
+Print Assumptions preservation.

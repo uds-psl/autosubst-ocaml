@@ -362,8 +362,8 @@ Ltac fsimpl :=
          | [|- context[fun x => ?tau (scons ?s ?sigma x)]] => setoid_rewrite scons_comp'; eta_reduce
          | [|- context[?tau (scons_p ?p ?f ?g _)]] => (rewrite_strat innermost scons_p_comp'); eta_reduce
          | [|- context[scons (@var_zero ?n) shift]] => change (scons (@var_zero n) shift) with (fun x => (scons (@var_zero n) shift) x); setoid_rewrite scons_eta_id'; eta_reduce
-         | _ => progress autorewrite with FunctorInstances
-         (* | _ => first [progress setoid_rewrite scons_p_head' | progress setoid_rewrite scons_p_tail' ] *)
+         (* | _ => progress autorewrite with FunctorInstances *)
+         | _ => first [progress setoid_rewrite scons_p_head' | progress setoid_rewrite scons_p_tail' ]
          end.
 
 (** Generic fsimpl tactic: simplifies the above primitives in the context *)

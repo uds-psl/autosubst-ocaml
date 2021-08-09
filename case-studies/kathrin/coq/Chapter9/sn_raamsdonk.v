@@ -196,7 +196,13 @@ Proof.
   - inv HeqMp.
   - inv H.
     + apply SAbs. eapply anti_rename. exact H0.
-      instantiate (1 := p..). substify.
+      instantiate (1 := p..).
+      instantiate (1 := id).
+      substify.
+      (* TODO incorporate in asimpl tactic so that we reject goals with evars *)
+      (* match goal with *)
+      (* | [|- ?x] => assert_fails (has_evar x) *)
+      (* end. *)
       now asimpl.
     + eapply SRed. exact H. eapply IHSN. reflexivity.
 Qed.

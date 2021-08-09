@@ -33,13 +33,7 @@ Proof.
     asimpl.
     (* TODO a.d. why is cod_map not unfolded + why does the rewrite with scons_p_head' fail. It should happen in fsimpl *)
 
-    unfold cod_map. asimpl.
-    (* TODO need setoid_rewrite head/tail instead of autorewrite. That means in sn_raamsdonk I need to set the evar because setoid_rewrite does not like evars *)
-    unfold funcomp.
-    setoid_rewrite scons_p_head'.
-    setoid_rewrite scons_p_tail'.
-    asimpl.
-    reflexivity.
+    unfold cod_map. now asimpl.
   - apply step_abs. eapply IHst.
   - apply step_appL, IHst.
 Qed.
