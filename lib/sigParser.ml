@@ -16,7 +16,7 @@ module S = Settings
 (** what we parse here *)
 type parameter = string * string
 type constructorAST = L.cId * parameter list * L.position list * string
-type specAST = L.tId list * L.fId list * constructorAST list
+type specAST = L.tId list * L.fId list * constructorAST list * (L.tId, string) AL.t
 type parserSpec = L.tId list * L.fId list * L.spec [@@deriving show]
 
 (** char tests *)
@@ -95,7 +95,9 @@ let end_line = skip_many1 blank_line *> option () (spaces *> end_of_input)
 let line (p: 'a t) = spaces *> lex p <* end_line
 
 (** sort and functor declarations just care about the name *)
-let sortDecl = lift3 (fun s _ _ -> `Sort s) ident colon ttype
+(** if var_name is not present (i.e. None) it will be filtered out in the end *)
+let var_name = parens ident >>| (fun name -> Some name)
+let sortDecl = lift4 (fun s name _ _ -> `Sort (s, name)) ident (option None var_name) colon ttype
 let functorDecl = lift3 (fun f _ _ -> `Functor f) ident colon tfunctor
 
 (** Binders can be parsed as either a single binder or a variadic binder *)
@@ -154,10 +156,11 @@ let constructorDecl : ([> `Constructor of constructorAST ]) t =
  ** Because they can appear in any order we can just throw them in a polymorphic variant
  ** and filter them out again later *)
 let signature : specAST t = lift3 (fun _ ds _ ->
-    let ss = List.filter_map (function `Sort s -> Some s | _ -> None) ds in
+    let ss = List.filter_map (function `Sort (s, _) -> Some s | _ -> None) ds in
+    let var_name_assoc = AL.from_list (List.filter_map (function `Sort (s, Some var_name) -> Some (s, var_name) | _ -> None) ds) in
     let fs = List.filter_map (function `Functor f -> Some f | _ -> None) ds in
     let cs = List.filter_map (function `Constructor c -> Some c | _ -> None) ds in
-    (ss, fs, cs))
+    (ss, fs, cs, var_name_assoc))
     (skip_many blank_line)
     (sortDecl <|> functorDecl <|> constructorDecl |> line |> many)
     (commit *>
@@ -170,7 +173,7 @@ let signature : specAST t = lift3 (fun _ ds _ ->
  ** and functors exist.
  ** Also, unscoped syntax with variadic binders is not supported and we check that here.
  ** The applicative Syntax *> of the error monad is very nice here because it acts as a semicolon. *)
-let checkSpec (sorts, functors, ctors) =
+let checkSpec (sorts, functors, ctors, var_name_assoc) =
   let open ErrorM.Syntax in
   let open ErrorM in
   let names = sorts @ functors @ List.map (fun (ctor_name, _, _, _) -> ctor_name) ctors in
@@ -205,7 +208,7 @@ let checkSpec (sorts, functors, ctors) =
     in
     let empty_spec = AL.from_list @@ List.map (fun s -> (s, [])) sorts in
     let* ctors = m_fold_right ~f:checkConstructor ~init:empty_spec ctors in
-    pure (sorts, functors, AL.flatten ctors)
+    pure (sorts, functors, AL.flatten ctors, var_name_assoc)
 
 (** parse and check a signature.
  ** We replace windows line endings here because that's the only way I found to handle comments

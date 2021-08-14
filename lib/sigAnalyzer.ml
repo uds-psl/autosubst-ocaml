@@ -71,7 +71,7 @@ let subordination g canonical_order open_sorts t =
 let topological_sort g canonical_order =
   List.map (fun component -> list_intersection canonical_order component) (C.scc_list g)
 
-let build_signature (canonical_order, fs, spec) =
+let build_signature (canonical_order, fs, spec, _) =
   let open ErrorM.Syntax in
   let open ErrorM in
   let g = build_graph spec in

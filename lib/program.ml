@@ -44,13 +44,13 @@ let parse_args args =
   let force_overwrite_r = ref false in
   let gen_allfv_r = ref false in
   let gen_fext_r = ref false in
-  let set_var_fmt s =
-    try
-      (* just to check that it is a valid format string. we can't put a format string into a reference so we use the original string *)
-      let _ = Scanf.format_from_string s "%s" in
-      Settings.var_fmt := s
-    with Scanf.Scan_failure _ ->
-      raise (Arg.Bad ("var constructor format must contain one %s format specifier which is replaced by the respective sort")) in
+  (* let set_var_fmt s =
+   *   try
+   *     (\* just to check that it is a valid format string. we can't put a format string into a reference so we use the original string *\)
+   *     let _ = Scanf.format_from_string s "%s" in
+   *     Settings.var_fmt := s
+   *   with Scanf.Scan_failure _ ->
+   *     raise (Arg.Bad ("var constructor format must contain one %s format specifier which is replaced by the respective sort")) in *)
   let arg_spec = Arg.[
       ("-o", String set_outfile, "File to save output to.");
       ("-s", Symbol (["coq"; "ucoq"], set_scope), "Generate scoped or unscoped code.");
@@ -59,7 +59,7 @@ let parse_args args =
       ("-no-static", Clear gen_static_files_r, "Don't put the static files like core.v, unscoped.v, etc. into the output directory.");
       ("-allfv", Set gen_allfv_r, "Generate allfv lemmas.");
       ("-fext", Set gen_fext_r, "Generate lemmas & tactics that use the functional extensionality axiom.");
-      ("-var", String set_var_fmt, "Format of the variable constructor")
+      (* ("-var", String set_var_fmt, "Format of the variable constructor") *)
   ] in
   (* have to pass in a fresh reference (or set the one from the module) to be able to call this multiple times in repl *)
   let () = Arg.parse_argv ~current:(ref 0) args arg_spec anon_fun usage_message in
@@ -154,7 +154,8 @@ let main argv =
       then gen_static_files args.force_overwrite dir args.scope args.version
       else () in
     (* parse input HOAS *)
-    let* (_, functors, _) as spec = read_file args.infile |> SigParser.parse_signature in
+    let* (_, functors, _, var_fmt_assoc) as spec = read_file args.infile |> SigParser.parse_signature in
+    let () = Settings.var_fmt_assoc := var_fmt_assoc in
     (* check if we use the "cod" functor because then we need fext also in the normal code *)
     let args = if List.mem "cod" functors then {args with gen_fext = true} else args in
     let* signature = SigAnalyzer.build_signature spec in

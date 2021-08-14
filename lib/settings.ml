@@ -1,8 +1,11 @@
 (** This module contains some global variables for which I did not want to add a
  ** state monad to the monad transformer stack *)
 
-(** format string for printing variable constructors *)
-let var_fmt = ref "var_%s"
+module AL = AssocList
+
+(** Assoc list for printing variable constructors
+ ** If a sort has no associated varable constructor name, a default name will be used. *)
+let var_fmt_assoc = ref (AL.empty : (Language.tId, string) AL.t)
 
 (** What kind of code we generate. Set after parsing program arguments in Program
  ** DONE can we have mutable references in ocaml that we can only set once?

@@ -3,6 +3,8 @@ type ('a, 'b) t = ('a * 'b) list [@@deriving show]
 let assoc_exn = List.assoc
 let assoc = List.assoc_opt
 
+let empty = []
+
 let assoc_default x l ~default =
   match assoc x l with
   | None -> default

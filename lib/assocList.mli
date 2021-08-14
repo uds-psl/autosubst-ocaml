@@ -2,6 +2,8 @@
 
 type ('a, 'b) t [@@deriving show]
 
+val empty : ('a, 'b) t
+
 val assoc_exn : 'a -> ('a, 'b) t -> 'b
 val assoc : 'a -> ('a, 'b) t -> 'b option
 

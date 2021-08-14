@@ -5,13 +5,14 @@
 open Util
 
 module L = Language
+module AL = AssocList
 
 (** This uses the mutable variable var_fmt to build the name for variable constructors.
  ** format_from_string takes a string and format string (the "%s") and tries to cast the string
  ** to that format. Can error at runtime if user supplied a wrong format string. *)
 let var_ x =
-  let fmt = Scanf.format_from_string !Settings.var_fmt "%s" in
-  Printf.sprintf fmt x
+  let default_name = Printf.sprintf "var_%s" x in
+  AL.assoc_default ~default:default_name x !Settings.var_fmt_assoc
 
 let congr_ c = sepd ["congr"; c]
 
