@@ -5,10 +5,12 @@
 module S = Settings
 
 
-let usage_message = "dune exec -- bin/main.exe [OPTION]... signature-file
+let usage_message = "
+dune exec -- bin/main.exe [OPTION]... signature-file
 
 signature-file:
-  Path to a .sig file containing the signature of your language."
+  Path to a .sig file containing the signature of your language.
+"
 
 
 (** Parse the program arguments and return a Settings.args object.
@@ -42,6 +44,13 @@ let parse_args args =
   let force_overwrite_r = ref false in
   let gen_allfv_r = ref false in
   let gen_fext_r = ref false in
+  let set_var_fmt s =
+    try
+      (* just to check that it is a valid format string. we can't put a format string into a reference so we use the original string *)
+      let _ = Scanf.format_from_string s "%s" in
+      Settings.var_fmt := s
+    with Scanf.Scan_failure _ ->
+      raise (Arg.Bad ("var constructor format must contain one %s format specifier which is replaced by the respective sort")) in
   let arg_spec = Arg.[
       ("-o", String set_outfile, "File to save output to.");
       ("-s", Symbol (["coq"; "ucoq"], set_scope), "Generate scoped or unscoped code.");
@@ -49,7 +58,8 @@ let parse_args args =
       ("-f", Set force_overwrite_r, "Force overwrite files in the output directory.");
       ("-no-static", Clear gen_static_files_r, "Don't put the static files like core.v, unscoped.v, etc. into the output directory.");
       ("-allfv", Set gen_allfv_r, "Generate allfv lemmas.");
-      ("-fext", Set gen_fext_r, "Generate lemmas & tactics that use the functional extensionality axiom.")
+      ("-fext", Set gen_fext_r, "Generate lemmas & tactics that use the functional extensionality axiom.");
+      ("-var", String set_var_fmt, "Format of the variable constructor")
   ] in
   (* have to pass in a fresh reference (or set the one from the module) to be able to call this multiple times in repl *)
   let () = Arg.parse_argv ~current:(ref 0) args arg_spec anon_fun usage_message in
@@ -132,23 +142,27 @@ let main argv =
   (* print backtrace if the program crashes *)
   let () = Printexc.record_backtrace true in
   let () = GallinaGen.setup_coq () in
-  (* parse program arguments *)
-  let args = parse_args argv in
-  let () = Settings.scope_type := args.scope in
-  (* setup static files *)
-  let () =
-    let dir = Filename.dirname args.outfile in
-    let () = create_dir dir in
-    if args.gen_static_files
-    then gen_static_files args.force_overwrite dir args.scope args.version
-    else () in
-  (* parse input HOAS *)
-  let* (_, functors, _) as spec = read_file args.infile |> SigParser.parse_signature in
-  (* check if we use the "cod" functor because then we need fext also in the normal code *)
-  let args = if List.mem "cod" functors then {args with gen_fext = true} else args in
-  let* signature = SigAnalyzer.build_signature spec in
-  (* generate code *)
-  let* code, _ = FileGenerator.run_gen_code signature args.gen_allfv args.gen_fext in
-  (* write file *)
-  let () = write_file args.force_overwrite args.outfile code in
-  pure "done"
+  try
+    (* parse program arguments *)
+    let args = parse_args argv in
+    let () = Settings.scope_type := args.scope in
+    (* setup static files *)
+    let () =
+      let dir = Filename.dirname args.outfile in
+      let () = create_dir dir in
+      if args.gen_static_files
+      then gen_static_files args.force_overwrite dir args.scope args.version
+      else () in
+    (* parse input HOAS *)
+    let* (_, functors, _) as spec = read_file args.infile |> SigParser.parse_signature in
+    (* check if we use the "cod" functor because then we need fext also in the normal code *)
+    let args = if List.mem "cod" functors then {args with gen_fext = true} else args in
+    let* signature = SigAnalyzer.build_signature spec in
+    (* generate code *)
+    let* code, _ = FileGenerator.run_gen_code signature args.gen_allfv args.gen_fext in
+    (* write file *)
+    let () = write_file args.force_overwrite args.outfile code in
+    pure "done"
+  with
+  | Arg.Help help -> pure help
+  | Arg.Bad e -> error e
