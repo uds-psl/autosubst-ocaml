@@ -69,7 +69,8 @@ let gen_asimpl_star () =
 let gen_asimpl_fext () =
   let* auto_unfold_star = gen_auto_unfold_star' () in
   let unfold_funcomp = repeat_ (try_ (calltac_ "unfold_funcomp")) in
-  let tac = then_ [ unfold_funcomp
+  let tac = then_ [ calltac_ "check_no_evars"
+                  ; unfold_funcomp
                   ; auto_unfold_star
                   ; calltac_ "asimpl_fext'"
                   ; unfold_funcomp ] in
@@ -78,7 +79,8 @@ let gen_asimpl_fext () =
 let gen_asimpl () =
   let* auto_unfold_star = gen_auto_unfold_star' () in
   let unfold_funcomp = repeat_ (try_ (calltac_ "unfold_funcomp")) in
-  let tac = then_ [ unfold_funcomp
+  let tac = then_ [ calltac_ "check_no_evars"
+                  ; unfold_funcomp
                   ; auto_unfold_star
                   ; calltac_ "asimpl'"
                   ; calltac_ "minimize" ] in

@@ -232,7 +232,7 @@ Proof. intros H. specialize (H n Gamma A C id).  now asimpl in H. Qed.
 Hint Resolve transitivity_proj.
 
 Lemma transitivity_ren m n B (xi: fin m -> fin n) : transitivity_at B -> transitivity_at B⟨xi⟩.
-Proof. unfold transitivity_at. intros. eapply H; asimpl in H0; asimpl in H1; eauto. Qed.
+Proof. unfold transitivity_at. intros. eapply H with (xi:=funcomp xi0 xi); asimpl in H0; asimpl in H1; eauto. Qed.
 
 Lemma sub_narrow n (Delta Delta': ctx n) A C :
   (forall x, SUB Delta' |- Delta' x <: Delta x) ->
@@ -569,7 +569,7 @@ Proof.
       eapply context_renaming_lemma; try eapply eq2.
       * intros. now asimpl.
       * intros. now asimpl.
-  - eapply T_Tapp with (A0 := subst_ty sigma A) .
+  - eapply T_Tapp with (A0 := subst_ty sigma A) (B0 := B[up_ty_ty sigma]).
     asimpl in IHty. eapply IHty; eauto.
     eapply sub_substitution; eauto.
     now asimpl.
@@ -644,7 +644,7 @@ Proof.
     replace A with (A[ids]) by (now asimpl). replace A' with (A'[ids]) by (now asimpl).
     eapply sub_substitution; eauto. intros x.
     asimpl. econstructor. eauto.
- - econstructor; eauto. eapply sub_substitution with (sigma := ids) in H0; eauto.
+ - econstructor; eauto. eapply sub_substitution with (sigma := ids) (Delta':=Delta') in H0; eauto.
     asimpl in H0. eapply H0. intros x. econstructor. asimpl. eapply eq.
 Qed.
 
@@ -691,7 +691,7 @@ Proof.
         -- auto_case; asimpl; eauto using sub_refl.
         -- intros x. asimpl. constructor.
       * pose proof (ty_inv_tabs _ H_ty H) as (?&?&?&?).
-        eapply T_Sub.  asimpl.
+        eapply T_Sub.  
         eapply context_morphism_lemma; eauto.
         -- auto_case; asimpl; eauto.
         -- intros z. asimpl. constructor.

@@ -92,3 +92,8 @@ Ltac minimize :=
 
 (* had to add this tactic abbreviation because I could not print a setoid_rewrite with the arrow *)
 Ltac setoid_rewrite_left t := setoid_rewrite <- t.
+
+Ltac check_no_evars :=
+  match goal with
+  | [|- ?x] => assert_fails (has_evar x)
+  end.
