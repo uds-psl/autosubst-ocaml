@@ -652,12 +652,9 @@ Proof.
       eapply IHty2. eauto.
       * intros z.
         unfold dctx in Gamma, Gamma0. unfold upRen_p.
-        (* asimpl. *)
-        fsimpl.
+        asimpl.
         unfold funcomp.
-        simple apply scons_p_morphism; [reflexivity|].
         now setoid_rewrite H'.
-    (* apply (crl0 m n p pt s t A B m' n' Delta Gamma Delta0 Gamma0 xi zeta Gamma' H ty1 ty2 IHty1 IHty2 H0 H'). *)
   - econstructor. eauto. eapply sub_weak; eauto.
 Qed.
 
@@ -706,13 +703,20 @@ Proof.
       * intros x.
         destruct (destruct_fin x) as [[x' ->] |[x' ->]]; asimpl; eauto.
         -- eapply T_Var'. now asimpl.
-        -- eapply context_renaming_lemma'; try eapply eq2; try now asimpl.
-           intros z.
-           now asimpl.
-           (* TODO setoid-asimpl does not work with scons_p yet *)
-           intros x.
-           now asimpl.
-           (* now asimpl_fext. *)
+        -- eapply context_renaming_lemma'; try eapply eq2.
+           (* TODO try out why exactly only the scons_p_* lemmas have issues with evars *)
+           Unshelve.
+           5: exact id.
+           5: exact (shift_p p).
+           5: exact x'.
+           all: now asimpl.
+           (* try now asimpl. *)
+           (* intros z. *)
+           (* now asimpl. *)
+           (* (* TODO setoid-asimpl does not work with scons_p yet *) *)
+           (* intros x. *)
+           (* now asimpl. *)
+           (* (* now asimpl_fext. *) *)
      } 
   - econstructor.
     + eapply IHty; eauto.

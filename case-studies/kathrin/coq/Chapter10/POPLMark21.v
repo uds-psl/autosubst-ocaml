@@ -523,13 +523,15 @@ Proof.
         (* https://coq.zulipchat.com/#narrow/stream/237656-Coq-devs.20.26.20plugin.20devs/topic/Change.20of.20case.20representation/near/220411671 *)
         (* TODO why does setoid_rewrite H' fail even though it works when I just apply the morphism *)
         (* TODO why does setoid_rewrite scons_p_head' fail? but it works when I apply the morphism *)
+        asimpl.
         unfold funcomp.
-        (* Set Typeclasses Debug. *)
-        (* try setoid_rewrite scons_p_tail'. *)
-        (* asimpl. *)
-        simple apply scons_p_morphism.
-        -- now setoid_rewrite scons_p_head'.
-        -- setoid_rewrite scons_p_tail'. now setoid_rewrite H'.
+        now setoid_rewrite H'.
+        (* (* Set Typeclasses Debug. *) *)
+        (* (* try setoid_rewrite scons_p_tail'. *) *)
+        (* (* asimpl. *) *)
+        (* simple apply scons_p_morphism. *)
+        (* -- now setoid_rewrite scons_p_head'. *)
+        (* -- setoid_rewrite scons_p_tail'. now setoid_rewrite H'. *)
         (* Info 3 asimpl_fext. *)
         (* (* TODO actually I did not have to use fext here since the goal compates the output of scons_p and we have a morphism *) *)
         (* apply scons_p_morphism; easy. *)
@@ -584,14 +586,17 @@ Proof.
         destruct (destruct_fin x) as [[x' ->] |[x' ->]]; asimpl; eauto.
         -- eapply T_Var'. now asimpl.
         -- eapply context_renaming_lemma' with (Delta':=Delta'); try eapply eq2.
-           try now asimpl.
-           intros z.
            Unshelve.
+           5: exact id.
+           5: exact (shift_p p).
            5: exact x'.
-           4: exact id.
-           now asimpl.
-           (* a.d. TODO got one more goal left from context_renaming_lemma' *)
-           intros x. now asimpl.
+           all: now asimpl.
+           (* instantiate (1:=id). *)
+           (* try now asimpl. *)
+           (* intros z. *)
+           (* now asimpl. *)
+           (* (* a.d. TODO got one more goal left from context_renaming_lemma' *) *)
+           (* intros x. now asimpl. *)
      }
      
   - econstructor.

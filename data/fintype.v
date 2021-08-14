@@ -215,6 +215,19 @@ Proof.
     + cbn. apply Hsigma.
 Qed.
 
+Instance scons_p_morphism2 {X: Type} {m n:nat} :
+  Proper (pointwise_relation _ eq ==> pointwise_relation _ eq ==> eq ==> eq) (@scons_p X m n).
+Proof.
+  intros sigma sigma' Hsigma tau tau' Htau ? x ->.
+  induction m.
+  - cbn. apply Htau.
+  - cbn. change (fin (S m + n)) with (fin (S (m + n))) in x.
+    destruct x as [x|].
+    + cbn. apply IHm.
+      intros ?. apply Hsigma.
+    + cbn. apply Hsigma.
+Qed.
+
 Definition zero_p {m : nat} {n} : fin m -> fin (m + n).
 Proof.
   induction m.
@@ -363,7 +376,8 @@ Ltac fsimpl :=
          | [|- context[?tau (scons_p ?p ?f ?g _)]] => (rewrite_strat innermost scons_p_comp'); eta_reduce
          | [|- context[scons (@var_zero ?n) shift]] => change (scons (@var_zero n) shift) with (fun x => (scons (@var_zero n) shift) x); setoid_rewrite scons_eta_id'; eta_reduce
          (* | _ => progress autorewrite with FunctorInstances *)
-         | _ => first [progress setoid_rewrite scons_p_head' | progress setoid_rewrite scons_p_tail' ]
+         | [|- context[scons_p _ _ _ (zero_p _ _)]] => setoid_rewrite scons_p_head'
+         | [|- context[scons_p _ _ _ (shift_p _ _)]] => setoid_rewrite scons_p_tail'
          end.
 
 (** Generic fsimpl tactic: simplifies the above primitives in the context *)
