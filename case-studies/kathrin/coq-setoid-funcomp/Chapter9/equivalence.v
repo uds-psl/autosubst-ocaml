@@ -254,13 +254,14 @@ Proof. unfold logeq_rel. intros. eapply main. constructor; eauto. Qed.
 Lemma cont_ext_id Gamma : cont_ext Gamma id Gamma.
 Proof. intros x H. split; auto. Qed.
 
+
 (** The fundamental theorem. *)
 Theorem fundamental Gamma A s t:
   decleq Gamma A s t -> forall Gamma' gamma delta, logeq_rel Gamma gamma delta Gamma' -> logeq Gamma' (s[gamma]) (t[delta]) A.
 Proof.
   induction 1; intros.
   - asimpl. eapply logeq_backward_closure; [| |constructor].
-    2: {eright. constructor. now asimpl. constructor. }
+    2: {eright. constructor. instantiate (1:=M[N[gamma] .: gamma]). now asimpl. constructor. }
     eapply IHdecleq1.
     intros [|] HH; cbn; eauto.
     + eapply H1. simpl in *. omega.

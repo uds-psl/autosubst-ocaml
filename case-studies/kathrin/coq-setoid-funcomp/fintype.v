@@ -51,6 +51,7 @@ Definition scons {X : Type} {n : nat} (x : X) (f : fin n -> X) (m : fin (S n)) :
   | Some i => f i
   end.
 
+Hint Opaque scons : rewrite.
 
 (** ** Type Class Instances for Notation *)
 
@@ -141,7 +142,6 @@ Definition up_ren m n (xi : ren m n) : ren (S m) (S n) :=
   var_zero .: xi >> shift.
 
 (** Generic proof that lifting of renamings composes. *)
-(* TODO use pointwise_relation? *)
 Lemma up_ren_ren k l m (xi: ren k l) (zeta : ren l m) (rho: ren k m) (E: forall x, (xi >> zeta) x = rho x) :
   forall x, (up_ren xi >> up_ren zeta) x = up_ren rho x.
 Proof.
@@ -153,33 +153,33 @@ Qed.
 Arguments up_ren_ren {k l m} xi zeta rho E.
 
 Lemma fin_eta {X} (f g : fin 0 -> X) :
-  forall x, f x = g x.
+  pointwise_relation _ eq f g.
 Proof. intros []. Qed.
 
 (** Eta laws *)
-Lemma scons_eta' {T} {n : nat} (f : fin (S n) -> T) (x: fin (S n)) :
-  (f var_zero .: (fun x => f (shift x))) x = f x.
-Proof. destruct x; reflexivity. Qed.
-
-Lemma scons_eta_id' {n : nat} (x: fin (S n)) :
-  (var_zero .: shift) x = id x.
-Proof. destruct x; reflexivity. Qed.
-
-Lemma scons_comp' {T:Type} {U} {m} (s: T) (sigma: fin m -> T) (tau: T -> U) (x: fin (S m)) :
-  tau ((s .: sigma) x) = ((tau s) .: (fun x => tau (sigma x))) x.
-Proof. destruct x; reflexivity. Qed.
-
-Lemma scons_eta_pointwise {T} {n : nat} (f : fin (S n) -> T) :
-  pointwise_relation _ eq (f var_zero .: shift >> f) f.
+Lemma scons_eta' {T} {n : nat} (f : fin (S n) -> T) :
+  pointwise_relation _ eq (f var_zero .: (funcomp f shift)) f.
 Proof. intros x. destruct x; reflexivity. Qed.
 
-Lemma scons_eta_id_pointwise {n : nat} :
-  pointwise_relation _ eq (@var_zero n .: shift) id.
+Lemma scons_eta_id' {n : nat} :
+  pointwise_relation (fin (S n)) eq (var_zero .: shift) id.
 Proof. intros x. destruct x; reflexivity. Qed.
 
-Lemma scons_comp_pointwise {T:Type} {U} {m} (s: T) (sigma: fin m -> T) (tau: T -> U) :
-  pointwise_relation _ eq ((s .: sigma) >> tau) ((tau s) .: (sigma >> tau)).
+Lemma scons_comp' {T:Type} {U} {m} (s: T) (sigma: fin m -> T) (tau: T -> U) :
+  pointwise_relation _ eq (funcomp tau (s .: sigma)) ((tau s) .: (funcomp tau sigma)).
 Proof. intros x. destruct x; reflexivity. Qed.
+
+Lemma scons_tail'_pointwise {X} {n} (s : X) (f : fin n -> X) :
+  pointwise_relation _ eq (funcomp (scons s f) shift) f.
+Proof.
+  reflexivity.
+Qed.
+
+Lemma scons_tail' {X} {n} (s : X) (f : fin n -> X) x :
+  (scons s f (shift x)) = f x.
+Proof.
+  reflexivity.
+Qed.
 
 (* Morphism for Setoid Rewriting. The only morphism that can be defined statically. *)
 Instance scons_morphism {X: Type} {n:nat} (t: X) :
@@ -192,16 +192,14 @@ Proof.
   reflexivity.
 Qed.
 
-Instance funcomp_morphism {X Y Z} :
-  Proper (@pointwise_relation Y Z eq ==> @pointwise_relation X Y eq ==> @pointwise_relation X Z eq) funcomp.
+Instance scons_morphism2 {X: Type} {n:nat} :
+  Proper (eq ==> pointwise_relation _ eq ==> pointwise_relation _ eq) (@scons X n).
 Proof.
-  cbv - [funcomp].
-  intros g0 g1 Hg f0 f1 Hf x.
-  unfold funcomp. rewrite Hf, Hg.
+  intros ? ? -> sigma tau H.
+  intros [x|].
+  cbn. apply H.
   reflexivity.
 Qed.
-
-
 (** ** Variadic Substitution Primitives *)
 
 Fixpoint shift_p (p : nat) {n} : ren n (p + n) :=
@@ -221,11 +219,26 @@ Proof.
       * exact g.
 Defined.
 
+Hint Opaque scons_p : rewrite.
+
 Instance scons_p_morphism {X: Type} {m n:nat} :
   Proper (pointwise_relation _ eq ==> pointwise_relation _ eq ==> pointwise_relation _ eq) (@scons_p X m n).
 Proof.
   intros sigma sigma' Hsigma tau tau' Htau.
   intros x.
+  induction m.
+  - cbn. apply Htau.
+  - cbn. change (fin (S m + n)) with (fin (S (m + n))) in x.
+    destruct x as [x|].
+    + cbn. apply IHm.
+      intros ?. apply Hsigma.
+    + cbn. apply Hsigma.
+Qed.
+
+Instance scons_p_morphism2 {X: Type} {m n:nat} :
+  Proper (pointwise_relation _ eq ==> pointwise_relation _ eq ==> eq ==> eq) (@scons_p X m n).
+Proof.
+  intros sigma sigma' Hsigma tau tau' Htau ? x ->.
   induction m.
   - cbn. apply Htau.
   - cbn. change (fin (S m + n)) with (fin (S (m + n))) in x.
@@ -243,6 +256,36 @@ Proof.
     + exact (shift_p 1 (IHm x)).
     + exact var_zero.
 Defined.
+      
+Lemma scons_p_head' {X} {m n} (f : fin m -> X) (g : fin n -> X) z:
+  (scons_p  f g) (zero_p  z) = f z.
+Proof.
+ induction m.
+  - inversion z.
+  - destruct z.
+    + simpl. simpl. now rewrite IHm.
+    + reflexivity.
+Qed.
+
+Lemma scons_p_head_pointwise {X} {m n} (f : fin m -> X) (g : fin n -> X) :
+  pointwise_relation _ eq (funcomp (scons_p f g) zero_p) f.
+Proof.
+  intros z.
+  unfold funcomp.
+  induction m.
+  - inversion z.
+  - destruct z.
+    + simpl. now rewrite IHm.
+    + reflexivity.
+Qed.
+
+Lemma scons_p_tail' X  m n (f : fin m -> X) (g : fin n -> X) z :
+  scons_p  f g (shift_p m z) = g z.
+Proof. induction m; cbn; eauto. Qed.
+
+Lemma scons_p_tail_pointwise X  m n (f : fin m -> X) (g : fin n -> X) :
+  pointwise_relation _ eq (funcomp (scons_p f g) (shift_p m)) g.
+Proof. intros z. induction m; cbn; eauto. Qed.
 
 Lemma destruct_fin {m n} (x : fin (m + n)):
   (exists x', x = zero_p  x') \/ exists x', x = shift_p m x'.
@@ -256,65 +299,36 @@ Proof.
     + left. exists None. eauto.
 Qed.
 
-Lemma scons_p_head' {X} {m n} (f : fin m -> X) (g : fin n -> X) z:
-  (scons_p  f g) (zero_p  z) = f z.
+Lemma pointwise_forall {X Y:Type} (f g: X -> Y) :
+  (pointwise_relation _ eq f g) -> forall x, f x = g x.
 Proof.
- induction m.
-  - inversion z.
-  - destruct z.
-    + simpl. simpl. now rewrite IHm.
-    + reflexivity.
+  trivial.
 Qed.
 
-Lemma scons_p_tail' X  m n (f : fin m -> X) (g : fin n -> X) z :
-  scons_p  f g (shift_p m z) = g z.
-Proof. induction m; cbn; eauto. Qed.
-
-Lemma scons_p_comp' X Y m n (f : fin m -> X) (g : fin n -> X) (h : X -> Y) x:
- h (scons_p  f g x)  = scons_p (f >> h) (g >> h) x.
+Instance funcomp_morphism {X Y Z} :
+  Proper (@pointwise_relation Y Z eq ==> @pointwise_relation X Y eq ==> @pointwise_relation X Z eq) funcomp.
 Proof.
-  destruct (destruct_fin x) as [[x' ->]|[x' ->]].
-  - now rewrite !scons_p_head'.
-  - now rewrite !scons_p_tail'.
+  cbv - [funcomp].
+  intros g0 g1 Hg f0 f1 Hf x.
+  unfold funcomp. rewrite Hf, Hg.
+  reflexivity.
 Qed.
 
-Lemma scons_p_head_pointwise {X} {m n} (f : fin m -> X) (g : fin n -> X) :
-  pointwise_relation _ eq (zero_p >> scons_p f g) f.
-Proof.
-  intros z.
-  unfold funcomp.
- induction m.
-  - inversion z.
-  - destruct z.
-    + simpl. now rewrite IHm.
-    + reflexivity.
-Qed.
-
-Lemma scons_p_tail_pointwise X  m n (f : fin m -> X) (g : fin n -> X) :
-  pointwise_relation _ eq (shift_p m >> scons_p f g) g.
-Proof. intros z. induction m; cbn; eauto. Qed.
-
-Lemma pointwise_forall {X Y} (f g : X -> Y):
-  pointwise_relation X eq f g -> forall x:X, f x = g x.
-Proof.
-  intros H x. apply H.
-Qed.
-
-Lemma scons_p_comp_pointwise X Y m n (f : fin m -> X) (g : fin n -> X) (h : X -> Y):
-  pointwise_relation _ eq ((scons_p f g) >> h) (scons_p (f >> h) (g >> h)).
+Lemma scons_p_comp' X Y m n (f : fin m -> X) (g : fin n -> X) (h : X -> Y) :
+  pointwise_relation _ eq (funcomp h (scons_p f g)) (scons_p (f >> h) (g >> h)).
 Proof.
   intros x.
   destruct (destruct_fin x) as [[x' ->]|[x' ->]].
-  - (* TODO this might be one of the problems Yannick encountered.
-     * *)
-    revert x'. apply pointwise_forall.
-    minimize.
-    change (zero_p >> (scons_p f g >> h)) with ((zero_p >> scons_p f g) >> h).
+  (* TODO better way to solve this? *)
+  - revert x'.
+    apply pointwise_forall.
+    change (fun x => (scons_p f g >> h) (zero_p x)) with (zero_p >> scons_p f g >> h).
     now setoid_rewrite scons_p_head_pointwise.
-  - revert x'. apply pointwise_forall.
-    minimize.
-    change (shift_p m >> (scons_p f g >> h)) with ((shift_p m >> scons_p f g) >> h).
-    now setoid_rewrite scons_p_tail_pointwise.
+  - revert x'.
+    apply pointwise_forall.
+    change (fun x => (scons_p f g >> h) (shift_p m x)) with (shift_p m >> scons_p f g >> h).
+    change (fun x => scons_p (f >> h) (g >> h) (shift_p m x)) with (shift_p m >> scons_p (f >> h) (g >> h)).
+    now rewrite !scons_p_tail_pointwise.
 Qed.
 
 Lemma scons_p_congr {X} {m n} (f f' : fin m -> X) (g g': fin n -> X) z:
@@ -327,15 +341,33 @@ Definition upRen_p p { m : nat } { n : nat } (xi : (fin) (m) -> (fin) (n)) : fin
 
 Arguments upRen_p p {m n} xi.
 
+Instance funcomp_morphism2 {X Y Z} :
+  Proper (@pointwise_relation Y Z eq ==> @pointwise_relation X Y eq ==> eq ==> eq) funcomp.
+Proof.
+  intros g0 g1 Hg f0 f1 Hf ? x ->.
+  unfold funcomp. rewrite Hf, Hg.
+  reflexivity.
+Qed.
+
 (** Generic proof for composition of n-ary lifting. *)
 Lemma up_ren_ren_p p k l m (xi: ren k l) (zeta : ren l m) (rho: ren k m) (E: forall x, (xi >> zeta) x = rho x) :
   forall x, (upRen_p p xi >> upRen_p p zeta) x = upRen_p p rho x.
 Proof.
   intros x. destruct (destruct_fin x) as [[? ->]|[? ->]].
-  - unfold upRen_p. unfold funcomp. now repeat rewrite scons_p_head'.
-  - unfold upRen_p. unfold funcomp. repeat rewrite scons_p_tail'.
-    now rewrite <- E.
+  - unfold upRen_p.
+    revert x0. apply pointwise_forall.
+    change (fun x => (scons_p zero_p (xi >> shift_p p) >> scons_p zero_p (zeta >> shift_p p)) (zero_p x)) with (fun x: fin p => ((zero_p >> scons_p zero_p (xi >> shift_p p)) >> (scons_p zero_p (zeta >> shift_p p))) x).
+    now repeat setoid_rewrite scons_p_head_pointwise.
+  - unfold upRen_p.
+    revert x0. apply pointwise_forall.
+    change (fun x : fin k => (scons_p zero_p (xi >> shift_p p) >> scons_p zero_p (zeta >> shift_p p)) (shift_p p x)) with (fun x : fin k => (((shift_p p) >> scons_p zero_p (xi >> shift_p p)) >> (scons_p zero_p (zeta >> shift_p p))) x).
+    setoid_rewrite scons_p_tail_pointwise.
+    rewrite funcomp_assoc.
+    setoid_rewrite scons_p_tail_pointwise.
+    unfold funcomp.
+    now setoid_rewrite <- E.
 Qed.
+
 
 Arguments zero_p m {n}.
 Arguments scons_p  {X} m {n} f g.
@@ -345,20 +377,10 @@ Lemma scons_p_eta {X} {m n} {f : fin m -> X}
   (forall x, g x = h (shift_p m x)) -> (forall x, f x = h (zero_p m x)) -> scons_p m f g z = h z.
 Proof.
   intros H1 H2. destruct (destruct_fin z) as [[? ->] |[? ->]].
-  - rewrite scons_p_head'. eauto.
-  - rewrite scons_p_tail'. eauto.
-Qed.
-
-Lemma scons_p_eta_pointwise {X} {m n} {f : fin m -> X}
-      {g : fin n -> X} (h: fin (m + n) -> X) :
-  pointwise_relation _  eq g (shift_p m >> h) -> pointwise_relation _ eq f (zero_p m >> h) ->
-  pointwise_relation _ eq (scons_p m f g) h.
-Proof.
-  intros H1 H2 z. destruct (destruct_fin z) as [[z' ->] |[z' ->]].
-  - revert z'; apply pointwise_forall; minimize.
-    rewrite scons_p_head_pointwise. eauto.
-  - revert z'; apply pointwise_forall. minimize.
-    rewrite scons_p_tail_pointwise. eauto.
+  - revert x; apply pointwise_forall.
+    setoid_rewrite scons_p_head'. eauto.
+  - revert x; apply pointwise_forall.
+    setoid_rewrite scons_p_tail'. eauto.
 Qed.
 
 Arguments scons_p_eta {X} {m n} {f g} h {z}.
@@ -409,27 +431,34 @@ Tactic Notation "auto_case" tactic(t) :=  (match goal with
                                            | [|- forall (i : fin (S _)), _] =>  intros [?|]; t
                                            end).
 
-(** Functor instances which can be added later on. *)
-Hint Rewrite @scons_p_comp_pointwise @scons_p_head_pointwise @scons_p_tail_pointwise : FunctorInstances2.
+Hint Rewrite @scons_p_head' @scons_p_tail' : FunctorInstances.
+
 
 (** Generic fsimpl tactic: simplifies the above primitives in a goal. *)
 Ltac fsimpl :=
   repeat match goal with
-         | [|- context[id >> ?f]] => change (id >> f) with f (* AsimplCompIdL *); idtac "id comp"
-         | [|- context[?f >> id]] => change (f >> id) with f (* AsimplCompIdR *); idtac "comp id"
-         | [|- context [id ?s]] => change (id s) with s; idtac "id s"
-         | [|- context[(?f >> ?g) >> ?h]] => change ((f >> g) >> h) with (f >> (g >> h)) (* AsimplComp *); idtac "funcomp assoc"
-         | [|- zero_p >> scons_p ?f ?g] => setoid_rewrite scons_p_head_pointwise; idtac "scons_p_head"
-         | [|- context[(?s .: ?sigma) var_zero]] => change ((s.:sigma) var_zero) with s; idtac "zero scons"
-         | [|- context[(?s .: ?sigma) (shift ?m)]] => change ((s.:sigma) (shift m)) with (sigma m); idtac "shift scons"
-         | [|- context[idren >> ?f]] => change (idren >> f) with f; idtac "idren comp"
-         | [|- context[?f >> idren]] => change (f >> idren) with f; idtac "comp idren"
-         | [|- context[?f >> (?x .: ?g)]] => change (f >> (x .: g)) with g (* f should evaluate to shift *); idtac "shift scons"
-         | [|- context[?x2 .: (shift >> ?f)]] => change (scons x2 (shift >> f)) with (scons (f var_zero) (shift >> f)); setoid_rewrite (@scons_eta_pointwise _ _ f); idtac "scons_eta 1"
-         | [|- context[?f var_zero .: ?g]] => change (scons (f var_zero) g) with (scons (f var_zero) (shift >> f)); setoid_rewrite scons_eta_pointwise; idtac "scons_eta 2"
-         | [|- _ =  ?h (?f ?s)] => change (h (f s)) with ((f >> h) s); idtac "fold funcomp 1"
-         | [|-  ?h (?f ?s) = _] => change (h (f s)) with ((f >> h) s); idtac "fold funcomp 2"
-         | _ => first [progress setoid_rewrite scons_comp_pointwise | progress setoid_rewrite scons_eta_id_pointwise | progress autorewrite with FunctorInstances2 ]; idtac "catchall"
+         | [|- context[id >> ?f]] => change (id >> f) with f (* AsimplCompIdL *)
+         | [|- context[?f >> id]] => change (f >> id) with f (* AsimplCompIdR *)
+         | [|- context [id ?s]] => change (id s) with s
+         | [|- context[(?f >> ?g) >> ?h]] => change ((f >> g) >> h) with (f >> (g >> h)) (* AsimplComp *)
+         (* | [|- zero_p >> scons_p ?f ?g] => rewrite scons_p_head *)
+         | [|- context[(?s .: ?sigma) var_zero]] => change ((s.:sigma) var_zero) with s
+         | [|- context[(?s .: ?sigma) (shift ?m)]] => change ((s.:sigma) (shift m)) with (sigma m)
+           (* first [progress setoid_rewrite scons_tail' | progress setoid_rewrite scons_tail'_pointwise ] *)
+         | [|- context[idren >> ?f]] => change (idren >> f) with f
+         | [|- context[?f >> idren]] => change (f >> idren) with f
+         | [|- context[?f >> (?x .: ?g)]] => change (f >> (x .: g)) with g (* f should evaluate to shift *)
+         | [|- context[?x2 .: (funcomp ?f shift)]] => change (scons x2 (funcomp f shift)) with (scons (f var_zero) (funcomp f shift)); setoid_rewrite (@scons_eta' _ _ f); eta_reduce
+         | [|- context[?f var_zero .: ?g]] => change (scons (f var_zero) g) with (scons (f var_zero) (funcomp f shift)); setoid_rewrite scons_eta'; eta_reduce
+         |[|- _ =  ?h (?f ?s)] => change (h (f s)) with ((f >> h) s)
+         |[|-  ?h (?f ?s) = _] => change (h (f s)) with ((f >> h) s)
+         | [|- context[funcomp _ (scons _ _)]] => setoid_rewrite scons_comp'; eta_reduce
+         | [|- context[funcomp _ (scons_p _ _ _)]] => setoid_rewrite scons_p_comp'; eta_reduce
+         | [|- context[scons (@var_zero ?n) shift]] => setoid_rewrite scons_eta_id'; eta_reduce
+         (* | _ => progress autorewrite with FunctorInstances *)
+         | [|- context[funcomp (zero_p _) (scons_p _ _ _)]] => setoid_rewrite scons_p_head'
+         | [|- context[funcomp (shift_p _) (scons_p _ _ _)]] => setoid_rewrite scons_p_tail'
+         | _ => minimize
          end.
 
 (** Generic fsimpl tactic: simplifies the above primitives in the context *)
@@ -438,13 +467,14 @@ Ltac fsimplc :=
          | [H: context[id >> ?f] |- _] => change (id >> f) with f in H(* AsimplCompIdL *)
          | [H: context[?f >> id]|- _] => change (f >> id) with f in H(* AsimplCompIdR *)
          | [H: context [id ?s]|- _] => change (id s) with s in H
+         (* | [H: context[comp ?f ?g]|- _] => change (comp f g) with (g >> f) in H (* AsimplCompIdL *) *)
          | [H: context[(?f >> ?g) >> ?h]|- _] =>
            change ((f >> g) >> h) with (f >> (g >> h)) in H (* AsimplComp *)
          | [H: context[(?s.:?sigma) var_zero]|- _] => change ((s.:sigma) var_zero) with s in H
          | [H: context[(?s.:?sigma) var_zero]|- _] => change ((s.:sigma) var_zero) with s in H
          | [H: context[(?s.:?sigma) (shift ?m)]|- _] => change ((s.:sigma) (shift m)) with (sigma m) in H
                                                                                       |[H : context[ _ =  ?h (?f ?s)]|- _] => change (h (f s)) with ((f >> h) s) in H
-         |[H: context[?h (?f ?s) = _]|- _] => change (h (f s)) with ((f >> h) s) in H
+         (* |[H: context[?h (?f ?s) = _]|- _] => change (h (f s)) with ((f >> h) s) in H *)
          | [H: context[idren >> ?f]|- _] => change (idren >> f) with f in H
          | [H: context[?f >> idren]|- _] => change (f >> idren) with f in H
          | [H: context[?f >> (?x .: ?g)]|- _] =>
@@ -459,3 +489,4 @@ Ltac fsimplc :=
 (** Simplification in both the goal and the context *)
 Tactic Notation "fsimpl" "in" "*" :=
   fsimpl; fsimplc.
+

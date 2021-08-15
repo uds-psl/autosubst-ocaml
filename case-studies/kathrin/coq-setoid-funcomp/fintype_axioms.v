@@ -51,7 +51,7 @@ Ltac fsimpl_fext :=
          |[|- _ =  ?h (?f ?s)] => change (h (f s)) with ((f >> h) s)
          |[|-  ?h (?f ?s) = _] => change (h (f s)) with ((f >> h) s)
 
-         | _ => first [progress (rewrite scons_comp) |  progress (rewrite scons_eta_id) | progress (autorewrite with FunctorInstances)]
+         | _ => first [progress (rewrite scons_comp) |  progress (rewrite scons_eta_id) | progress (autorewrite with FunctorInstancesFext)]
          end.
 
 (** Generic fsimpl tactic: simplifies the above primitives in the context *)
@@ -76,11 +76,11 @@ Ltac fsimplc_fext :=
            change x2 with (f var_zero) in H; rewrite (@scons_eta _ _ f) in H
          | [H: context[?f var_zero .: ?g]|- _] =>
            change g with (shift >> f) in H; rewrite scons_eta in H
-         | _ => first [progress (rewrite scons_comp in *) | progress (rewrite scons_eta_id in *) | progress (autorewrite with FunctorInstances in *)]
+         | _ => first [progress (rewrite scons_comp in *) | progress (rewrite scons_eta_id in *) | progress (autorewrite with FunctorInstancesFext in *)]
          end.
 
 (** Simplification in both the goal and the context *)
 Tactic Notation "fsimpl_fext" "in" "*" :=
   fsimpl_fext; fsimplc_fext.
 
-Hint Rewrite @scons_p_comp' @scons_p_head' @scons_p_tail' @scons_p_comp scons_p_head scons_p_tail : FunctorInstances.
+Hint Rewrite @scons_p_head' @scons_p_tail' @scons_p_comp scons_p_head scons_p_tail : FunctorInstancesFext.

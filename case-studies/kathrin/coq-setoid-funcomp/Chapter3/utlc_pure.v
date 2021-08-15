@@ -402,7 +402,7 @@ Ltac asimpl' := repeat (first
                  | progress fsimpl
                  | repeat unfold funcomp ]).
 
-Ltac asimpl := repeat try unfold_funcomp;
+Ltac asimpl := check_no_evars; repeat try unfold_funcomp;
                 repeat
                  unfold VarInstance_tm, Var, ids, Ren_tm, Ren1, ren1,
                   Up_tm_tm, Up_tm, up_tm, Subst_tm, Subst1, subst1 in *;
@@ -412,9 +412,9 @@ Tactic Notation "asimpl" "in" hyp(J) := revert J; asimpl; intros J.
 
 Tactic Notation "auto_case" := auto_case ltac:(asimpl; cbn; eauto).
 
-Ltac substify := auto_unfold; try repeat erewrite ?rinstInst'_tm.
+Ltac substify := auto_unfold; try setoid_rewrite rinstInst'_tm.
 
-Ltac renamify := auto_unfold; try repeat erewrite <- ?rinstInst'_tm.
+Ltac renamify := auto_unfold; try setoid_rewrite_left rinstInst'_tm.
 
 End renSubst.
 
@@ -502,7 +502,7 @@ Ltac asimpl_fext' := repeat (first
                       | progress cbn[subst_tm ren_tm]
                       | fsimpl_fext ]).
 
-Ltac asimpl_fext := repeat try unfold_funcomp;
+Ltac asimpl_fext := check_no_evars; repeat try unfold_funcomp;
                      repeat
                       unfold VarInstance_tm, Var, ids, Ren_tm, Ren1, ren1,
                        Up_tm_tm, Up_tm, up_tm, Subst_tm, Subst1, subst1 

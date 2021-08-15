@@ -196,7 +196,14 @@ Proof.
   - inv HeqMp.
   - inv H.
     + apply SAbs. eapply anti_rename. exact H0.
-      instantiate (1 := p..). substify. now asimpl.
+      instantiate (1 := p..).
+      instantiate (1 := id).
+      substify.
+      (* TODO incorporate in asimpl tactic so that we reject goals with evars *)
+      (* match goal with *)
+      (* | [|- ?x] => assert_fails (has_evar x) *)
+      (* end. *)
+      now asimpl.
     + eapply SRed. exact H. eapply IHSN. reflexivity.
 Qed.
 
@@ -258,7 +265,8 @@ Proof.
       * cbn. unfold funcomp.
         (* a.d. had to insert the following line *) 
         change (fun x : fin n' => @var_tm m (R x)) with (funcomp var_tm R).
-       renamify. 
+        asimpl.
+        renamify.
         apply rename_red. eauto.
   - cbn.  specialize (IHhas_type2 _ _ H1).
     specialize (IHhas_type1  _ _ H1 n' id _ IHhas_type2).

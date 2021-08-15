@@ -24,26 +24,16 @@ Proof. intros ->. now constructor. Qed.
 
 (** *** Substitutivity *)
 
-(* TODO I also need this morphism to rewrite in a subsitution inside another substitution *)
-Require Import Setoid Morphisms.
-Instance subst_tm_morphism2  {m_tm : nat} {n_tm : nat}:
- (Proper (pointwise_relation _ eq ==> pointwise_relation _ eq)
-    (@subst_tm m_tm n_tm)).
-Proof.
-  intros f g H s. now setoid_rewrite H.
-  Qed.
-
 Require Import core_axioms.
 Lemma step_inst {m n} (f : fin m -> tm n) (s t : tm m) :
   step s t -> step (subst_tm f s) (subst_tm f t).
 Proof.
   intros st. revert n f.  induction st; intros; cbn.
-  Hint Opaque scons_p : rewrite.
-  - apply step_beta'. asimpl.
-    unfold funcomp. setoid_rewrite scons_p_head'.
+  - apply step_beta'.
+    asimpl.
     (* TODO a.d. why is cod_map not unfolded + why does the rewrite with scons_p_head' fail. It should happen in fsimpl *)
-    asimpl. unfold cod_map. asimpl.
-    reflexivity.
+
+    unfold cod_map. now asimpl.
   - apply step_abs. eapply IHst.
   - apply step_appL, IHst.
 Qed.

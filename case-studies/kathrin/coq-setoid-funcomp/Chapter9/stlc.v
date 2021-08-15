@@ -440,7 +440,7 @@ Qed.
 Lemma renRen_tm_pointwise {k_tm : nat} {l_tm : nat} {m_tm : nat}
   (xi_tm : fin m_tm -> fin k_tm) (zeta_tm : fin k_tm -> fin l_tm)
   :
-  pointwise_relation _ eq (funcomp (ren_tm zeta_tm) (ren_tm xi_tm)) (ren_tm (funcomp zeta_tm xi_tm)).
+    pointwise_relation _ eq (funcomp (ren_tm zeta_tm ) (ren_tm xi_tm)) (ren_tm (funcomp zeta_tm xi_tm)).
 Proof.
 exact (fun s => compRenRen_tm xi_tm zeta_tm _ (fun n => eq_refl) s).
 Qed.
@@ -457,8 +457,7 @@ Qed.
 Lemma substRen_tm_pointwise {k_tm : nat} {l_tm : nat} {m_tm : nat}
   (sigma_tm : fin m_tm -> tm k_tm) (zeta_tm : fin k_tm -> fin l_tm)
   :
-  pointwise_relation _ eq (funcomp (ren_tm zeta_tm) (subst_tm sigma_tm)) 
-                     (subst_tm (funcomp (ren_tm zeta_tm) sigma_tm)).
+    pointwise_relation _ eq (funcomp (ren_tm zeta_tm) (subst_tm sigma_tm)) (subst_tm (funcomp (ren_tm zeta_tm) sigma_tm)).
 Proof.
 exact (fun s => compSubstRen_tm sigma_tm zeta_tm _ (fun n => eq_refl) s).
 Qed.
@@ -471,8 +470,9 @@ exact (compRenSubst_tm xi_tm tau_tm _ (fun n => eq_refl) s).
 Qed.
 
 Lemma renSubst_tm_pointwise {k_tm : nat} {l_tm : nat} {m_tm : nat}
-  (xi_tm : fin m_tm -> fin k_tm) (tau_tm : fin k_tm -> tm l_tm)
-  : pointwise_relation _ eq (funcomp (subst_tm tau_tm) (ren_tm xi_tm)) (subst_tm (funcomp tau_tm xi_tm)).
+  (xi_tm : fin m_tm -> fin k_tm) (tau_tm : fin k_tm -> tm l_tm) 
+  :
+    pointwise_relation _ eq (funcomp (subst_tm tau_tm) (ren_tm xi_tm)) (subst_tm (funcomp tau_tm xi_tm)).
 Proof.
 exact (fun s => compRenSubst_tm xi_tm tau_tm _ (fun n => eq_refl) s).
 Qed.
@@ -489,10 +489,39 @@ Qed.
 Lemma substSubst_tm_pointwise {k_tm : nat} {l_tm : nat} {m_tm : nat}
   (sigma_tm : fin m_tm -> tm k_tm) (tau_tm : fin k_tm -> tm l_tm)
   :
-  pointwise_relation _ eq (funcomp (subst_tm tau_tm) (subst_tm sigma_tm))
-                     (subst_tm (funcomp (subst_tm tau_tm) sigma_tm)).
+    pointwise_relation _ eq (funcomp (subst_tm tau_tm) (subst_tm sigma_tm)) (subst_tm (funcomp (subst_tm tau_tm) sigma_tm)).
 Proof.
 exact (fun s => compSubstSubst_tm sigma_tm tau_tm _ (fun n => eq_refl) s).
+Qed.
+
+Lemma rinstInst'_tm_pointwise {m_tm : nat} {n_tm : nat} (xi_tm : fin m_tm -> fin n_tm):
+  pointwise_relation _ eq (ren_tm xi_tm) (subst_tm (funcomp (var_tm n_tm) xi_tm)).
+Proof.
+exact (fun s => rinst_inst_tm xi_tm _ (fun n => eq_refl) s).
+Qed.
+
+Lemma instId'_tm_pointwise {m_tm : nat} :
+  pointwise_relation _ eq (subst_tm (var_tm m_tm)) id.
+Proof.
+exact (fun s => idSubst_tm (var_tm m_tm) (fun n => eq_refl) s).
+Qed.
+
+Lemma rinstId'_tm_pointwise {m_tm : nat} :
+  pointwise_relation _ eq (@ren_tm m_tm m_tm id) id.
+Proof.
+exact (fun s => eq_ind_r (fun t => t = s) (instId'_tm_pointwise s) (rinstInst'_tm_pointwise id s)).
+Qed.
+
+Lemma varL'_tm_pointwise {m_tm : nat} {n_tm : nat} (sigma_tm : fin m_tm -> tm n_tm) :
+  pointwise_relation _ eq (funcomp (subst_tm sigma_tm) (var_tm m_tm)) sigma_tm.
+Proof.
+exact (fun x => eq_refl).
+Qed.
+
+Lemma varLRen'_tm_pointwise {m_tm : nat} {n_tm : nat} (xi_tm : fin m_tm -> fin n_tm) :
+  pointwise_relation _ eq (funcomp (ren_tm xi_tm) (var_tm m_tm)) (funcomp (var_tm n_tm) xi_tm).
+Proof.
+exact (fun x => eq_refl).
 Qed.
 
 Lemma rinstInst'_tm {m_tm : nat} {n_tm : nat} (xi_tm : fin m_tm -> fin n_tm)
@@ -501,30 +530,14 @@ Proof.
 exact (rinst_inst_tm xi_tm _ (fun n => eq_refl) s).
 Qed.
 
-Lemma rinstInst'_tm_pointwise {m_tm : nat} {n_tm : nat} (xi_tm : fin m_tm -> fin n_tm)
-  : pointwise_relation _ eq (ren_tm xi_tm) (subst_tm (funcomp (var_tm n_tm) xi_tm)).
-Proof.
-exact (fun s => rinst_inst_tm xi_tm _ (fun n => eq_refl) s).
-Qed.
-
 Lemma instId'_tm {m_tm : nat} (s : tm m_tm) : subst_tm (var_tm m_tm) s = s.
 Proof.
 exact (idSubst_tm (var_tm m_tm) (fun n => eq_refl) s).
 Qed.
 
-Lemma instId'_tm_pointwise {m_tm : nat} : pointwise_relation _ eq (subst_tm (var_tm m_tm)) id.
-Proof.
-exact (fun s => idSubst_tm (var_tm m_tm) (fun n => eq_refl) s).
-Qed.
-
 Lemma rinstId'_tm {m_tm : nat} (s : tm m_tm) : ren_tm id s = s.
 Proof.
 exact (eq_ind_r (fun t => t = s) (instId'_tm s) (rinstInst'_tm id s)).
-Qed.
-
-Lemma rinstId'_tm_pointwise {m_tm : nat} : pointwise_relation _ eq (@ren_tm m_tm m_tm id) id.
-Proof.
-exact (fun s => eq_ind_r (fun t => t = s) (instId'_tm s) (rinstInst'_tm id s)).
 Qed.
 
 Lemma varL'_tm {m_tm : nat} {n_tm : nat} (sigma_tm : fin m_tm -> tm n_tm)
@@ -533,23 +546,12 @@ Proof.
 exact (eq_refl).
 Qed.
 
-Lemma varL'_tm_pointwise {m_tm : nat} {n_tm : nat} (sigma_tm : fin m_tm -> tm n_tm)
-  : pointwise_relation _ eq (funcomp (subst_tm sigma_tm) (var_tm m_tm)) sigma_tm.
-Proof.
-exact (fun x => eq_refl).
-Qed.
-
 Lemma varLRen'_tm {m_tm : nat} {n_tm : nat} (xi_tm : fin m_tm -> fin n_tm)
   (x : fin m_tm) : ren_tm xi_tm (var_tm m_tm x) = var_tm n_tm (xi_tm x).
 Proof.
 exact (eq_refl).
 Qed.
 
-Lemma varLRen'_tm_pointwise {m_tm : nat} {n_tm : nat} (xi_tm : fin m_tm -> fin n_tm) :
-  pointwise_relation _ eq (funcomp (ren_tm xi_tm) (var_tm m_tm)) (funcomp (var_tm n_tm) xi_tm).
-Proof.
-exact (fun x => eq_refl).
-Qed.
 
 Class Up_tm X Y :=
     up_tm : X -> Y.
@@ -615,33 +617,29 @@ Tactic Notation "auto_unfold" "in" "*" := repeat
                                             subst1 in *.
 
 Ltac asimpl' := repeat (first
-                 [ progress rewrite substSubst_tm; idtac "substSubst"
-                 | progress rewrite substSubst_tm_pointwise; idtac "substSubst pointwise"
-                 (* | progress rewrite ?substSubst_tm *)
-                 | progress rewrite renSubst_tm; idtac "renSubst"
-                 | progress rewrite renSubst_tm_pointwise; idtac "renSubst pointwise"
-                 (* | progress rewrite ?renSubst_tm *)
-                 | progress rewrite substRen_tm; idtac "substRen"
-                 | progress rewrite substRen_tm_pointwise; idtac "substRen pointwise"
-                 (* | progress rewrite ?substRen_tm *)
-                 | progress rewrite renRen_tm; idtac "renRen"
-                 | progress rewrite renRen_tm_pointwise; idtac "renRen pointwise"
-                 (* | progress rewrite ?renRen_tm *)
-                 | progress rewrite varLRen'_tm_pointwise; idtac "varLRen"
-                 (* | progress rewrite ?varLRen'_tm_pointwise *)
-                 | progress rewrite varL'_tm_pointwise; idtac "varL"
-                 (* | progress rewrite ?varL'_tm_pointwise *)
-                 | progress rewrite rinstId'_tm_pointwise; idtac "rinstId"
-                 (* | progress rewrite ?rinstId'_tm_pointwise *)
-                 | progress rewrite instId'_tm_pointwise; idtac "instId"
-                 (* | progress rewrite ?instId'_tm_pointwise *)
+                 [ progress setoid_rewrite substSubst_tm
+                 | progress setoid_rewrite substSubst_tm_pointwise
+                 | progress setoid_rewrite renSubst_tm
+                 | progress setoid_rewrite renSubst_tm_pointwise
+                 | progress setoid_rewrite substRen_tm
+                 | progress setoid_rewrite substRen_tm_pointwise
+                 | progress setoid_rewrite renRen_tm
+                 | progress setoid_rewrite renRen_tm_pointwise
+                 | progress setoid_rewrite varLRen'_tm
+                 | progress setoid_rewrite varLRen'_tm_pointwise
+                 | progress setoid_rewrite varL'_tm
+                 | progress setoid_rewrite varL'_tm_pointwise
+                 | progress setoid_rewrite rinstId'_tm
+                 | progress setoid_rewrite rinstId'_tm_pointwise
+                 | progress setoid_rewrite instId'_tm
+                 | progress setoid_rewrite instId'_tm_pointwise
                  | progress
                     unfold up_list_tm_tm, up_tm_tm, upRen_list_tm_tm,
-                     upRen_tm_tm, up_ren; idtac "unfold"
-                 | progress cbn[subst_tm ren_tm]; idtac "cbn"
-                 | progress fsimpl; idtac "fsimpl" ]).
+                     upRen_tm_tm, up_ren
+                 | progress cbn[subst_tm ren_tm shift scons scons_p]
+                 | progress fsimpl ]).
 
-Ltac asimpl := repeat try unfold_funcomp;
+Ltac asimpl := check_no_evars; repeat try unfold_funcomp;
                 repeat
                  unfold VarInstance_tm, Var, ids, Ren_tm, Ren1, ren1,
                   Up_tm_tm, Up_tm, up_tm, Subst_tm, Subst1, subst1 in *;
@@ -651,9 +649,9 @@ Tactic Notation "asimpl" "in" hyp(J) := revert J; asimpl; intros J.
 
 Tactic Notation "auto_case" := auto_case ltac:(asimpl; cbn; eauto).
 
-Ltac substify := auto_unfold; try repeat erewrite ?rinstInst'_tm.
+Ltac substify := auto_unfold; try setoid_rewrite rinstInst'_tm.
 
-Ltac renamify := auto_unfold; try repeat erewrite <- ?rinstInst'_tm.
+Ltac renamify := auto_unfold; try setoid_rewrite_left rinstInst'_tm.
 
 End renSubst.
 
@@ -747,7 +745,7 @@ Ltac asimpl_fext' := repeat (first
                       | progress cbn[subst_tm ren_tm]
                       | fsimpl_fext ]).
 
-Ltac asimpl_fext := repeat try unfold_funcomp;
+Ltac asimpl_fext := check_no_evars; repeat try unfold_funcomp;
                      repeat
                       unfold VarInstance_tm, Var, ids, Ren_tm, Ren1, ren1,
                        Up_tm_tm, Up_tm, up_tm, Subst_tm, Subst1, subst1 
@@ -768,6 +766,9 @@ Export renSubst.
 Export
 fext.
 
+Hint Opaque subst_tm : rewrite.
+Hint Opaque ren_tm : rewrite.
+
 Arguments lam {n_tm}.
 
 Arguments app {n_tm}.
@@ -777,4 +778,3 @@ Arguments var_tm {n_tm}.
 End interface.
 
 Export interface.
-

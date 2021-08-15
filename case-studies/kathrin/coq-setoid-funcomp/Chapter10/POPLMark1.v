@@ -80,6 +80,8 @@ Proof.
   intros H. autorevert H. induction H; intros; subst; asimpl; econstructor; eauto.
   - eapply IHsub2; try reflexivity.
     auto_case. rewrite <- H1. now asimpl.
+    (* TODO auto_case should call asimpl on this goal. and asimpl directly solves this. so why is it still here? *)
+    now asimpl.
 Qed.
 
 Lemma sub_weak1 n (Delta : ctx n) A A' B B' C :
@@ -96,7 +98,7 @@ Proof. intros H. specialize (H n Gamma A C id). now asimpl in H. Qed.
 Hint Resolve transitivity_proj.
 
 Lemma transitivity_ren m n B (xi: fin m -> fin n) : transitivity_at B -> transitivity_at B⟨xi⟩.
-Proof. unfold transitivity_at. intros. eapply H; asimpl in H0; asimpl in H1; eauto.
+Proof. unfold transitivity_at. intros. apply H with (xi:=funcomp xi0 xi); asimpl in H0; asimpl in H1; eauto.
 Qed.
 
 Lemma sub_narrow n (Delta Delta': ctx n) A C :
@@ -123,14 +125,15 @@ Proof with asimpl;eauto.
   - depind H... depind H1...
   - depind H... depind H1...
     econstructor... clear IHsub0 IHsub3 IHsub1 IHsub2.
-    eapply IHB2; eauto.
+    eapply IHB2 with (xi:=upRen_ty_ty xi).
     + asimpl. eapply sub_narrow; try eapply H0.
       * auto_case. apply sub_refl.
         eapply sub_weak with (xi := ↑); try reflexivity; eauto.
         (* adrian: as of 7b3472c the goal is already solved by eauto
          TODO find out why
-         as of dd2f061 it's not solved anymore *)
-        now asimpl.
+         as of dd2f061 it's not solved anymore
+         as of now it's solved again *)
+        (* now asimpl. *)
       * intros [x|]; try cbn; eauto. right. apply transitivity_ren. apply transitivity_ren. eauto.
     + asimpl in H1_0. auto.
 Qed.
@@ -283,8 +286,9 @@ Proof.
   - econstructor. apply IHty; eauto.
     + auto_case; try now asimpl. rewrite <- H. now asimpl.
     + intros. asimpl. rewrite <- H'. now asimpl.
-  - eapply T_Tapp with (A0 := A⟨sigma⟩) .
-    asimpl in IHty. eapply IHty; eauto.
+  - eapply T_Tapp with (A0 := A⟨sigma⟩) (B0:=ren_ty (upRen_ty_ty sigma) B).
+    asimpl in IHty.
+    eapply IHty; eauto.
     eapply sub_weak; eauto.
     now asimpl.
   - econstructor. eauto.
@@ -316,7 +320,7 @@ Proof.
       eapply context_renaming_lemma; eauto.
       * intros. now asimpl.
       * intros. now asimpl.
-  - eapply T_Tapp with (A0 := subst_ty sigma A) .
+  - eapply T_Tapp with (A0 := subst_ty sigma A) (B0:=B[up_ty_ty sigma]).
     asimpl in IHty. eapply IHty; eauto.
     eapply sub_substitution; eauto.
     now asimpl.
@@ -346,8 +350,9 @@ Proof.
     replace A with (A[ids]) by (now asimpl). replace A' with (A'[ids]) by (now asimpl).
     eapply sub_substitution; eauto. intros x.
     asimpl. econstructor. eauto.
-  - econstructor; eauto. eapply sub_substitution with (sigma := ids) in H0; eauto.
-    asimpl in H0. eapply H0. intros x. econstructor. asimpl. eapply eq.
+  - econstructor; eauto. eapply sub_substitution with (sigma := ids) (Delta':=Delta') in H0; eauto.
+    + asimpl in H0. apply H0.
+    + intros x. econstructor. asimpl. eapply eq.
 Qed.
 
 Lemma ty_inv_tabs {m n} {Delta Gamma A A' B C} (s : tm (S m) n):
@@ -388,11 +393,12 @@ Proof.
         eapply context_morphism_lemma; try eapply H_ty; eauto.
         -- auto_case.
            ++ asimpl. constructor. apply sub_refl.
-        (* a.d. TODO why is this already solved? *)
-           (* ++ now asimpl. *)
+        (* a.d. TODO why is this already solved?
+         now it's not solved anymore *)
+           ++ now asimpl.
         -- intros x. asimpl. constructor.
       * pose proof (ty_inv_tabs _ H_ty H) as (?&?&?&?).
-        eapply T_Sub; eauto. asimpl.
+        eapply T_Sub; eauto. 
         eapply context_morphism_lemma; eauto.
         -- auto_case; asimpl; eauto. asimpl. constructor. apply sub_refl.
         -- intros z. unfold funcomp. asimpl. constructor.
