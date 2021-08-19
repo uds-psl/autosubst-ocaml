@@ -79,9 +79,11 @@ Lemma sub_weak m n (Delta1: ctx m) (Delta2: ctx n) A1 A2 A1' A2' (xi: fin m -> f
 Proof.
   intros H. autorevert H. induction H; intros; subst; asimpl; econstructor; eauto.
   - eapply IHsub2; try reflexivity.
-    auto_case. rewrite <- H1. now asimpl.
-    (* TODO auto_case should call asimpl on this goal. and asimpl directly solves this. so why is it still here? *)
-    now asimpl.
+    auto_case.
+    unfold funcomp.
+    rewrite <- H1. now asimpl.
+    (* DONE auto_case should call asimpl on this goal. and asimpl directly solves this. so why is it still here?
+     pointwise version solves it again *)
 Qed.
 
 Lemma sub_weak1 n (Delta : ctx n) A A' B B' C :
@@ -132,7 +134,9 @@ Proof with asimpl;eauto.
         (* adrian: as of 7b3472c the goal is already solved by eauto
          TODO find out why
          as of dd2f061 it's not solved anymore
-         as of now it's solved again *)
+         as of now it's solved again
+         seems to have to do with unfolding funcomp
+         it's really because of funcomp. If I want to base my lemmas around folded funcomp and the pointwise predicate I must not call the unfold_funcomp tactic in asimpl *)
         (* now asimpl. *)
       * intros [x|]; try cbn; eauto. right. apply transitivity_ren. apply transitivity_ren. eauto.
     + asimpl in H1_0. auto.
@@ -284,8 +288,12 @@ Proof.
   - rewrite H0. constructor.
   - constructor. apply IHty; eauto. auto_case.
   - econstructor. apply IHty; eauto.
-    + auto_case; try now asimpl. rewrite <- H. now asimpl.
-    + intros. asimpl. rewrite <- H'. now asimpl.
+    + auto_case; try now asimpl.
+      unfold funcomp.
+      rewrite <- H. now asimpl.
+    + intros. asimpl.
+      unfold funcomp.
+      rewrite <- H'. now asimpl.
   - eapply T_Tapp with (A0 := A⟨sigma⟩) (B0:=ren_ty (upRen_ty_ty sigma) B).
     asimpl in IHty.
     eapply IHty; eauto.
@@ -395,7 +403,7 @@ Proof.
            ++ asimpl. constructor. apply sub_refl.
         (* a.d. TODO why is this already solved?
          now it's not solved anymore *)
-           ++ now asimpl.
+           (* ++ now asimpl. *)
         -- intros x. asimpl. constructor.
       * pose proof (ty_inv_tabs _ H_ty H) as (?&?&?&?).
         eapply T_Sub; eauto. 

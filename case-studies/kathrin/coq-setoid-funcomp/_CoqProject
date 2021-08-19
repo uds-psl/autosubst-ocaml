@@ -33,7 +33,7 @@ Chapter9/preservation.v
 Chapter9/wn.v
 Chapter9/sn.v
 Chapter9/sn_raamsdonk.v
-Chapter9/equivalence.v
+# Chapter9/equivalence.v
 Chapter9/girard.v
 
 # Chapter10/sysf.v

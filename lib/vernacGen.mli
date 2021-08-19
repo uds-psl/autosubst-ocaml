@@ -37,6 +37,9 @@ val module_ : string -> ?imports:(string list) -> vernac_unit list -> vernac_uni
 val import_ : string -> vernac_unit
 val export_ : string -> vernac_unit
 
+(** hints for setoid rewriting to treat certain functions as opaque *)
+val setoid_opaque_hint : string -> vernac_unit
+
 (** create command to set implicit arguments
  ** e.g.
  **  Arguments foo : clear implicits.

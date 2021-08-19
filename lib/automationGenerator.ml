@@ -42,12 +42,12 @@ let gen_asimpl' () =
   let asimpl_rewrite_base = info.asimpl_rewrite_base in
   let asimpl_cbn_functions = info.asimpl_cbn_functions in
   let asimpl_unfold_functions = info.asimpl_unfold_functions in
-  let rewrites = List.(concat (map (fun t -> [ progress_ (setoid_rewrite_ t); progress_ (rewrite_ t) ]) (asimpl_rewrite_base @ asimpl_rewrite_no_fext))) in
+  let rewrites = List.(concat (map (fun t -> [ progress_ (setoid_rewrite_ t) ]) (asimpl_rewrite_base @ asimpl_rewrite_no_fext))) in
   let tac = repeat_ (first_ (rewrites @
                              [ progress_ (unfold_ asimpl_unfold_functions)
                              ; progress_ (cbn_ asimpl_cbn_functions)
                              ; progress_ (calltac_ "fsimpl")
-                             ; repeat_ (unfold_ [ "funcomp" ]) ])) in
+                              ])) in
   pure @@ TacticLtac ("asimpl'", tac)
 
 (*
@@ -78,9 +78,9 @@ let gen_asimpl_fext () =
 
 let gen_asimpl () =
   let* auto_unfold_star = gen_auto_unfold_star' () in
-  let unfold_funcomp = repeat_ (try_ (calltac_ "unfold_funcomp")) in
+  (* let unfold_funcomp = repeat_ (try_ (calltac_ "unfold_funcomp")) in *)
   let tac = then_ [ calltac_ "check_no_evars"
-                  ; unfold_funcomp
+                  (* ; unfold_funcomp *)
                   ; auto_unfold_star
                   ; calltac_ "asimpl'"
                   ; calltac_ "minimize" ] in
@@ -150,6 +150,10 @@ let gen_arguments () =
         else Some (impl_arguments_ name args))
       arguments
   else pure []
+
+let gen_opaques () =
+  let* ops = gets asimpl_cbn_functions in
+  pure (List.map setoid_opaque_hint ops)
 
 let gen_classes () =
   let* classes = gets classes in
@@ -222,6 +226,7 @@ let gen_notations () =
 
 let gen_automation () =
   let* arguments = gen_arguments () in
+  let* opaques = gen_opaques () in
   let* classes = gen_classes () in
   let* instances = gen_instances () in
   let* notations = gen_notations () in
@@ -246,4 +251,4 @@ let gen_automation () =
   pure { ren_subst_units = classes @ instances @ notations @ proper_instances @ tactics
        ; allfv_units = []
        ; fext_units = guard gen_fext tactics_fext
-       ; interface_units = arguments }
+       ; interface_units = arguments @ opaques }

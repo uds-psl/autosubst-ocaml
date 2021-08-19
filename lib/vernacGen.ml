@@ -139,6 +139,10 @@ let initial_modules =
   ; interface_units = [ export_ "renSubst" ] }
 
 
+(** the opaqueness hints for setoid rewriting are put into the "rewrite" db *)
+let setoid_opaque_hint name =
+  Vernac [ VernacHints (["rewrite"], HintsTransparency (Hints.HintsReferences [qualid_ name], false)) ]
+
 (* disable unused warning *)
 module [@warning "-32"] GenTests = struct
   (* Lemma congr_lam  { s0 : tm   } { t0 : tm   } (H1 : s0 = t0) : lam  s0 = lam  t0 . *)

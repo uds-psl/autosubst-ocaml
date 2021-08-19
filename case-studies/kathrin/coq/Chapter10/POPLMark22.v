@@ -217,9 +217,10 @@ Lemma sub_weak m n (Delta1: ctx m) (Delta2: ctx n) A1 A2 A1' A2' (xi: fin m -> f
 Proof.
   intros H. autorevert H. induction H using @sub_rec; intros; subst; asimpl; cbn; econstructor; eauto.
   - eapply IHsub2; try reflexivity.
-    auto_case; eauto. rewrite <- H1. now asimpl.
+    auto_case; eauto.
+    unfold funcomp. rewrite <- H1. now asimpl.
     (* TODO auto_case problems *)
-    now asimpl.
+    (* now asimpl. *)
   - intros l T' HH. rewrite in_map_iff in HH. destruct HH as ([]&HH&?).
     inv HH. destruct (H _ _ H3) as (?&?&?&?).
     exists (x⟨xi⟩). split; eauto. apply in_map; eauto.
@@ -630,8 +631,10 @@ Proof.
   - constructor. eapply IHty; eauto.
     auto_case; asimpl.
   - cbn. econstructor. apply IHty; eauto.
-    + auto_case; try now asimpl. rewrite <- H. now asimpl.
-    + intros. asimpl. rewrite <- H'. now asimpl.
+    + auto_case; try now asimpl.
+      unfold funcomp. rewrite <- H. now asimpl.
+    + intros. asimpl.
+      unfold funcomp. rewrite <- H'. now asimpl.
   - cbn. eapply T_Tapp with (A0 := A⟨xi⟩) (B0 := ren_ty (upRen_ty_ty xi) B).
     asimpl in IHty. eapply IHty; eauto.
     eapply sub_weak; eauto. now asimpl.
@@ -642,7 +645,7 @@ Proof.
       eapply H3; eassumption.
   - cbn. econstructor; eauto. now apply in_map.
   - cbn. asimpl. apply letpat_ty  with (A0 := A⟨xi⟩) (Gamma'0 := Gamma' >> ⟨xi⟩); eauto.
-    + unfold funcomp.
+    + (* unfold funcomp. *)
       (* TODO the unfold funcomp should not be necessary anymore when I use Yannicks appraoch *)
       substify.
       eauto.
@@ -652,6 +655,9 @@ Proof.
       eapply IHty2. eauto.
       * intros z.
         unfold dctx in Gamma, Gamma0. unfold upRen_p.
+        asimpl.
+        (* TODO same as in popl21 *)
+        apply pointwise_forall.
         asimpl.
         unfold funcomp.
         now setoid_rewrite H'.

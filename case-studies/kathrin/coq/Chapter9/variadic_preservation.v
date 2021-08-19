@@ -24,7 +24,18 @@ Proof. intros ->. now constructor. Qed.
 
 (** *** Substitutivity *)
 
+Require Import Setoid Morphisms.
+
 Require Import core_axioms.
+
+(* TODO need to generate this morphism *)
+Instance subst_tm_morphism2  {m_tm : nat} {n_tm : nat}:
+ Proper (pointwise_relation _ eq ==> pointwise_relation _ eq) (@subst_tm m_tm n_tm).
+Proof.
+  intros f g H x.
+  exact (subst_tm_morphism f g H x x eq_refl).
+Qed.
+
 Lemma step_inst {m n} (f : fin m -> tm n) (s t : tm m) :
   step s t -> step (subst_tm f s) (subst_tm f t).
 Proof.
@@ -32,8 +43,8 @@ Proof.
   - apply step_beta'.
     asimpl.
     (* TODO a.d. why is cod_map not unfolded + why does the rewrite with scons_p_head' fail. It should happen in fsimpl *)
-
-    unfold cod_map. now asimpl.
+    unfold cod_map.
+    now asimpl.
   - apply step_abs. eapply IHst.
   - apply step_appL, IHst.
 Qed.
@@ -74,8 +85,7 @@ Proof.
   intros C H. revert k Delta rho C. induction H; intros; asimpl; eauto using has_type.
   - unfold ltc in C. rewrite <- C. constructor.
   - constructor. apply IHhas_type. intros x.
-    destruct (destruct_fin x) as [(?&->)|(?&->)]; eauto; asimpl; unfold upRen_p; asimpl. cbn. eauto.
-    + now asimpl.
+    destruct (destruct_fin x) as [(?&->)|(?&->)]; eauto; asimpl; unfold upRen_p; asimpl; eauto.
   - econstructor; eauto.
 Qed.
 

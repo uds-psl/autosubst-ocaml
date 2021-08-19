@@ -456,8 +456,10 @@ Ltac fsimpl :=
          | [|- context[funcomp _ (scons_p _ _ _)]] => setoid_rewrite scons_p_comp'; eta_reduce
          | [|- context[scons (@var_zero ?n) shift]] => setoid_rewrite scons_eta_id'; eta_reduce
          (* | _ => progress autorewrite with FunctorInstances *)
-         | [|- context[funcomp (zero_p _) (scons_p _ _ _)]] => setoid_rewrite scons_p_head'
-         | [|- context[funcomp (shift_p _) (scons_p _ _ _)]] => setoid_rewrite scons_p_tail'
+         | [|- context[funcomp (zero_p _) (scons_p _ _ _)]] => setoid_rewrite scons_p_head_pointwise; idtac "head"
+         | [|- context[funcomp (shift_p _) (scons_p _ _ _)]] => setoid_rewrite scons_p_tail_pointwise; idtac "tail"
+         (* | [|- context[funcomp (zero_p _) (scons_p _ _ _)]] => setoid_rewrite scons_p_head'; idtac "head" *)
+         (* | [|- context[funcomp (shift_p _) (scons_p _ _ _)]] => setoid_rewrite scons_p_tail'; idtac "tail" *)
          | _ => minimize
          end.
 

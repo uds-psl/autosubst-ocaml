@@ -43,7 +43,9 @@ Lemma whr_ren xi M N :
 Proof.
   intros H. revert xi.
   induction H; intros; subst; asimpl; eauto.
-  econstructor. now asimpl.
+  econstructor.
+  (* DONE have to do everything for unscoped again *)
+  now asimpl.
 Qed.
 
 Lemma mwhr_ren xi M N :
@@ -85,7 +87,7 @@ Lemma cont_ext_cons Gamma xi Delta A :
   cont_ext Gamma xi Delta -> cont_ext (A :: Gamma) (up_ren xi) (A :: Delta).
 Proof.
   intros H. intros [|i] HH; split; eauto; simpl in *; try omega.
-  - asimpl. specialize (H i). omega.
+  - asimpl. specialize (H i). unfold funcomp. omega.
   - cbn. apply H. omega.
 Qed.
 
@@ -279,7 +281,7 @@ Proof.
     (* asimpl in *. *)
     eapply IHdecleq.
     intros [|i] HH; asimpl; eauto.
-    cbn. eapply logEq_monotone; eauto. eapply H0. simpl in *. omega.
+    cbn. eapply logEq_monotone; unfold funcomp; eauto. eapply H0. simpl in *. omega.
   - simpl. now eapply H0.
   - specialize (IHdecleq1 _ _ _ H1). (* asimpl in *. *)
     specialize (IHdecleq2 _ _ _ H1). cbn in *.

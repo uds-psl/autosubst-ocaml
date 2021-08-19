@@ -840,6 +840,7 @@ let genLemmaRinstInst sort =
 let genLemmaRinstInst' sort =
   (* register substify lemma *)
   let* () = tell_substify_lemma (rinstInst'Fun_ sort) in
+  let* () = tell_substify_lemma (rinstInst'FunPointwise_ sort) in
   let* v = V.genVariables sort [ `MS; `NS; `XIS (`MS, `NS) ] in
   let [@warning "-8"] [], [ ms; ns ], [ xis ], scopeBinders = v in
   let* substSorts = substOf sort in
@@ -852,7 +853,14 @@ let genLemmaRinstInst' sort =
                                          @ List.map (const underscore_) substSorts
                                          @ List.map (const (abs_ref "n" eq_refl_)) substSorts
                                          @ [ ref_ s ]) in
-  pure @@ lemma_ (rinstInst'Fun_ sort) (scopeBinders @ [ binder1_ ~btype:(app_sort sort ms) s ]) ret proof
+  let ret_pointwise = pointwise_
+      (app_ref (ren_ sort) (sty_terms xis))
+      (app_ref (subst_ sort) xis_subst) in
+  let proof_pointwise = abs_ref "s" proof in
+  pure @@ (
+    lemma_ (rinstInst'Fun_ sort) (scopeBinders @ [ binder1_ ~btype:(app_sort sort ms) s ]) ret proof,
+    lemma_ (rinstInst'FunPointwise_ sort) (scopeBinders) ret_pointwise proof_pointwise
+  )
 
 let genLemmaVarL sort =
   (* register lemma for asimpl *)
@@ -868,6 +876,7 @@ let genLemmaVarL sort =
 let genLemmaVarL' sort =
   (* register lemma for asimpl *)
   let* () = tell_rewrite_no_fext (varL'Fun_ sort) in
+  let* () = tell_rewrite_no_fext (varL'FunPointwise_ sort) in
   let* v = V.genVariables sort [ `MS; `NS; `SIGMAS (`MS, `NS) ] in
   let [@warning "-8"] [], [ ms; ns ], [ sigmas ], scopeBinders = v in
   (* generate type *)
@@ -880,7 +889,13 @@ let genLemmaVarL' sort =
                               @ [ app_constr (var_ sort) ms [ ref_ x ] ]))
       (app1_ sigma' (ref_ x)) in
   let proof = eq_refl_ in
-  pure @@ lemma_ (varL'Fun_ sort) (scopeBinders @ [ binder1_ ~btype:(varT m') x ]) ret proof
+  let ret_pointwise = pointwise_ (app_var_constr sort ms >>> app_ref (subst_ sort) (sty_terms sigmas)) sigma' in
+  let proof_pointwise = abs_ref "x" eq_refl_ in
+  pure @@ (
+    lemma_ (varL'Fun_ sort) (scopeBinders @ [ binder1_ ~btype:(varT m') x ]) ret proof,
+    lemma_ (varL'FunPointwise_ sort) scopeBinders ret_pointwise proof_pointwise
+  )
+
 
 let genLemmaVarLRen sort =
   (* register lemma for asimpl *)
@@ -898,6 +913,7 @@ let genLemmaVarLRen sort =
 let genLemmaVarLRen' sort =
   (* register lemma for asimpl *)
   let* () = tell_rewrite_no_fext (varLRen'Fun_ sort) in
+  let* () = tell_rewrite_no_fext (varLRen'FunPointwise_ sort) in
   let* v = V.genVariables sort [ `MS; `NS; `XIS (`MS, `NS) ] in
   let [@warning "-8"] [], [ ms; ns ], [ xis ], scopeBinders = v in
   let* xi' = toVar sort xis in
@@ -908,7 +924,15 @@ let genLemmaVarLRen' sort =
                             @ [ app_constr (var_ sort) ms [ ref_ x ] ]))
       (app_constr (var_ sort) ns [ app1_ xi' (ref_ x) ]) in
   let proof = eq_refl_ in
-  pure @@ lemma_ (varLRen'Fun_ sort) (scopeBinders @ [binder1_ ~btype:(varT m') x ]) ret proof
+  let ret_pointwise = pointwise_
+      (app_var_constr sort ms >>> app_ref (ren_ sort) (sty_terms xis))
+      (xi' >>> (app_var_constr sort ns)) in
+  let proof_pointwise = abs_ref "x" eq_refl_ in
+  pure @@ (
+    lemma_ (varLRen'Fun_ sort) (scopeBinders @ [binder1_ ~btype:(varT m') x ]) ret proof,
+    lemma_ (varLRen'FunPointwise_ sort) scopeBinders ret_pointwise proof_pointwise
+  )
+
 
 let genLemmaInstId sort =
   (* register lemma for asimpl *)
@@ -927,6 +951,7 @@ let genLemmaInstId sort =
 let genLemmaInstId' sort =
   (* register lemma for asimpl *)
   let* () = tell_rewrite_no_fext (instId'Fun_ sort) in
+  let* () = tell_rewrite_no_fext (instId'FunPointwise_ sort) in
   let* v = V.genVariables sort [ `MS ] in
   let [@warning "-8"] [], [ ms ], [], scopeBinders = v in
   let* substSorts = substOf sort in
@@ -936,7 +961,12 @@ let genLemmaInstId' sort =
   let proof = app_ref (idSubst_ sort) (vars
                                        @ List.map (const (abs_ref "n" eq_refl_)) substSorts
                                        @ [ ref_ "s" ]) in
-  pure @@ lemma_ (instId'Fun_ sort) (scopeBinders @ [ binder1_ ~btype:(app_sort sort ms) s ]) ret proof
+  let ret_pointwise = pointwise_ (app_ref (subst_ sort) vars) id_ in
+  let proof_pointwise = abs_ref "s" proof in
+  pure @@ (
+    lemma_ (instId'Fun_ sort) (scopeBinders @ [ binder1_ ~btype:(app_sort sort ms) s ]) ret proof,
+    lemma_ (instId'FunPointwise_ sort) scopeBinders ret_pointwise proof_pointwise
+  )
 
 let genLemmaRinstId sort =
   (* register lemma for asimpl *)
@@ -955,6 +985,7 @@ let genLemmaRinstId sort =
 let genLemmaRinstId' sort =
   (* register lemma for asimpl *)
   let* () = tell_rewrite_no_fext (rinstId'Fun_ sort) in
+  let* () = tell_rewrite_no_fext (rinstId'FunPointwise_ sort) in
   let* v = V.genVariables sort [ `MS ] in
   let [@warning "-8"] [], [ ms ], [], scopeBinders = v in
   let* substSorts = substOf sort in
@@ -967,12 +998,19 @@ let genLemmaRinstId' sort =
   let proof = app_ref "eq_ind_r" [ abs_ref t (eq_ (ref_ t) (ref_ s))
                                  ; app_ref (instId'Fun_ sort) [ ref_ s ]
                                  ; app_ref (rinstInst'Fun_ sort) (ids @ [ ref_ s ]) ] in
-  pure @@ lemma_ (rinstId'Fun_ sort) (scopeBinders @ [ binder1_ ~btype:(app_sort sort ms) s ]) ret proof
-
+  let ret_pointwise = pointwise_
+      (app_fix ~expl:true (ren_ sort) ~sscopes:[ms; ms] (List.map (const id_) substSorts))
+      id_ in
+  let proof_pointwise = abs_ref "s" proof in
+  pure @@ (
+    lemma_ (rinstId'Fun_ sort) (scopeBinders @ [ binder1_ ~btype:(app_sort sort ms) s ]) ret proof,
+    lemma_ (rinstId'FunPointwise_ sort) scopeBinders ret_pointwise proof_pointwise
+  )
 
 let genLemmaCompRenRen sort =
   (* register lemmas for asimpl *)
   let* () = tell_rewrite_base (renRen_ sort) in
+  let* () = tell_rewrite_base (renRenPointwise_ sort) in
   let* () = tell_rewrite_fext (renRen'_ sort) in
   let* v = V.genVariables sort [ `KS; `LS; `MS; `XIS (`MS, `KS); `ZETAS (`KS, `LS) ] in
   let [@warning "-8"] [], [ ks; ls; ms ], [ xis; zetas ], scopeBinders = v in
@@ -997,14 +1035,22 @@ let genLemmaCompRenRen sort =
                            (sty_terms xis
                             @ sty_terms zetas
                             @ [ ref_ "n" ]))) in
-  pure (lemma_ (renRen_ sort) (scopeBinders
+  let ret_pointwise = pointwise_
+      (app_ref (ren_ sort) (sty_terms xis) >>> app_ref (ren_ sort) (sty_terms zetas))
+      (app_ref (ren_ sort) sigmazeta) in
+  let proof_pointwise = abs_ref "s" proof in
+  pure (
+    lemma_ (renRen_ sort) (scopeBinders
                                @ [ binder1_ ~btype:(app_sort sort ms) s ])
-          ret proof,
-        lemma_ (renRen'_ sort) scopeBinders ret' proof')
+      ret proof,
+    lemma_ (renRen'_ sort) scopeBinders ret' proof',
+    lemma_ (renRenPointwise_ sort) scopeBinders ret_pointwise proof_pointwise
+  )
 
 let genLemmaCompSubstRen sort =
   (* register lemmas for asimpl *)
   let* () = tell_rewrite_base (substRen_ sort) in
+  let* () = tell_rewrite_base (substRenPointwise_ sort) in
   let* () = tell_rewrite_fext (substRen'_ sort) in
   let* v = V.genVariables sort [ `KS; `LS; `MS; `SIGMAS (`MS, `KS); `ZETAS (`KS, `LS) ] in
   let [@warning "-8"] [], [ ks; ls; ms ], [ sigmas; zetas ], scopeBinders = v in
@@ -1029,14 +1075,22 @@ let genLemmaCompSubstRen sort =
                            (sty_terms sigmas
                             @ sty_terms zetas
                             @ [ ref_ "n" ]))) in
-  pure (lemma_ (substRen_ sort) (scopeBinders
-                                @ [ binder1_ ~btype:(app_sort sort ms) s ])
-          ret proof,
-        lemma_ (substRen'_ sort) scopeBinders ret' proof')
+  let ret_pointwise = pointwise_
+      (app_ref (subst_ sort) (sty_terms sigmas) >>> app_ref (ren_ sort) (sty_terms zetas))
+      (app_ref (subst_ sort) sigmazetas) in
+  let proof_pointwise = abs_ref "s" proof in
+  pure (
+    lemma_ (substRen_ sort) (scopeBinders
+                             @ [ binder1_ ~btype:(app_sort sort ms) s ])
+      ret proof,
+    lemma_ (substRen'_ sort) scopeBinders ret' proof',
+    lemma_ (substRenPointwise_ sort) scopeBinders ret_pointwise proof_pointwise
+  )
 
 let genLemmaCompRenSubst sort =
   (* register lemmas for asimpl *)
   let* () = tell_rewrite_base (renSubst_ sort) in
+  let* () = tell_rewrite_base (renSubstPointwise_ sort) in
   let* () = tell_rewrite_fext (renSubst'_ sort) in
   let* v = V.genVariables sort [ `KS; `LS; `MS; `XIS (`MS, `KS); `TAUS (`KS, `LS) ] in
   let [@warning "-8"] [], [ ks; ls; ms ], [ xis; taus ], scopeBinders = v in
@@ -1061,14 +1115,22 @@ let genLemmaCompRenSubst sort =
                            (sty_terms xis
                             @ sty_terms taus
                             @ [ref_ "n"]))) in
-  pure (lemma_ (renSubst_ sort) (scopeBinders
-                                @ [ binder1_ ~btype:(app_sort sort ms) s ])
-          ret proof,
-        lemma_ (renSubst'_ sort) scopeBinders ret' proof')
+  let ret_pointwise = pointwise_
+      (app_ref (ren_ sort) (sty_terms xis) >>> (app_ref (subst_ sort) (sty_terms taus)))
+      (app_ref (subst_ sort) xitaus) in
+  let proof_pointwise = abs_ref "s" proof in
+  pure (
+    lemma_ (renSubst_ sort) (scopeBinders
+                             @ [ binder1_ ~btype:(app_sort sort ms) s ])
+      ret proof,
+    lemma_ (renSubst'_ sort) scopeBinders ret' proof',
+    lemma_ (renSubstPointwise_ sort) scopeBinders ret_pointwise proof_pointwise
+  )
 
 let genLemmaCompSubstSubst sort =
   (* register lemmas for asimpl *)
   let* () = tell_rewrite_base (substSubst_ sort) in
+  let* () = tell_rewrite_base (substSubstPointwise_ sort) in
   let* () = tell_rewrite_fext (substSubst'_ sort) in
   let* v = V.genVariables sort [ `KS; `LS; `MS; `SIGMAS (`MS, `KS); `TAUS (`KS, `LS) ] in
   let [@warning "-8"] [], [ ks; ls; ms ], [ sigmas; taus ], scopeBinders = v in
@@ -1093,10 +1155,17 @@ let genLemmaCompSubstSubst sort =
                            (sty_terms sigmas
                             @ sty_terms taus
                             @ [ref_ "n"]))) in
-  pure (lemma_ (substSubst_ sort) (scopeBinders
-                                 @ [ binder1_ ~btype:(app_sort sort ms) s ])
-          ret proof,
-        lemma_ (substSubst'_ sort) scopeBinders ret' proof')
+  let ret_pointwise = pointwise_
+      (app_ref (subst_ sort) (sty_terms sigmas) >>> app_ref (subst_ sort) (sty_terms taus))
+      (app_ref (subst_ sort) sigmatau) in
+  let proof_pointwise = abs_ref "s" proof in
+  pure (
+    lemma_ (substSubst_ sort) (scopeBinders
+                               @ [ binder1_ ~btype:(app_sort sort ms) s ])
+      ret proof,
+    lemma_ (substSubst'_ sort) scopeBinders ret' proof',
+    lemma_ (substSubstPointwise_ sort) scopeBinders ret_pointwise proof_pointwise
+  )
 
 (** This function delegates to all the different code generation functions and in the end
  ** aggregates all the returned vernacular commands. *)
@@ -1168,20 +1237,34 @@ let gen_code sorts upList =
     let* rinstInst = guard_map genRinstInst sorts in
     (* Lemmas for the rewriting system *)
     let* lemmaInstId_fext = a_map genLemmaInstId sorts in
-    let* lemmaInstId = a_map genLemmaInstId' sorts in
+    let* lemmaInstId, lemmaInstIdPointwise = a_split_map genLemmaInstId' sorts in
     let* lemmaRinstId_fext = guard_map genLemmaRinstId sorts in
-    let* lemmaRinstId = guard_map genLemmaRinstId' sorts in
+    let* lemmaRinstId, lemmaRinstIdPointwise = guard_split_map genLemmaRinstId' sorts in
     let* varSorts = a_filter isOpen sorts in
     let* lemmaVarL_fext = a_map genLemmaVarL varSorts in
-    let* lemmaVarL = a_map genLemmaVarL' varSorts in
+    let* lemmaVarL, lemmaVarLPointwise = a_split_map genLemmaVarL' varSorts in
     let* lemmaVarLRen_fext = guard_map genLemmaVarLRen varSorts in
-    let* lemmaVarLRen = guard_map genLemmaVarLRen' varSorts in
+    let* lemmaVarLRen, lemmaVarLRenPointwise = guard_split_map genLemmaVarLRen' varSorts in
     let* lemmaRenSubst_fext = guard_map genLemmaRinstInst sorts in
-    let* lemmaRenSubst = guard_map genLemmaRinstInst' sorts in
-    let* lemmaCompRenRen, lemmaCompRenRenFext = guard_split_map genLemmaCompRenRen sorts in
-    let* lemmaCompSubstRen, lemmaCompSubstRenFext = guard_split_map genLemmaCompSubstRen sorts in
-    let* lemmaCompRenSubst, lemmaCompRenSubstFext = guard_split_map genLemmaCompRenSubst sorts in
-    let* lemmaCompSubstSubst, lemmaCompSubstSubstFext = guard_split_map genLemmaCompSubstSubst sorts in
+    let* lemmaRenSubst, lemmaRenSubstPointwise = guard_split_map genLemmaRinstInst' sorts in
+    let open List in
+    let split3 l =
+      let x0 = map (fun (x, _, _) -> x) l in
+      let x1 = map (fun (_, y, _) -> y) l in
+      let x2 = map (fun (_, _, z) -> z) l in
+      (x0, x1, x2) in
+    let* lemmaCompRenRen, lemmaCompRenRenFext, lemmaCompRenRenPointwise =
+      let* renRen = guard_map genLemmaCompRenRen sorts in
+      pure (split3 renRen) in
+    let* lemmaCompSubstRen, lemmaCompSubstRenFext, lemmaCompSubstRenPointwise =
+      let* substRen = guard_map genLemmaCompSubstRen sorts in
+      pure (split3 substRen) in
+    let* lemmaCompRenSubst, lemmaCompRenSubstFext, lemmaCompRenSubstPointwise =
+      let* renSubst = guard_map genLemmaCompRenSubst sorts in
+      pure (split3 renSubst) in
+    let* lemmaCompSubstSubst, lemmaCompSubstSubstFext, lemmaCompSubstSubstPointwise =
+      let* substSubst = guard_map genLemmaCompSubstSubst sorts in
+      pure (split3 substSubst) in
     (* Code for Allfv *)
     let* upAllfv = a_map genUpAllfv upList in
     let* allfvs = a_map genAllfv sorts in
@@ -1201,11 +1284,11 @@ let gen_code sorts upList =
                              upSubstRen @ mk_fixpoint compSubstRen @
                              upSubstSubst @ mk_fixpoint compSubstSubst @ upSubstSubstNoRen @
                              upRinstInst @ mk_fixpoint rinstInst @
-                             lemmaCompRenRen @ lemmaCompSubstRen @
-                             lemmaCompRenSubst @ lemmaCompSubstSubst @
-                             lemmaRenSubst @
-                             lemmaInstId @ lemmaRinstId @
-                             lemmaVarL @ lemmaVarLRen;
+                             lemmaCompRenRen @ lemmaCompRenRenPointwise @ lemmaCompSubstRen @ lemmaCompSubstRenPointwise @
+                             lemmaCompRenSubst @ lemmaCompRenSubstPointwise @ lemmaCompSubstSubst @ lemmaCompSubstSubstPointwise @
+                             lemmaRenSubst @ lemmaRenSubstPointwise @
+                             lemmaInstId @ lemmaInstIdPointwise @ lemmaRinstId @ lemmaRinstIdPointwise @
+                             lemmaVarL @ lemmaVarLPointwise @ lemmaVarLRen @ lemmaVarLRenPointwise;
            allfv_units = guard gen_allfv (upAllfv @ mk_fixpoint allfvs @
                                           upAllfvTriv @ mk_fixpoint allfvTriv);
            fext_units = guard gen_fext (lemmaRenSubst_fext @
