@@ -73,3 +73,5 @@ let vernacend = Pp.((str ".") ++ newline)
 
 let guard b l =
   if b then l else []
+
+let string_of_char c = String.make 1 c

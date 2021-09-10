@@ -20,23 +20,19 @@ type specAST = L.tId list * L.fId list * constructorAST list * (L.tId, string) A
 type parserSpec = L.tId list * L.fId list * L.spec [@@deriving show]
 
 (** char tests *)
-let is_first_ident = function
-  | 'A' .. 'Z' | 'a' .. 'z' | '_' -> true
-  | _ -> false
-let is_ident = function
-  | 'A' .. 'Z' | 'a' .. 'z' | '0' .. '9' | '_' | '\'' -> true
-  | _ -> false
+let is_ascii c = (Char.code c) <= 127
 let is_space = function
   | ' ' | '\t' -> true | _ -> false
 let is_end_of_line = function
   | '\n' -> true | _ -> false
+
 
 (** lex can be used to separate tokens from each other as it eats all following whitespace *)
 let spaces = skip_while is_space
 let lex p = p <* spaces
 
 (** parser that aborts parsing by commiting so we can't backtrack and then immediately failing *)
-let hardFail msg = commit *> fail msg
+let hard_fail msg = commit *> fail msg
 
 (** taken from Autosubst 2 *)
 let reservedIds =
@@ -53,20 +49,28 @@ let reservedIds =
    "up_ren"; "size_ind"; "lift";
    "get_In"; "some_none_explosion"; "Some_inj"
   ]
-let filterReserved i =
+let filter_reserved i =
   if List.mem i reservedIds
-  then hardFail @@ "reserved identifier: " ^ i
+  then hard_fail @@ "reserved identifier: " ^ i
   else return i
 
-let checkWellFormed (c, s) =
-  if c = '_' && String.length s = 0 then hardFail "an identifier cannot be a single underscore"
-  else return (String.of_seq (Seq.return c) ^ s)
+(* let checkWellFormed (c, s) =
+ *   if c = '_' && String.length s = 0 then hard_fail "an identifier cannot be a single underscore"
+ *   else return (string_of_char c ^ s) *)
 
 (** parsers for all the tokens we encounter. Most uses of the identifier parser are filtered so that they don't contain reserved keywords *)
-let raw_ident = lex @@ take_while1 is_ident
-let ident = lift3 (fun c s _ -> (c, s))
-    (satisfy is_first_ident) (take_while is_ident) spaces
-  >>= checkWellFormed >>= filterReserved
+(* let raw_ident = lex @@ take_while1 is_ident *)
+(* let ident = lift3 (fun c s _ -> (c, s))
+ *     (satisfy is_first_ident) (take_while is_ident) spaces
+ *   >>= checkWellFormed >>= filterReserved *)
+
+(* this is safe because ascii bytes cannot appear in non-ascii utf-8 encodings, so we can iterate over the bytes and is_ident will only return true if we give it a valid utf-8 bytestring *)
+let raw_ident = lex @@ scan_state "" (fun s c ->
+    let s' = s ^ string_of_char c in
+    if not (is_ascii c) || CLexer.(is_ident s' && not (is_keyword s'))
+    then Some s' else None
+  )
+let ident = raw_ident >>= filter_reserved
 let arrow = lex @@ string "->"
 let colon = lex @@ char ':'
 let ttype = lex @@ string "Type"
@@ -165,7 +169,7 @@ let signature : specAST t = lift3 (fun _ ds _ ->
     (sortDecl <|> functorDecl <|> constructorDecl |> line |> many)
     (commit *>
      end_of_input <|>
-     (take_till is_end_of_line >>= fun s -> hardFail ("Could not parse the following line: "^s)))
+     (take_till is_end_of_line >>= fun s -> hard_fail ("Could not parse the following line: "^s)))
 
 (** check if the spec is well formed.
  ** For that we check that all sort/functor/constructor names are unique
