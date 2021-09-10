@@ -25,29 +25,26 @@ let createBinders = List.map (fun p -> binder1_ ~btype:(ref_ (snd p)) (fst p))
 
 let createImpBinders = List.map (fun p -> binder1_ ~implicit:true ~btype:(ref_ (snd p)) (fst p))
 
+
+let genVarConstr sort ns =
+  (* register variable constructor instance *)
+  let* () = tell_instance (ClassGen.Var, sort, ss_names ns) in
+  let* () = tell_notation (NotationGen.VarConstr, sort) in
+  let* () = tell_notation (NotationGen.VarInst, sort) in
+  let* () = tell_notation (NotationGen.Var, sort) in
+  let* () = tell_argument (var_ sort, ss_names ns) in
+  let* s = gen_var_arg sort ns in
+  let t = [s] ==> app_sort sort ns in
+  pure @@ constructor_ (var_ sort) t
+
 let rec genArg sort n bs = function
   | L.Atom y ->
     let* up_scopes = castUpSubstScope sort bs y n in
-    pure (app_ref y (ss_terms up_scopes))
+    pure @@ app_sort y up_scopes
   | L.FunApp (f, p, xs) ->
     let* xs' = a_map (genArg sort n bs) xs in
     let p' = Option.default [] (Option.map (fun x -> [x]) p) in
     pure @@ app_ref f (p' @ xs')
-
-
-let genVar sort ns =
-  let* is_open = isOpen sort in
-  if not is_open then pure []
-  else
-    (* register variable constructor instance *)
-    let* () = tell_instance (ClassGen.Var, sort, ss_names ns) in
-    let* () = tell_notation (NotationGen.VarConstr, sort) in
-    let* () = tell_notation (NotationGen.VarInst, sort) in
-    let* () = tell_notation (NotationGen.Var, sort) in
-    let* () = tell_argument (var_ sort, ss_names ns) in
-    let* s = gen_var_arg sort ns in
-    let t = [s] ==> app_sort sort ns in
-    pure @@ [constructor_ (var_ sort) t]
 
 let genConstr sort ns L.{ cparameters; cname; cpositions } =
   let* t =
@@ -60,9 +57,14 @@ let genConstr sort ns L.{ cparameters; cname; cpositions } =
 let genBody sort =
   let* cs = constructors sort in
   let* (ns, bns) = introScopeVar "n" sort in
-  let* varCons = genVar sort ns in
-  let* constrs = a_map (genConstr sort ns) cs in
-  pure @@ inductiveBody_ sort (explicit_ bns) ~rtype:type_ (varCons @ constrs)
+  let* is_open = isOpen sort in
+  let* ctors = a_map (genConstr sort ns) cs in
+  let* ctors = if is_open
+    then let* varCtor = genVarConstr sort ns in
+      pure (varCtor :: ctors)
+    else pure ctors
+  in
+  pure @@ inductiveBody_ sort (explicit_ bns) ~rtype:type_ ctors
 
 (** the proof term is just n-1 eq_trans and n ap's where n is the length of cpositions.
  ** The pattern is that with each f_equal we swap out one s_n for one t_n
@@ -90,10 +92,10 @@ let genCongruence sort L.{ cparameters; cname; cpositions } =
       (app_constr cname ms (parameters' @ ts)) in
   let x = VarState.tfresh "x" in
   let (_, proof') = List.fold_left (fun (i, t) h ->
-      let ss' = list_take ts i @ [ref_ x] @ (list_drop ss (i + 1)) in
-      let t' = eqTrans_ t (ap_ (abs_ref "x" (app_constr cname ms (parameters' @ ss')))
-                             (ref_ h)) in
-      (i + 1, t'))
+      let feq_args = list_take ts i @ [ref_ x] @ (list_drop ss (i + 1)) in
+      let feq_lam = abs_ref "x" (app_constr cname ms (parameters' @ feq_args)) in
+      let feq = ap_ feq_lam (ref_ h) in
+      (i + 1, eqTrans_ t feq))
       (0, eq_refl_) hs in
   pure @@ lemma_ (congr_ cname) (bparameters @ bms @ bss @ bts @ beqs) eq proof'
 
@@ -111,7 +113,7 @@ let traversal
   let open L in
   let* substSorts = substOf sort in
   (* the underscore pattern is used when constructing the branches to ignore the scope variables. Could also construct a dummy SusbtScope instead of matching the scope_type *)
-  let underscore_pattern = List.map (const "_") (match !S.scope_type with | S.Unscoped -> [] | S.WellScoped -> substSorts) in
+  let underscore_pattern = List.map (const "_") (match !S.scope_type with | S.Unscoped -> [] | S.Wellscoped -> substSorts) in
   let* cs = constructors sort in
   let* open_x = isOpen sort in
   (* Only create the variable branch if the sort is open *)
@@ -185,8 +187,8 @@ let genRenaming sort =
   let* () = tell_notation (NotationGen.RenApply substSorts, sort) in
   let* () = tell_notation (NotationGen.Ren substSorts, sort) in
   let* () = tell_proper_instance (sort, ren_ sort, extRen_ sort) in
-  (* DONE what is the result of toVar here?\
-   * when I call it with sort=tm, xi=[xity;xivl] I get this weird error term that toVar constructs. This is then probably ignored by some similar logic in the traversal. Seems brittle.
+  (* DONE what is the result of to_var here?\
+   * when I call it with sort=tm, xi=[xity;xivl] I get this weird error term that to_var constructs. This is then probably ignored by some similar logic in the traversal. Seems brittle.
    * When I call it instead with sort=vl I get xivl. So it seems get the renaming of the sort that I'm currently inspecting *)
   (* register renaming instance & and unfolding *)
   (** type *)
@@ -195,7 +197,7 @@ let genRenaming sort =
   (** body *)
   let* body = traversal s sort ren_ ~no_args:id [xis]
       (fun s ->
-         let* toVarT = toVar sort xis in
+         let* toVarT = to_var sort xis in
          pure @@ app1_ (app_var_constr sort ns) (app1_ toVarT s))
       ~sem:(fun pms cname positions -> app_constr cname ns (mk_refs pms @ positions))
       map_ in
@@ -240,12 +242,12 @@ let genUpS (binder, sort) =
   let* sigma = upSubstT binder sort ns sigma in
   let (_, bpms) = bparameters binder in
   let m' = succ_ m sort binder in
-  let* n' = upSubstScope sort [binder] ns in
-  pure @@ lemma_ ~opaque:false (up_ sort binder) (bpms @ scopeBinders) (substT m' n' sort) sigma
+  let* ns' = upSubstScope sort [binder] ns in
+  pure @@ lemma_ ~opaque:false (up_ sort binder) (bpms @ scopeBinders) (substT m' ns' sort) sigma
 
 (** make the default var_case_body *)
 let mk_var_case_body (sort: L.tId) (sty: substTy) = fun (s: constr_expr) ->
-  let* toVarT = toVar sort sty in
+  let* toVarT = to_var sort sty in
   pure @@ app1_ toVarT s
 
 (** Generate the substitution function
@@ -311,7 +313,7 @@ let genAllfv sort =
   (** body *)
   let* body = traversal s sort allfvName ~no_args:(fun s -> true_) [ps]
       (fun s ->
-         let* toVarT = toVar sort ps in
+         let* toVarT = to_var sort ps in
          pure (app1_ toVarT s))
       ~sem:(fun pms cname positions -> mk_ands positions)
       map_ in
@@ -365,15 +367,15 @@ let genAllfvTriv sort =
 
 let genUpId (binder, sort) =
   let* (ms, bms) = introScopeVar "m" sort in
-  let* m_var = toVarScope sort ms in
+  let* m_var = to_var_scope sort ms in
   let (sigma, bsigma) = genSubstS "sigma" (m_var, ms) sort in
   let (eq, beq) = genEq "Eq" sigma (app_var_constr sort ms) in
   let n = VarState.tfresh "n" in
-  let* ms = upSubstScope sort [binder] ms in
+  let* ms' = upSubstScope sort [binder] ms in
   let (pms, bpms) = binvparameters binder in
   let ret = equiv_
       (app_ref (up_ sort binder) (pms @ [sigma]))
-      (app_var_constr sort ms) in
+      (app_var_constr sort ms') in
   let* shift = patternSId sort binder in
   let* hasRen = hasRenamings sort in
   let t n = ap_
@@ -381,7 +383,7 @@ let genUpId (binder, sort) =
       (app1_ eq n) in
   let defBody = definitionBody sort binder
       (matchFin_ (ref_ n) t eq_refl_, t (ref_ n))
-      (const2 (app_ref "scons_p_eta" [app_var_constr sort ms; abs_ref n (t (ref_ n)); abs_ref n eq_refl_], t (ref_ n))) in
+      (const2 (app_ref "scons_p_eta" [app_var_constr sort ms'; abs_ref n (t (ref_ n)); abs_ref n eq_refl_], t (ref_ n))) in
   pure @@ lemma_ (upId_ sort binder) (bpms @ bms @ bsigma @ beq) ret (abs_ref n defBody)
 
 let genIdLemma sort =
@@ -431,7 +433,7 @@ let genExtRen sort =
   (** body *)
   let* body = traversal s sort extRen_ [xis; zetas; eqs]
       (fun s ->
-         let* toVarT = toVar sort eqs in
+         let* toVarT = to_var sort eqs in
          pure @@ ap_ (app_var_constr sort ns) (app1_ toVarT s))
       mapExt_ in
   pure @@ fixpointBody_ (extRen_ sort) (scopeBinders @ beqs @ bs) type_ body s
@@ -487,6 +489,7 @@ let genUpRenRen (binder, sort) =
       (const2 @@ (app_ref "up_ren_ren_p" [eq], eq)) in
   pure @@ lemma_ (up_ren_ren_ sort binder) (bpms @ scopeBinders @ beq) ret defBody
 
+(* TODO consistent order of klmn *)
 let genCompRenRen sort =
   let* v = V.genVariables sort [ `KS; `LS; `MS;
                                  `XIS (`MS, `KS); `ZETAS (`KS, `LS); `RHOS (`MS, `LS) ] in
@@ -509,7 +512,7 @@ let genCompRenRen sort =
   (** body *)
   let* body = traversal s sort compRenRen_ [xis; zetas; rhos; eqs]
       (fun s ->
-         let* toVarT = toVar sort eqs in
+         let* toVarT = to_var sort eqs in
          pure (ap_ (app_var_constr sort ls) (app1_ toVarT s)))
       mapComp_ in
   pure @@ fixpointBody_ (compRenRen_ sort) (scopeBinders @ beqs @ bs) type_ body s
@@ -781,7 +784,7 @@ let genUpSubstSubstNoRen (binder, sort) =
 let genUpRinstInst (binder, sort) =
   let* v = V.genVariables sort [ `M; `NS ] in
   let [@warning "-8"] [ m ], [ ns ], [], scopeBinders = v in
-  let* n_var = toVarScope sort ns in
+  let* n_var = to_var_scope sort ns in
   let (xi, bxi) = genRenS "xi" (m, n_var) in
   let (sigma, bsigma) = genSubstS "sigma" (m, ns) sort in
   let (eq, beq) = genEq "Eq" (xi >>> app_var_constr sort ns) sigma in
@@ -859,7 +862,7 @@ let genLemmaVarL sort =
   let* () = tell_rewrite_fext (varLFun_ sort) in
   let* v = V.genVariables sort [ `MS; `NS; `SIGMAS (`MS, `NS) ] in
   let [@warning "-8"] [], [ ms; ns ], [ sigmas ], scopeBinders = v in
-  let* sigma' = toVar sort sigmas in
+  let* sigma' = to_var sort sigmas in
   let ret = eq_ (app_var_constr sort ms >>> app_ref (subst_ sort) (sty_terms sigmas)) sigma' in
   let proof = fext_ (abs_ref "x" eq_refl_) in
   pure @@ lemma_ (varLFun_ sort) scopeBinders ret proof
@@ -872,8 +875,8 @@ let genLemmaVarL' sort =
   let [@warning "-8"] [], [ ms; ns ], [ sigmas ], scopeBinders = v in
   (* generate type *)
   (* on the right hand side we only need the sigma for the current sort *)
-  let* sigma' = toVar sort sigmas in
-  let* m' = toVarScope sort ms in
+  let* sigma' = to_var sort sigmas in
+  let* m' = to_var_scope sort ms in
   let x = VarState.tfresh "x" in
   let ret = eq_
       (app_ref (subst_ sort) (sty_terms sigmas
@@ -887,7 +890,7 @@ let genLemmaVarLRen sort =
   let* () = tell_rewrite_fext (varLRenFun_ sort) in
   let* v = V.genVariables sort [ `MS; `NS; `XIS (`MS, `NS) ] in
   let [@warning "-8"] [], [ ms; ns ], [ xis ], scopeBinders = v in
-  let* xi' = toVar sort xis in
+  let* xi' = to_var sort xis in
   let ret = eq_
       (app_var_constr sort ms >>> app_ref (ren_ sort) (sty_terms xis))
       (xi' >>> (app_var_constr sort ns)) in
@@ -900,8 +903,8 @@ let genLemmaVarLRen' sort =
   let* () = tell_rewrite_no_fext (varLRen'Fun_ sort) in
   let* v = V.genVariables sort [ `MS; `NS; `XIS (`MS, `NS) ] in
   let [@warning "-8"] [], [ ms; ns ], [ xis ], scopeBinders = v in
-  let* xi' = toVar sort xis in
-  let* m' = toVarScope sort ms in
+  let* xi' = to_var sort xis in
+  let* m' = to_var_scope sort ms in
   let x = VarState.tfresh "x" in
   let ret = eq_
       (app_ref (ren_ sort) (sty_terms xis
