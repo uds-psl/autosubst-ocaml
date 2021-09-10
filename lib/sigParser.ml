@@ -49,28 +49,42 @@ let reservedIds =
    "up_ren"; "size_ind"; "lift";
    "get_In"; "some_none_explosion"; "Some_inj"
   ]
+
+(** check if an identifier is either in our list of keywords
+ ** or one of the hardcoded Coq keywords (i.e. Type, Prop etc.) *)
 let filter_reserved i =
-  if List.mem i reservedIds
+  if List.mem i reservedIds || CLexer.is_keyword i
   then hard_fail @@ "reserved identifier: " ^ i
   else return i
 
-(* let checkWellFormed (c, s) =
- *   if c = '_' && String.length s = 0 then hard_fail "an identifier cannot be a single underscore"
- *   else return (string_of_char c ^ s) *)
+let check_non_empty = function
+  | "" -> hard_fail "empty identifier"
+  | s -> return s
 
-(** parsers for all the tokens we encounter. Most uses of the identifier parser are filtered so that they don't contain reserved keywords *)
-(* let raw_ident = lex @@ take_while1 is_ident *)
-(* let ident = lift3 (fun c s _ -> (c, s))
- *     (satisfy is_first_ident) (take_while is_ident) spaces
- *   >>= checkWellFormed >>= filterReserved *)
+(** Parsers for all the tokens we encounter. *)
 
-(* this is safe because ascii bytes cannot appear in non-ascii utf-8 encodings, so we can iterate over the bytes and is_ident will only return true if we give it a valid utf-8 bytestring *)
-let raw_ident = lex @@ scan_state "" (fun s c ->
+(** Parse an identifier using functions frm the Coq implementation.
+ ** This allows the same unicode identifiers as Coq, e.g. greek letters.
+ ** It works by taking bytes from the input stream and successively checking if they
+ ** are a valid identifier.
+ ** Because utf-8 encoded codepoints may be represented by multiple bytes we have to skip the check for any non-ascii bytes and remember the longest valid prefix so far.
+ ** If the byte is ascii we check if the whole string is an identifier and if so we update the longest valid prefix. If not we are done and return this prefix. *)
+(* folding over the input bytes is safe because ascii bytes cannot appear in non-ascii utf-8 encodings.
+ * e.g. if the identifier is the greek letter lambda it will consist of 2 bytes, CE and BB, and is_ascii will fail for both *)
+let raw_ident = lex @@ scan_state ("", "") (fun (s, valid_prefix) c ->
     let s' = s ^ string_of_char c in
-    if not (is_ascii c) || CLexer.(is_ident s' && not (is_keyword s'))
-    then Some s' else None
-  )
+    if is_ascii c
+    then
+      if CLexer.is_ident s'
+      then Some (s', s')
+      else None
+    else Some (s', valid_prefix)
+  ) >>= function (_, i) -> return i (* just take the longest valid prefix *)
+    >>= check_non_empty
+
+(** Most uses of the identifier parser are filtered so that they don't contain reserved keywords *)
 let ident = raw_ident >>= filter_reserved
+
 let arrow = lex @@ string "->"
 let colon = lex @@ char ':'
 let ttype = lex @@ string "Type"
