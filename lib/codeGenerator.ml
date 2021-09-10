@@ -1250,24 +1250,18 @@ let gen_code sorts upList =
     let* lemmaVarLRen, lemmaVarLRenPointwise = guard_split_map genLemmaVarLRen' varSorts in
     let* lemmaRenSubst_fext = guard_map genLemmaRinstInst sorts in
     let* lemmaRenSubst, lemmaRenSubstPointwise = guard_split_map genLemmaRinstInst' sorts in
-    let open List in
-    let split3 l =
-      let x0 = map (fun (x, _, _) -> x) l in
-      let x1 = map (fun (_, y, _) -> y) l in
-      let x2 = map (fun (_, _, z) -> z) l in
-      (x0, x1, x2) in
     let* lemmaCompRenRen, lemmaCompRenRenFext, lemmaCompRenRenPointwise =
       let* renRen = guard_map genLemmaCompRenRen sorts in
-      pure (split3 renRen) in
+      pure (list_split3 renRen) in
     let* lemmaCompSubstRen, lemmaCompSubstRenFext, lemmaCompSubstRenPointwise =
       let* substRen = guard_map genLemmaCompSubstRen sorts in
-      pure (split3 substRen) in
+      pure (list_split3 substRen) in
     let* lemmaCompRenSubst, lemmaCompRenSubstFext, lemmaCompRenSubstPointwise =
       let* renSubst = guard_map genLemmaCompRenSubst sorts in
-      pure (split3 renSubst) in
+      pure (list_split3 renSubst) in
     let* lemmaCompSubstSubst, lemmaCompSubstSubstFext, lemmaCompSubstSubstPointwise =
       let* substSubst = guard_map genLemmaCompSubstSubst sorts in
-      pure (split3 substSubst) in
+      pure (list_split3 substSubst) in
     (* Code for Allfv *)
     let* upAllfv = a_map genUpAllfv upList in
     let* allfvs = a_map genAllfv sorts in

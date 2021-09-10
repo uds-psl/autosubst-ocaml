@@ -49,10 +49,13 @@ let rec list_drop xs n =
     | [] -> []
     | x :: xs -> list_drop xs (n - 1)
 
-let showPair f g (x, y) =
-  "(" ^ f x ^ ", " ^ g y ^ ")"
+let list_split3 l =
+  let open List in
+  let x0 = map (fun (x, _, _) -> x) l in
+  let x1 = map (fun (_, y, _) -> y) l in
+  let x2 = map (fun (_, _, z) -> z) l in
+  (x0, x1, x2)
 
-(* let nub cmp l = Set.stable_dedup_list cmp l *)
 
 let list_zip xs ys = List.combine xs ys
 
