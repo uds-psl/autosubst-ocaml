@@ -33,6 +33,7 @@ let up_ren_ xi = app_ref "up_ren" [xi]
 let up_allfv_ p = app_ref "up_allfv" [p]
 let fext_ s = app_ref "FunctionalExtensionality.functional_extensionality"
     [underscore_; underscore_; s]
+let pointwise_ f g = app_ref "pointwise_relation" [underscore_; ref_ "eq"; f; g]
 
 (** Create a list of terms from a list of strings *)
 let mk_refs = List.map ref_

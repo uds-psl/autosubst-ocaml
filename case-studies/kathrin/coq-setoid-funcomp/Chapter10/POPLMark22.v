@@ -1,6 +1,6 @@
 Require Export Coq.Lists.List.
 Require Import Coq.Program.Equality.
-Require Import core core_axioms fintype fintype_axioms.
+Require Import core (* core_axioms *) fintype (* fintype_axioms *).
 Import ScopedNotations.
 From Chapter10 Require Export sysf_pat.
 Require Import Coq.Program.Tactics.
@@ -218,6 +218,8 @@ Proof.
   intros H. autorevert H. induction H using @sub_rec; intros; subst; asimpl; cbn; econstructor; eauto.
   - eapply IHsub2; try reflexivity.
     auto_case; eauto. rewrite <- H1. now asimpl.
+    (* TODO auto_case problems *)
+    now asimpl.
   - intros l T' HH. rewrite in_map_iff in HH. destruct HH as ([]&HH&?).
     inv HH. destruct (H _ _ H3) as (?&?&?&?).
     exists (x⟨xi⟩). split; eauto. apply in_map; eauto.
@@ -238,7 +240,7 @@ Proof. intros H. specialize (H n Gamma A C id).  now asimpl in H. Qed.
 Hint Resolve transitivity_proj.
 
 Lemma transitivity_ren m n B (xi: fin m -> fin n) : transitivity_at B -> transitivity_at B⟨xi⟩.
-Proof. unfold transitivity_at. intros. eapply H; asimpl in H0; asimpl in H1; eauto. Qed.
+Proof. unfold transitivity_at. intros. eapply H with (xi:=funcomp xi0 xi); asimpl in H0; asimpl in H1; eauto. Qed.
 
 Lemma sub_narrow n (Delta Delta': ctx n) A C :
   (forall x, SUB Delta' |- Delta' x <: Delta x) ->
@@ -268,13 +270,13 @@ Proof with asimpl;eauto.
   - depind H... depind H1...
   - depind H... depind H1...
     econstructor... clear IHsub0 IHsub3 IHsub1 IHsub2.
-    eapply IHB2; eauto.
+    eapply IHB2 with (xi:=upRen_ty_ty xi); eauto.
     + asimpl. eapply sub_narrow; try eapply H0.
       * auto_case.
         eapply sub_weak with (xi := ↑); try reflexivity; eauto.
         (* adrian: as of 7b3472c the goal is already solved by eauto
          TODO find out why *)
-        now asimpl.
+        (* now asimpl. *)
       * intros [x|]; try cbn; eauto. right. apply transitivity_ren. apply transitivity_ren. eauto.
     + asimpl in H1_0. auto.
   - depind H0... depind H3...
@@ -459,277 +461,163 @@ Qed.
 
 (** Preservation *)
 
-(* TODO always use setoid_rewrite in substify in renamify *)
-Ltac substify := auto_unfold; try repeat setoid_rewrite rinstInst'_tm;
-                  try repeat setoid_rewrite rinstInst'_pat;
-                  try repeat setoid_rewrite rinstInst'_ty.
+(* Lemma scons_p_head2' {X} {m n} (f : fin m -> X) (g : fin n -> X): *)
+(*   pointwise_relation _ eq (zero_p m >> (scons_p m f g)) f. *)
+(* Proof. *)
+(*   intros z. *)
+(*   unfold funcomp. *)
+(*  induction m. *)
+(*   - inversion z. *)
+(*   - destruct z. *)
+(*     + simpl. simpl. now rewrite IHm. *)
+(*     + reflexivity. *)
+(* Qed. *)
 
-Ltac fsimpl_fext :=
-  repeat match goal with
-         | [|- context[id >> ?f]] => change (id >> f) with f (* AsimplCompIdL *); idtac "fsimpl0"
-         | [|- context[?f >> id]] => change (f >> id) with f (* AsimplCompIdR *); idtac "fsimpl1"
-         | [|- context [id ?s]] => change (id s) with s; idtac "fsimpl2"
-         (* | [|- context[comp ?f ?g]] => change (comp f g) with (g >> f) (* AsimplCompIdL *) *)
-         | [|- context[(?f >> ?g) >> ?h]] =>
-           change ((f >> g) >> h) with (f >> (g >> h)) (* AsimplComp *); idtac "fsimpl3"
+(* Lemma scons_p_tail2' X  m n (f : fin m -> X) (g : fin n -> X) : *)
+(*   pointwise_relation _ eq (shift_p m >> scons_p m f g) g. *)
+(* Proof. intros z; unfold funcomp. induction m; cbn; eauto. Qed. *)
 
-         | [|- zero_p >> scons_p ?f ?g] => rewrite scons_p_head; idtac "fsimpl4"
+(* Lemma scons_p_comp2' X Y m n (f : fin m -> X) (g : fin n -> X) (h : X -> Y): *)
+(*   pointwise_relation _ eq ((scons_p m f g) >> h) (scons_p m (f >> h) (g >> h)). *)
+(* Proof. *)
+(*   intros x. *)
+(*   unfold funcomp. *)
+(*   destruct (destruct_fin x) as [[x' ->]|[x' ->]]. *)
+(*   - (* TODO this might be one of the problems Yannick encountered. *)
+(*      * *) *)
+(*     now setoid_rewrite scons_p_head'. *)
+(*   - now setoid_rewrite scons_p_tail'. *)
+(* Qed. *)
 
-         | [|- context[(?s.:?sigma) var_zero]] => change ((s.:sigma) var_zero) with s; idtac "fsimpl5"
-         | [|- context[(?s.:?sigma) (shift ?m)]] => change ((s.:sigma) (shift m)) with (sigma m); idtac "fsimpl6"
+(* Instance funcomp_morphism {X Y Z} : *)
+(*   Proper (@pointwise_relation Y Z eq ==> @pointwise_relation X Y eq ==> @pointwise_relation X Z eq) funcomp. *)
+(* Proof. *)
+(*   cbv - [funcomp]. *)
+(*   intros g0 g1 Hg f0 f1 Hf x. *)
+(*   unfold funcomp. rewrite Hf, Hg. *)
+(*   reflexivity. *)
+(* Qed. *)
 
-         | [|- context[idren >> ?f]] => change (idren >> f) with f; idtac "fsimpl7"
-         | [|- context[?f >> idren]] => change (f >> idren) with f; idtac "fsimpl8"
-         | [|- context[?f >> (?x .: ?g)]] => change (f >> (x .: g)) with g; idtac "fsimpl9"
-         | [|- context[?x2 .: shift >> ?f]] => change x2 with (f var_zero); rewrite (@scons_eta _ _ f); idtac "fsimpl10"
-         | [|- context[?f var_zero .: ?g]] => change g with (shift >> f); rewrite scons_eta; idtac "fsimpl11"
+(* Lemma forall_pointwise {X} {Y: X} (f g: X -> Y) : (forall x, f x = g x) -> pointwise_relation _ eq f g. *)
+(* Proof. *)
+(*   intros * H x. apply H. *)
+(* Qed. *)
 
-         |[|- _ =  ?h (?f ?s)] => change (h (f s)) with ((f >> h) s); idtac "fsimpl12"
-         |[|-  ?h (?f ?s) = _] => change (h (f s)) with ((f >> h) s); idtac "fsimpl13"
-
-         | _ => first [progress (rewrite scons_comp) |  progress (rewrite scons_eta_id) | progress (autorewrite with FunctorInstances)]; idtac "fsimpl14"
-         end.
-
-Ltac asimpl_fext' := repeat (first
-                      [ progress rewrite substSubst_tm; idtac "substSubst_tm"
-                      | progress rewrite renSubst_tm; idtac "renSubst_tm"
-                      | progress rewrite substRen_tm; idtac "substRen_tm"
-                      | progress rewrite renRen_tm; idtac "renRen_tm"
-                      | progress rewrite substSubst_pat; idtac "substSubst_pat"
-                      | progress rewrite renSubst_pat; idtac "renSubst_pat"
-                      | progress rewrite substRen_pat; idtac "substRen_pat"
-                      | progress rewrite renRen_pat; idtac "renRen_pat"
-                      | progress rewrite substSubst_ty; idtac "substSubst_ty"
-                      | progress rewrite renSubst_ty; idtac "renSubst_ty"
-                      | progress rewrite substRen_ty; idtac "substRen_ty"
-                      | progress rewrite renRen_ty; idtac "renRen_ty"
-                      | progress rewrite substSubst'_tm; idtac "substSubst'_tm"
-                      | progress rewrite renSubst'_tm; idtac "renSubst'_tm"
-                      | progress rewrite substRen'_tm; idtac "substRen'_tm"
-                      | progress rewrite renRen'_tm; idtac "renRen'_tm"
-                      | progress rewrite varLRen_tm; idtac "varLRen_tm"
-                      | progress rewrite varL_tm; idtac "varL_tm"
-                      | progress rewrite rinstId_tm; idtac "rinstId_tm"
-                      | progress rewrite instId_tm; idtac "instId_tm"
-                      | progress rewrite substSubst'_pat; idtac "substSubst'_pat"
-                      | progress rewrite renSubst'_pat; idtac "renSubst'_pat"
-                      | progress rewrite substRen'_pat; idtac "substRen'_pat"
-                      | progress rewrite renRen'_pat; idtac "renRen'_pat"
-                      | progress rewrite rinstId_pat; idtac "rinstId_pat"
-                      | progress rewrite instId_pat; idtac "instId_pat"
-                      | progress rewrite substSubst'_ty; idtac "substSubst'_ty"
-                      | progress rewrite renSubst'_ty; idtac "renSubst'_ty"
-                      | progress rewrite substRen'_ty; idtac "substRen'_ty"
-                      | progress rewrite renRen'_ty; idtac "renRen'_ty"
-                      | progress rewrite varLRen_ty; idtac "varLRen_ty"
-                      | progress rewrite varL_ty; idtac "varL_ty"
-                      | progress rewrite rinstId_ty; idtac "rinstId_ty"
-                      | progress rewrite instId_ty; idtac "instId_ty"
-                      | progress
-                         unfold up_list_tm_tm, up_list_tm_ty, up_list_ty_tm,
-                          up_tm_tm, up_tm_ty, up_ty_tm, upRen_list_tm_tm,
-                          upRen_list_tm_ty, upRen_list_ty_tm, upRen_tm_tm,
-                          upRen_tm_ty, upRen_ty_tm, up_list_ty_ty, up_ty_ty,
-                          upRen_list_ty_ty, upRen_ty_ty, up_ren; idtac "unfold"
-                      | progress
-                         cbn[subst_tm ren_tm subst_pat ren_pat subst_ty
-                            ren_ty]; idtac "cbn"
-                      | fsimpl_fext; idtac "fsimpl" ]).
-
-Ltac asimpl_fext := repeat try unfold_funcomp;
-                     repeat
-                      unfold VarInstance_ty, Var, ids, Ren_ty, Ren1, ren1,
-                       Up_ty_ty, Up_ty, up_ty, Subst_ty, Subst1, subst1,
-                       Ren_pat, Ren1, ren1, Subst_pat, Subst1, subst1,
-                       VarInstance_tm, Var, ids, Ren_tm, Ren2, ren2,
-                       Up_ty_tm, Up_tm, up_tm, Up_tm_ty, Up_ty, up_ty,
-                       Up_tm_tm, Up_tm, up_tm, Subst_tm, Subst2, subst2 
-                       in *; asimpl_fext'; repeat try unfold_funcomp.
-
-Instance scons_p_morphism {X:Type} (m n:nat) :
-  Proper (pointwise_relation (fin m) eq ==> pointwise_relation (fin n) eq ==> @eq (fin (m + n)) ==> @eq X) (@scons_p X m n).
-Proof.
-  intros sigma sigma' Hsigma tau tau' Htau x x' <-.
-  induction m as [|m] in n, sigma, tau, sigma', tau', Hsigma, Htau, x |- *.
-  - cbn. apply Htau.
-  - cbn. destruct x as [|x].
-    + cbn. apply IHm.
-      intros y.
-      apply (Hsigma (Some y)).
-      apply Htau.
-    + cbn. apply (Hsigma var_zero).
-Qed.
-
-(* Ltac fsimpl := *)
-(*   repeat match goal with *)
-(*          | [|- context[id >> ?f]] => change (id >> f) with f (* AsimplCompIdL *) *)
-(*          | [|- context[?f >> id]] => change (f >> id) with f (* AsimplCompIdR *) *)
-(*          | [|- context [id ?s]] => change (id s) with s *)
-(*          | [|- context[(?f >> ?g) >> ?h]] => change ((f >> g) >> h) with (f >> (g >> h)) (* AsimplComp *) *)
-(*          (* | [|- zero_p >> scons_p ?f ?g] => rewrite scons_p_head *) *)
-(*          | [|- context[(?s .: ?sigma) var_zero]] => change ((s.:sigma) var_zero) with s *)
-(*          | [|- context[(?s .: ?sigma) (shift ?m)]] => change ((s.:sigma) (shift m)) with (sigma m) *)
-(*          | [|- context[idren >> ?f]] => change (idren >> f) with f *)
-(*          | [|- context[?f >> idren]] => change (f >> idren) with f *)
-(*          | [|- context[?f >> (?x .: ?g)]] => change (f >> (x .: g)) with g (* f should evaluate to shift *) *)
-(*          | [|- context[?x2 .: (fun x => ?f (shift x))]] => change (scons x2 (fun x => f (shift x))) with (fun x => (scons (f var_zero) (fun x => f (shift x))) x); setoid_rewrite (@scons_eta' _ _ f); eta_reduce *)
-(*          | [|- context[?f var_zero .: ?g]] => change (scons (f var_zero) g) with (fun x => (scons (f var_zero) (fun x => f (shift x))) x); setoid_rewrite scons_eta'; eta_reduce *)
-(*          (* we completely unfold funcomp *) *)
-(*          (* |[|- _ =  ?h (?f ?s)] => change (h (f s)) with ((f >> h) s) *) *)
-(*          (* |[|-  ?h (?f ?s) = _] => change (h (f s)) with ((f >> h) s) *) *)
-(*          | [|- context[fun x => ?tau (scons ?s ?sigma x)]] => setoid_rewrite scons_comp'; eta_reduce *)
-(*          | [|- context[fun x => ?tau (scons_p ?p ?f ?g x)]] => setoid_rewrite scons_p_comp'; eta_reduce *)
-(*          | [|- context[scons (@var_zero ?n) shift]] => change (scons (@var_zero n) shift) with (fun x => (scons (@var_zero n) shift) x); setoid_rewrite scons_eta_id'; eta_reduce *)
-(*          (* | _ => progress autorewrite with FunctorInstances2 *) *)
-(*          end. *)
-
-(* Hint Rewrite @scons_p_comp' @scons_p_head' @scons_p_tail' : FunctorInstances2. *)
-
-Lemma scons_p_head2' {X} {m n} (f : fin m -> X) (g : fin n -> X):
-  pointwise_relation _ eq (zero_p m >> (scons_p m f g)) f.
-Proof.
-  intros z.
-  unfold funcomp.
- induction m.
-  - inversion z.
-  - destruct z.
-    + simpl. simpl. now rewrite IHm.
-    + reflexivity.
-Qed.
-
-Lemma scons_p_tail2' X  m n (f : fin m -> X) (g : fin n -> X) :
-  pointwise_relation _ eq (shift_p m >> scons_p m f g) g.
-Proof. intros z; unfold funcomp. induction m; cbn; eauto. Qed.
-
-Lemma scons_p_comp2' X Y m n (f : fin m -> X) (g : fin n -> X) (h : X -> Y):
-  pointwise_relation _ eq ((scons_p m f g) >> h) (scons_p m (f >> h) (g >> h)).
-Proof.
-  intros x.
-  unfold funcomp.
-  destruct (destruct_fin x) as [[x' ->]|[x' ->]].
-  - (* TODO this might be one of the problems Yannick encountered.
-     * *)
-    now setoid_rewrite scons_p_head'.
-  - now setoid_rewrite scons_p_tail'.
-Qed.
-
-Instance funcomp_morphism {X Y Z} :
-  Proper (@pointwise_relation Y Z eq ==> @pointwise_relation X Y eq ==> @pointwise_relation X Z eq) funcomp.
-Proof.
-  cbv - [funcomp].
-  intros g0 g1 Hg f0 f1 Hf x.
-  unfold funcomp. rewrite Hf, Hg.
-  reflexivity.
-Qed.
-
-(* with this lemma we can convert out forall goals into poinwtise_relation goals.
- might want to call the minimize tactic afterwards because the f & g will have unfolded funcomps *)
-Lemma pointwise_forall {X Y} (f g : X -> Y):
-  pointwise_relation X eq f g -> forall x:X, f x = g x.
-Proof.
-  intros H x. apply H.
-Qed.
-
-Instance subrelation_eq_flip_impl :
-  subrelation eq (Basics.flip Basics.impl).
-Proof.
-  intros ? ? -> ?. assumption.
-Qed.
-
-Lemma crl0:
-  forall (m n p : nat) (pt : pat m) (s : tm m n) (t : tm m (p + n)) (A B : ty m) (m' n' : nat)
-    (Delta: ctx m) (Gamma: dctx n m)
-    (Delta0 : ctx m') (Gamma0 : dctx n' m') (xi : fin m -> fin m') (zeta : fin n -> fin n')
-    (Gamma': fin p -> ty m) (H: pat_ty m p pt A Gamma')
-    (ty1: TY Delta;Gamma |- s : A) (ty2: TY Delta;scons_p p Gamma' Gamma |- t : B)
-  (IHty1 : forall (m' n' : nat) (Delta0 : ctx m') (Gamma0 : dctx n' m') (xi : fin m -> fin m')
-            (zeta : fin n -> fin n'),
-          (forall x : fin m, (Delta x) ⟨xi⟩ = Delta0 (xi x)) ->
-          (forall x : fin n, (Gamma x) ⟨xi⟩ = Gamma0 (zeta x)) -> TY Delta0;Gamma0 |- s ⟨xi;zeta⟩ : A ⟨xi⟩)
-  (IHty2 : forall (m' n' : nat) (Delta0 : ctx m') (Gamma0 : dctx n' m') (xi : fin m -> fin m')
-            (zeta : fin (p + n) -> fin n'),
-          (forall x : fin m, (Delta x) ⟨xi⟩ = Delta0 (xi x)) ->
-          (forall x : fin (p + n), (scons_p p Gamma' Gamma x) ⟨xi⟩ = Gamma0 (zeta x)) ->
-          TY Delta0;Gamma0 |- t ⟨xi;zeta⟩ : B ⟨xi⟩)
-  (H0: forall x : fin m, (Delta x) ⟨xi⟩ = Delta0 (xi x)) (H': forall x : fin n, (Gamma x) ⟨xi⟩ = Gamma0 (zeta x)),
+(* Lemma crl0: *)
+(*   forall (m n p : nat) (pt : pat m) (s : tm m n) (t : tm m (p + n)) (A B : ty m) (m' n' : nat) *)
+(*     (Delta: ctx m) (Gamma: dctx n m) *)
+(*     (Delta0 : ctx m') (Gamma0 : dctx n' m') (xi : fin m -> fin m') (zeta : fin n -> fin n') *)
+(*     (Gamma': fin p -> ty m) (H: pat_ty m p pt A Gamma') *)
+(*     (ty1: TY Delta;Gamma |- s : A) (ty2: TY Delta;scons_p p Gamma' Gamma |- t : B) *)
+(*   (IHty1 : forall (m' n' : nat) (Delta0 : ctx m') (Gamma0 : dctx n' m') (xi : fin m -> fin m') *)
+(*             (zeta : fin n -> fin n'), *)
+(*           (forall x : fin m, (Delta x) ⟨xi⟩ = Delta0 (xi x)) -> *)
+(*           (forall x : fin n, (Gamma x) ⟨xi⟩ = Gamma0 (zeta x)) -> TY Delta0;Gamma0 |- s ⟨xi;zeta⟩ : A ⟨xi⟩) *)
+(*   (IHty2 : forall (m' n' : nat) (Delta0 : ctx m') (Gamma0 : dctx n' m') (xi : fin m -> fin m') *)
+(*             (zeta : fin (p + n) -> fin n'), *)
+(*           (forall x : fin m, (Delta x) ⟨xi⟩ = Delta0 (xi x)) -> *)
+(*           (forall x : fin (p + n), (scons_p p Gamma' Gamma x) ⟨xi⟩ = Gamma0 (zeta x)) -> *)
+(*           TY Delta0;Gamma0 |- t ⟨xi;zeta⟩ : B ⟨xi⟩) *)
+(*   (H0: forall x : fin m, (Delta x) ⟨xi⟩ = Delta0 (xi x)) (H': forall x : fin n, (Gamma x) ⟨xi⟩ = Gamma0 (zeta x)), *)
   
- TY Delta0;Gamma0 |- letpat p pt ⟨xi⟩ s ⟨xi;zeta⟩ t ⟨xi;upRen_p p zeta⟩ : B ⟨xi⟩.
-Proof.
-  intros m n p pt s t A B m' n' Delta Gamma Delta0 Gamma0 xi zeta Gamma' H ty1 ty2 IHty1 IHty2 H0 H'.
-  cbn. asimpl. apply letpat_ty  with (A0 := A⟨xi⟩) (Gamma'0 := Gamma' >> ⟨xi⟩); eauto.
-  + unfold funcomp.
-    (* TODO the unfold funcomp should not be necessary anymore when I use Yannicks appraoch *)
-    substify.
-    eauto.
-  + asimpl.
-    Hint Opaque scons_p : rewrite.
-    Hint Opaque subst_ty : rewrite.
-    eapply IHty2; eauto; asimpl.
-    *
-      (** * works *)
-      (* DONE try to make the goal into pointwise_relation *)
-      (* apply pointwise_forall. minimize. *)
-      (* (* intros z. *) *)
-      (* (* adrian: had to add the following line to make it compile.*) *)
-      (* unfold dctx in Gamma, Gamma0. unfold upRen_p. *)
-      (* (* TODO setoid-asimpl does not work with scons_p yet *) *)
-      (* (* DONE use normal rewrite for asimpl_fext *)
-      (*  * works the same as it should (because it only used rewrite to begin with) *) *)
-      (* (* match goal with *) *)
-      (* (*    |[|- _ =  ?h (?f ?s)] => change (h (f s)) with ((f >> h) s); idtac "fsimpl12" *) *)
-      (* (*    |[|-  ?h (?f ?s) = _] => change (h (f s)) with ((f >> h) s); idtac "fsimpl13" *) *)
-      (* (* end. *) *)
-      (* (* match goal with *) *)
-      (* (*    |[|- _ =  ?h (?f ?s)] => change (h (f s)) with ((f >> h) s); idtac "fsimpl12" *) *)
-      (* (*    |[|-  ?h (?f ?s) = _] => change (h (f s)) with ((f >> h) s); idtac "fsimpl13" *) *)
-      (* (* end. *) *)
-      (* (* autorewrite with FunctorInstances. *) *)
+(*  TY Delta0;Gamma0 |- letpat p pt ⟨xi⟩ s ⟨xi;zeta⟩ t ⟨xi;upRen_p p zeta⟩ : B ⟨xi⟩. *)
+(* Proof. *)
+(*   intros m n p pt s t A B m' n' Delta Gamma Delta0 Gamma0 xi zeta Gamma' H ty1 ty2 IHty1 IHty2 H0 H'. *)
+(*   cbn. asimpl. apply letpat_ty  with (A0 := A⟨xi⟩) (Gamma'0 := Gamma' >> ⟨xi⟩); eauto. *)
+(*   + unfold funcomp. *)
+(*     (* TODO the unfold funcomp should not be necessary anymore when I use Yannicks appraoch *) *)
+(*     substify. *)
+(*     eauto. *)
+(*   + asimpl. *)
+(*     (* Hint Opaque scons_p : rewrite. *) *)
+(*     (* Hint Opaque subst_ty : rewrite. *) *)
+(*     eapply IHty2. eauto. *)
+(*     * *)
+(*       (** * works *) *)
+(*       (* DONE try to make the goal into pointwise_relation *) *)
+(*       (* enough (H2: pointwise_relation _ eq ((scons_p p Gamma' Gamma ) >> (ren_ty xi)) ((upRen_p p zeta ) >> (scons_p p (Gamma' >> ren_ty xi) Gamma0 ))) by apply H2. *) *)
+(*       (* intros z. *) *)
+(*       (* adrian: had to add the following line to make it compile.*) *)
+(*       (* unfold dctx in Gamma, Gamma0. unfold upRen_p. *) *)
+(*       (* (* TODO setoid-asimpl does not work with scons_p yet *) *) *)
+(*       (* (* DONE use normal rewrite for asimpl_fext *) *) *)
+(*       (* (*  * works the same as it should (because it only used rewrite to begin with) *) *) *)
+(*       (* (* match goal with *) *) *)
+(*       (* (*    |[|- _ =  ?h (?f ?s)] => change (h (f s)) with ((f >> h) s); idtac "fsimpl12" *) *) *)
+(*       (* (*    |[|-  ?h (?f ?s) = _] => change (h (f s)) with ((f >> h) s); idtac "fsimpl13" *) *) *)
+(*       (* (* end. *) *) *)
+(*       (* (* match goal with *) *) *)
+(*       (* (*    |[|- _ =  ?h (?f ?s)] => change (h (f s)) with ((f >> h) s); idtac "fsimpl12" *) *) *)
+(*       (* (*    |[|-  ?h (?f ?s) = _] => change (h (f s)) with ((f >> h) s); idtac "fsimpl13" *) *) *)
+(*       (* (* end. *) *) *)
+(*       (* (* autorewrite with FunctorInstances. *) *) *)
 
-      (* setoid_rewrite scons_p_comp2'. *)
-      (* setoid_rewrite scons_p_head2'. *)
-      (* match goal with *)
-      (*    | [|- context[(?f >> ?g) >> ?h]] => *)
-      (*      change ((f >> g) >> h) with (f >> (g >> h)) (* AsimplComp *); idtac "fsimpl3" *)
-      (* end. *)
-      (* setoid_rewrite scons_p_tail2'. *)
+(*       (* setoid_rewrite scons_p_comp2'. *) *)
+(*       (* setoid_rewrite scons_p_head2'. *) *)
+(*       (* match goal with *) *)
+(*       (*    | [|- context[(?f >> ?g) >> ?h]] => *) *)
+(*       (*      change ((f >> g) >> h) with (f >> (g >> h)) (* AsimplComp *); idtac "fsimpl3" *) *)
+(*       (* end. *) *)
+(*       (* setoid_rewrite scons_p_tail2'. *) *)
 
-      (* (* TODO can we do it without unfolding funcomp? *) *)
-      (* unfold funcomp. *)
-      (* setoid_rewrite H'. *)
+(*       (* (* TODO can we do it without unfolding funcomp? *) *) *)
+(*       (* unfold funcomp. *) *)
+(*       (* setoid_rewrite H'. *) *)
 
-      intros z.
-      unfold dctx in Gamma, Gamma0. unfold upRen_p.
-      unfold funcomp.
-      (* TODO this rewrites too eagerly and also uses the eq that is applied to the scons_p
-       * If I don't unfold funcomp this would not be a problem
-       * But I'm wondering why this happens here but not in the other file with just scons?*)
-      Set Typeclasses Debug.
-      (* try setoid_rewrite scons_p_comp'. *)
-      (* autorewrite with FunctorInstances2. *)
-      rewrite (scons_p_comp' _ _ (ren_ty xi)).
-      rewrite (scons_p_comp' _ _ (scons_p p (fun x : fin p => ren_ty xi (Gamma' x)) Gamma0)).
-      unfold funcomp.
-      setoid_rewrite scons_p_head'.
-      (* match goal with *)
-      (*    | [|- context[(?f >> ?g) >> ?h]] => *)
-      (*      change ((f >> g) >> h) with (f >> (g >> h)) (* AsimplComp *); idtac "fsimpl3" *)
-      (* end. *)
-      setoid_rewrite scons_p_tail'.
-      (* autorewrite with FunctorInstances. *)
-      (* fsimpl_fext. *)
-      (* asimpl_fext. *)
-  (* scons_p p (Gamma' >> ⟨xi⟩) (Gamma >> ⟨xi⟩) z = scons_p p (Gamma' >> ⟨xi⟩) (zeta >> Gamma0) z *)
-      (* asimpl. *)
-      (* unfold funcomp. *)
-      (* setoid_rewrite scons_p_comp'. *)
-      unfold funcomp.
-      (* DONE why does it not use the morphism?
-       * because my scons_p morphism had (pointwise_relation) in the conclusion (because scons_p returns a function)
-       * but here we want to solve an equality so we need eq in the conclusion.
-       * therefore we need to inline the extensional equality in the morphism's signature by taking another eq argument and returning an eq of the results *)
-      setoid_rewrite H'.
-      reflexivity.
-Qed.
+(*       intros z. *)
+(*       unfold dctx in Gamma, Gamma0. unfold upRen_p. *)
+(*       fsimpl. *)
+(*       unfold funcomp. *)
+(*       Hint Transparent scons_p : rewrite. *)
+(*       Set Typeclasses Debug. *)
+(*       try rewrite_strat innermost H'. *)
+
+(*       (* TODO somehow the approach of wrapping it in id or AW does nto work with scons_p_comp here *) *)
+(* (*        * but a rewrite strat does help *) *)
+(* (*        * but the rewrite_strat with subterms works well *) *)
+(*       (* rewrite_strat scons_p_comp'. *) *)
+(*       (* rewrite_strat subterms scons_p_comp'. *) *)
+(*       (* setoid_rewrite scons_p_head'. *) *)
+(*       (* setoid_rewrite scons_p_tail'. *) *)
+(*       (* setoid_rewrite H'. *) *)
+(*       (* reflexivity. *) *)
+
+(*       (* TODO this rewrites too eagerly and also uses the eq that is applied to the scons_p *) *)
+(* (*        * If I don't unfold funcomp this would not be a problem *) *)
+(* (*        * But I'm wondering why this happens here but not in the other file with just scons?*) *)
+(*       (* rewrite scons_p_comp'. *) *)
+(*       (* Set Printing All. *) *)
+(*       (* Fail setoid_rewrite scons_p_comp'. *) *)
+(*       (* TODO koennte bei problemen mit rewriting helfen *) *)
+(*       (* Set Keyed Unification. *) *)
+(*       (* autorewrite with FunctorInstances2. *) *)
+(*       (* Unset Printing Notations. *) *)
+(*   (*     Set Typeclasses Debug. *) *)
+(*   (*     setoid_rewrite scons_p_comp'. *) *)
+(*   (*     setoid_rewrite (scons_p_comp' _ _ (ren_ty xi)). *) *)
+(*   (*     setoid_rewrite (scons_p_comp' _ _ (scons_p p (fun x : fin p => ren_ty xi (Gamma' x)) Gamma0)). *) *)
+(*   (*     unfold funcomp. *) *)
+(*   (*     setoid_rewrite scons_p_head'. *) *)
+(*   (*     (* match goal with *) *) *)
+(*   (*     (*    | [|- context[(?f >> ?g) >> ?h]] => *) *) *)
+(*   (*     (*      change ((f >> g) >> h) with (f >> (g >> h)) (* AsimplComp *); idtac "fsimpl3" *) *) *)
+(*   (*     (* end. *) *) *)
+(*   (*     setoid_rewrite scons_p_tail'. *) *)
+(*   (*     (* autorewrite with FunctorInstances. *) *) *)
+(*   (*     (* fsimpl_fext. *) *) *)
+(*   (*     (* asimpl_fext. *) *) *)
+(*   (* (* scons_p p (Gamma' >> ⟨xi⟩) (Gamma >> ⟨xi⟩) z = scons_p p (Gamma' >> ⟨xi⟩) (zeta >> Gamma0) z *) *) *)
+(*   (*     (* asimpl. *) *) *)
+(*   (*     (* unfold funcomp. *) *) *)
+(*   (*     (* setoid_rewrite scons_p_comp'. *) *) *)
+(*   (*     unfold funcomp. *) *)
+(*   (*     (* DONE why does it not use the morphism? *) *) *)
+(* (*   (*      * because my scons_p morphism had (pointwise_relation) in the conclusion (because scons_p returns a function) *) *) *)
+(* (*   (*      * but here we want to solve an equality so we need eq in the conclusion. *) *) *)
+(* (*   (*      * therefore we need to inline the extensional equality in the morphism's signature by taking another eq argument and returning an eq of the results *) *) *)
+(*   (*     setoid_rewrite H'. *) *)
+(*   (*     reflexivity. *) *)
+(* Qed. *)
 
 Lemma context_renaming_lemma m m' n n' (Delta: ctx m') (Gamma: dctx n' m')                                                   (s: tm m n) A (xi : fin m -> fin m') (zeta: fin n -> fin n') Delta' (Gamma' : dctx n m):
   (forall x, (Delta' x)⟨xi⟩ = Delta (xi x)) ->
@@ -744,7 +632,7 @@ Proof.
   - cbn. econstructor. apply IHty; eauto.
     + auto_case; try now asimpl. rewrite <- H. now asimpl.
     + intros. asimpl. rewrite <- H'. now asimpl.
-  - cbn. eapply T_Tapp with (A0 := A⟨xi⟩) .
+  - cbn. eapply T_Tapp with (A0 := A⟨xi⟩) (B0 := ren_ty (upRen_ty_ty xi) B).
     asimpl in IHty. eapply IHty; eauto.
     eapply sub_weak; eauto. now asimpl.
   - econstructor; eauto.
@@ -753,7 +641,20 @@ Proof.
       eapply in_map_iff in H6. destruct H6 as ([j A']&?&?). inv H5.
       eapply H3; eassumption.
   - cbn. econstructor; eauto. now apply in_map.
-  - apply (crl0 m n p pt s t A B m' n' Delta Gamma Delta0 Gamma0 xi zeta Gamma' H ty1 ty2 IHty1 IHty2 H0 H').
+  - cbn. asimpl. apply letpat_ty  with (A0 := A⟨xi⟩) (Gamma'0 := Gamma' >> ⟨xi⟩); eauto.
+    + unfold funcomp.
+      (* TODO the unfold funcomp should not be necessary anymore when I use Yannicks appraoch *)
+      substify.
+      eauto.
+    + asimpl.
+      (* Hint Opaque scons_p : rewrite. *)
+      (* Hint Opaque subst_ty : rewrite. *)
+      eapply IHty2. eauto.
+      * intros z.
+        unfold dctx in Gamma, Gamma0. unfold upRen_p.
+        asimpl.
+        unfold funcomp.
+        now setoid_rewrite H'.
   - econstructor. eauto. eapply sub_weak; eauto.
 Qed.
 
@@ -762,6 +663,7 @@ Lemma context_renaming_lemma' m m' n n' (Delta: ctx m') (Gamma: dctx n' m')     
   (forall (x: fin n) , (Gamma' x)⟨xi⟩ =  (Gamma (zeta x))) ->
   TY Delta'; Gamma' |- s : A -> forall s' A', s' = s⟨xi;zeta⟩ -> A' = A⟨xi⟩ -> TY Delta; Gamma |- s' : A'.
 Proof. intros. subst. now eapply context_renaming_lemma. Qed.
+
 
 Lemma context_morphism_lemma m m' n n' (Delta: ctx m) (Delta': ctx m') (Gamma: dctx n m) (s: tm m n) A (sigma : fin m -> ty m') (tau: fin n -> tm m' n') (Gamma' : dctx n' m'):
   (forall x, SUB Delta' |- sigma x <: (Delta x)[sigma]) ->
@@ -786,7 +688,7 @@ Proof.
       eapply context_renaming_lemma; try eapply eq2.
       * intros. now asimpl.
       * intros. now asimpl.
-  - eapply T_Tapp with (A0 := subst_ty sigma A) .
+  - eapply T_Tapp with (A0 := subst_ty sigma A) (B0 := subst_ty (up_ty_ty sigma) B).
     asimpl in IHty. eapply IHty; eauto.
     eapply sub_substitution; eauto.
     now asimpl.
@@ -802,11 +704,20 @@ Proof.
       * intros x.
         destruct (destruct_fin x) as [[x' ->] |[x' ->]]; asimpl; eauto.
         -- eapply T_Var'. now asimpl.
-        -- eapply context_renaming_lemma'; try eapply eq2; try now asimpl.
-           intros z.
-           now asimpl.
-           (* TODO setoid-asimpl does not work with scons_p yet *)
-           intros x. now asimpl_fext.
+        -- eapply context_renaming_lemma'; try eapply eq2.
+           (* TODO try out why exactly only the scons_p_* lemmas have issues with evars *)
+           Unshelve.
+           5: exact id.
+           5: exact (shift_p p).
+           5: exact x'.
+           all: now asimpl.
+           (* try now asimpl. *)
+           (* intros z. *)
+           (* now asimpl. *)
+           (* (* TODO setoid-asimpl does not work with scons_p yet *) *)
+           (* intros x. *)
+           (* now asimpl. *)
+           (* (* now asimpl_fext. *) *)
      } 
   - econstructor.
     + eapply IHty; eauto.
@@ -853,7 +764,7 @@ Proof.
     replace A with (A[ids]) by (now asimpl). replace A' with (A'[ids]) by (now asimpl).
     eapply sub_substitution; eauto. intros x.
     asimpl. econstructor. eauto.
- - econstructor; eauto. eapply sub_substitution with (sigma := ids) in H0; eauto.
+ - econstructor; eauto. eapply sub_substitution with (sigma := ids) (Delta':=Delta') in H0; eauto.
     asimpl in H0. eapply H0. intros x. econstructor. asimpl. eapply eq.
 Qed.
 
@@ -900,8 +811,7 @@ Proof.
         -- auto_case; asimpl; eauto using sub_refl.
         -- intros x. asimpl. constructor.
       * pose proof (ty_inv_tabs _ H_ty H) as (?&?&?&?).
-        eapply T_Sub.  asimpl.
-        (* asimpl in * *)
+        eapply T_Sub.  
         eapply context_morphism_lemma; eauto.
         -- auto_case; asimpl; eauto.
         -- intros z. asimpl. constructor.
@@ -920,8 +830,8 @@ Proof.
       * intros. asimpl. constructor. now apply sub_refl.
       * intros. destruct (destruct_fin x) as [[]|[]]; subst.
         (* TODO why did I have to do `exact Gamma'` here twice? *)
-        -- asimpl. eapply pat_ty_eval; eauto. exact Gamma'.
-        -- asimpl. constructor. exact Gamma'.
+        -- asimpl. eapply pat_ty_eval; eauto. (* exact Gamma'. *)
+        -- asimpl. constructor. (* exact Gamma'. *)
     + eapply T_Sub; eauto.
   - depind H_ty; [|eapply T_Sub; eauto].
     econstructor; eauto.
@@ -930,3 +840,6 @@ Proof.
 Qed.
 
 End Pattern.
+
+(* TODO prove morphisms with Marcel's project. Also why does the UIP axiom appear here? *)
+Print Assumptions preservation.

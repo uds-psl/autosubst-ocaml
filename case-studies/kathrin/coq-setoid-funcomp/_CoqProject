@@ -14,14 +14,14 @@ fintype.v
 fintype_axioms.v
 ARS.v
 
-Chapter3/utlc_pure.v
-Chapter3/utlc_scoped.v
+# Chapter3/utlc_pure.v
+# Chapter3/utlc_scoped.v
 
-Chapter6/utlc_pairs.v
-Chapter6/sysf_cbv.v
-Chapter6/variadic_fin.v
-# TODO works but is VERY slow
-Chapter6/reductions.v
+# Chapter6/utlc_pairs.v
+# Chapter6/sysf_cbv.v
+# Chapter6/variadic_fin.v
+# # TODO works but is VERY slow
+# Chapter6/reductions.v
 
 Chapter9/stlc.v
 Chapter9/reduction.v
@@ -29,17 +29,16 @@ Chapter9/preservation.v
 # done does not work
 # because of scons_p. Probably also needs a morphism.
 # yes with a morphisms it sort of works
-Chapter9/variadic_preservation.v
+# Chapter9/variadic_preservation.v
 Chapter9/wn.v
 Chapter9/sn.v
 Chapter9/sn_raamsdonk.v
-Chapter9/equivalence.v
+# Chapter9/equivalence.v
 Chapter9/girard.v
 
-Chapter10/sysf.v
-Chapter10/POPLMark1.v
-Chapter10/sysf_pat.v
-Chapter10/POPLMark21.v
-# todo does not work
-Chapter10/POPLMark22.v
-
+# Chapter10/sysf.v
+# Chapter10/POPLMark1.v
+# Chapter10/sysf_pat.v
+# Chapter10/POPLMark21.v
+# # todo does not work
+# Chapter10/POPLMark22.v

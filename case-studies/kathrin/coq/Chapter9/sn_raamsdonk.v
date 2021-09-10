@@ -265,6 +265,7 @@ Proof.
       * cbn. unfold funcomp.
         (* a.d. had to insert the following line *) 
         change (fun x : fin n' => @var_tm m (R x)) with (funcomp var_tm R).
+        asimpl.
        renamify. 
         apply rename_red. eauto.
   - cbn.  specialize (IHhas_type2 _ _ H1).

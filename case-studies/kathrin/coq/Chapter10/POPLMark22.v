@@ -217,9 +217,10 @@ Lemma sub_weak m n (Delta1: ctx m) (Delta2: ctx n) A1 A2 A1' A2' (xi: fin m -> f
 Proof.
   intros H. autorevert H. induction H using @sub_rec; intros; subst; asimpl; cbn; econstructor; eauto.
   - eapply IHsub2; try reflexivity.
-    auto_case; eauto. rewrite <- H1. now asimpl.
+    auto_case; eauto.
+    unfold funcomp. rewrite <- H1. now asimpl.
     (* TODO auto_case problems *)
-    now asimpl.
+    (* now asimpl. *)
   - intros l T' HH. rewrite in_map_iff in HH. destruct HH as ([]&HH&?).
     inv HH. destruct (H _ _ H3) as (?&?&?&?).
     exists (x⟨xi⟩). split; eauto. apply in_map; eauto.
@@ -240,7 +241,7 @@ Proof. intros H. specialize (H n Gamma A C id).  now asimpl in H. Qed.
 Hint Resolve transitivity_proj.
 
 Lemma transitivity_ren m n B (xi: fin m -> fin n) : transitivity_at B -> transitivity_at B⟨xi⟩.
-Proof. unfold transitivity_at. intros. eapply H; asimpl in H0; asimpl in H1; eauto. Qed.
+Proof. unfold transitivity_at. intros. eapply H with (xi:=funcomp xi0 xi); asimpl in H0; asimpl in H1; eauto. Qed.
 
 Lemma sub_narrow n (Delta Delta': ctx n) A C :
   (forall x, SUB Delta' |- Delta' x <: Delta x) ->
@@ -270,7 +271,7 @@ Proof with asimpl;eauto.
   - depind H... depind H1...
   - depind H... depind H1...
     econstructor... clear IHsub0 IHsub3 IHsub1 IHsub2.
-    eapply IHB2; eauto.
+    eapply IHB2 with (xi:=upRen_ty_ty xi); eauto.
     + asimpl. eapply sub_narrow; try eapply H0.
       * auto_case.
         eapply sub_weak with (xi := ↑); try reflexivity; eauto.
@@ -630,9 +631,11 @@ Proof.
   - constructor. eapply IHty; eauto.
     auto_case; asimpl.
   - cbn. econstructor. apply IHty; eauto.
-    + auto_case; try now asimpl. rewrite <- H. now asimpl.
-    + intros. asimpl. rewrite <- H'. now asimpl.
-  - cbn. eapply T_Tapp with (A0 := A⟨xi⟩) .
+    + auto_case; try now asimpl.
+      unfold funcomp. rewrite <- H. now asimpl.
+    + intros. asimpl.
+      unfold funcomp. rewrite <- H'. now asimpl.
+  - cbn. eapply T_Tapp with (A0 := A⟨xi⟩) (B0 := ren_ty (upRen_ty_ty xi) B).
     asimpl in IHty. eapply IHty; eauto.
     eapply sub_weak; eauto. now asimpl.
   - econstructor; eauto.
@@ -642,7 +645,7 @@ Proof.
       eapply H3; eassumption.
   - cbn. econstructor; eauto. now apply in_map.
   - cbn. asimpl. apply letpat_ty  with (A0 := A⟨xi⟩) (Gamma'0 := Gamma' >> ⟨xi⟩); eauto.
-    + unfold funcomp.
+    + (* unfold funcomp. *)
       (* TODO the unfold funcomp should not be necessary anymore when I use Yannicks appraoch *)
       substify.
       eauto.
@@ -652,12 +655,12 @@ Proof.
       eapply IHty2. eauto.
       * intros z.
         unfold dctx in Gamma, Gamma0. unfold upRen_p.
-        (* asimpl. *)
-        fsimpl.
+        asimpl.
+        (* TODO same as in popl21 *)
+        apply pointwise_forall.
+        asimpl.
         unfold funcomp.
-        simple apply scons_p_morphism; [reflexivity|].
         now setoid_rewrite H'.
-    (* apply (crl0 m n p pt s t A B m' n' Delta Gamma Delta0 Gamma0 xi zeta Gamma' H ty1 ty2 IHty1 IHty2 H0 H'). *)
   - econstructor. eauto. eapply sub_weak; eauto.
 Qed.
 
@@ -666,6 +669,7 @@ Lemma context_renaming_lemma' m m' n n' (Delta: ctx m') (Gamma: dctx n' m')     
   (forall (x: fin n) , (Gamma' x)⟨xi⟩ =  (Gamma (zeta x))) ->
   TY Delta'; Gamma' |- s : A -> forall s' A', s' = s⟨xi;zeta⟩ -> A' = A⟨xi⟩ -> TY Delta; Gamma |- s' : A'.
 Proof. intros. subst. now eapply context_renaming_lemma. Qed.
+
 
 Lemma context_morphism_lemma m m' n n' (Delta: ctx m) (Delta': ctx m') (Gamma: dctx n m) (s: tm m n) A (sigma : fin m -> ty m') (tau: fin n -> tm m' n') (Gamma' : dctx n' m'):
   (forall x, SUB Delta' |- sigma x <: (Delta x)[sigma]) ->
@@ -690,7 +694,7 @@ Proof.
       eapply context_renaming_lemma; try eapply eq2.
       * intros. now asimpl.
       * intros. now asimpl.
-  - eapply T_Tapp with (A0 := subst_ty sigma A) .
+  - eapply T_Tapp with (A0 := subst_ty sigma A) (B0 := subst_ty (up_ty_ty sigma) B).
     asimpl in IHty. eapply IHty; eauto.
     eapply sub_substitution; eauto.
     now asimpl.
@@ -706,13 +710,20 @@ Proof.
       * intros x.
         destruct (destruct_fin x) as [[x' ->] |[x' ->]]; asimpl; eauto.
         -- eapply T_Var'. now asimpl.
-        -- eapply context_renaming_lemma'; try eapply eq2; try now asimpl.
-           intros z.
-           now asimpl.
-           (* TODO setoid-asimpl does not work with scons_p yet *)
-           intros x.
-           now asimpl.
-           (* now asimpl_fext. *)
+        -- eapply context_renaming_lemma'; try eapply eq2.
+           (* TODO try out why exactly only the scons_p_* lemmas have issues with evars *)
+           Unshelve.
+           5: exact id.
+           5: exact (shift_p p).
+           5: exact x'.
+           all: now asimpl.
+           (* try now asimpl. *)
+           (* intros z. *)
+           (* now asimpl. *)
+           (* (* TODO setoid-asimpl does not work with scons_p yet *) *)
+           (* intros x. *)
+           (* now asimpl. *)
+           (* (* now asimpl_fext. *) *)
      } 
   - econstructor.
     + eapply IHty; eauto.
@@ -759,7 +770,7 @@ Proof.
     replace A with (A[ids]) by (now asimpl). replace A' with (A'[ids]) by (now asimpl).
     eapply sub_substitution; eauto. intros x.
     asimpl. econstructor. eauto.
- - econstructor; eauto. eapply sub_substitution with (sigma := ids) in H0; eauto.
+ - econstructor; eauto. eapply sub_substitution with (sigma := ids) (Delta':=Delta') in H0; eauto.
     asimpl in H0. eapply H0. intros x. econstructor. asimpl. eapply eq.
 Qed.
 
@@ -806,8 +817,7 @@ Proof.
         -- auto_case; asimpl; eauto using sub_refl.
         -- intros x. asimpl. constructor.
       * pose proof (ty_inv_tabs _ H_ty H) as (?&?&?&?).
-        eapply T_Sub.  asimpl.
-        (* asimpl in * *)
+        eapply T_Sub.  
         eapply context_morphism_lemma; eauto.
         -- auto_case; asimpl; eauto.
         -- intros z. asimpl. constructor.

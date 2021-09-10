@@ -148,6 +148,7 @@ Proof.
         intros [i|]; eauto. cbn. unfold funcomp.
         (* adrian: had to insert the following line *)
         change (fun x : fin k' => @var_tm k'0 (xi x)) with (funcomp var_tm xi).
+        asimpl.
         renamify. apply L.ren with (Gamma := Gamma'); eauto.
   - destruct (IHA _ _ _ adm) as [IHA1 IHA2]. specialize (IHB _ _ _ adm).
     assert (HH : ltc Gamma' Gamma' id) by now intros.

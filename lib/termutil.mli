@@ -29,6 +29,7 @@ val up_ren_ : constr_expr -> constr_expr
 val up_allfv_ : constr_expr -> constr_expr
 val fin_ : constr_expr -> constr_expr
 val fext_ : constr_expr -> constr_expr
+val pointwise_ : constr_expr -> constr_expr -> constr_expr
 
 val mk_refs : identifier list -> constr_exprs
 

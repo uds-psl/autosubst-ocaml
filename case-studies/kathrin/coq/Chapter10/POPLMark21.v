@@ -209,9 +209,10 @@ Lemma sub_weak m n (Delta1: ctx m) (Delta2: ctx n) A1 A2 A1' A2' (xi: fin m -> f
 Proof.
   intros H. autorevert H. induction H using @sub_rec; intros; subst; asimpl; cbn; econstructor; eauto.
   - eapply IHsub2; try reflexivity.
-    auto_case; eauto. rewrite <- H1. now asimpl.
+    auto_case; eauto.
+    unfold funcomp. rewrite <- H1. now asimpl.
     (* TODO same here as in Popl1. auto_case should call asimpl which direclty solves the goal, so why isn't it solved *)
-    now asimpl.
+    (* now asimpl. *)
   - intros l T' HH. rewrite in_map_iff in HH. destruct HH as ([]&HH&?).
     inv HH. destruct (H _ _ H3) as (?&?&?&?).
     exists (x⟨xi⟩). split; eauto. apply in_map; eauto.
@@ -232,7 +233,7 @@ Proof. intros H. specialize (H n Gamma A C id).  now asimpl in H. Qed.
 Hint Resolve transitivity_proj.
 
 Lemma transitivity_ren m n B (xi: fin m -> fin n) : transitivity_at B -> transitivity_at B⟨xi⟩.
-Proof. unfold transitivity_at. intros. eapply H; asimpl in H0; asimpl in H1; eauto. Qed.
+Proof. unfold transitivity_at. intros. eapply H with (xi:=funcomp xi0 xi); asimpl in H0; asimpl in H1; eauto. Qed.
 
 Lemma sub_narrow n (Delta Delta': ctx n) A C :
   (forall x, SUB Delta' |- Delta' x <: Delta x) ->
@@ -484,8 +485,10 @@ Proof.
   - constructor. eapply IHty; eauto.
     auto_case; asimpl.
   - cbn. econstructor. apply IHty; eauto.
-    + auto_case; try now asimpl. rewrite <- H. now asimpl.
-    + intros. asimpl. rewrite <- H'. now asimpl.
+    + auto_case; try now asimpl.
+      unfold funcomp. rewrite <- H. now asimpl.
+    + intros. asimpl.
+      unfold funcomp. rewrite <- H'. now asimpl.
   - cbn. eapply T_Tapp with (A0 := A⟨xi⟩) .
     Unshelve.
     4: exact (ren_ty (upRen_ty_ty xi) B).
@@ -516,20 +519,25 @@ Proof.
       (* Hint Opaque subst_ty : rewrite. *)
       (* Print HintDb rewrite. *)
       Fail setoid_rewrite varL'_ty.
-      Info 2 asimpl.
       * intros z.
         (* adrian: had to add the following line to make it compile.*)
         unfold dctx in Gamma, Gamma0. unfold upRen_p.
         (* https://coq.zulipchat.com/#narrow/stream/237656-Coq-devs.20.26.20plugin.20devs/topic/Change.20of.20case.20representation/near/220411671 *)
         (* TODO why does setoid_rewrite H' fail even though it works when I just apply the morphism *)
         (* TODO why does setoid_rewrite scons_p_head' fail? but it works when I apply the morphism *)
+        asimpl.
+        setoid_rewrite (scons_p_comp' _ _ _ z).
+        (* TODO do this in asimpl? the problem seems to be that scons_p_comp' does not want to rewrite if the goal is in the forall-form. So either we turn it into pointwise-form or we do the above and rewrite with the argument (I think one of the rewrites in Kathrin's fsimpl also does this so she might have had a similar problem) *)
+        apply pointwise_forall.
+        asimpl.
         unfold funcomp.
-        (* Set Typeclasses Debug. *)
-        (* try setoid_rewrite scons_p_tail'. *)
-        (* asimpl. *)
-        simple apply scons_p_morphism.
-        -- now setoid_rewrite scons_p_head'.
-        -- setoid_rewrite scons_p_tail'. now setoid_rewrite H'.
+        now setoid_rewrite H'.
+        (* (* Set Typeclasses Debug. *) *)
+        (* (* try setoid_rewrite scons_p_tail'. *) *)
+        (* (* asimpl. *) *)
+        (* simple apply scons_p_morphism. *)
+        (* -- now setoid_rewrite scons_p_head'. *)
+        (* -- setoid_rewrite scons_p_tail'. now setoid_rewrite H'. *)
         (* Info 3 asimpl_fext. *)
         (* (* TODO actually I did not have to use fext here since the goal compates the output of scons_p and we have a morphism *) *)
         (* apply scons_p_morphism; easy. *)
@@ -567,7 +575,7 @@ Proof.
       eapply context_renaming_lemma; try eapply eq2.
       * intros. now asimpl.
       * intros. now asimpl.
-  - eapply T_Tapp with (A0 := subst_ty sigma A) .
+  - eapply T_Tapp with (A0 := subst_ty sigma A) (B0 := B[up_ty_ty sigma]).
     asimpl in IHty. eapply IHty; eauto.
     eapply sub_substitution; eauto.
     now asimpl.
@@ -584,14 +592,17 @@ Proof.
         destruct (destruct_fin x) as [[x' ->] |[x' ->]]; asimpl; eauto.
         -- eapply T_Var'. now asimpl.
         -- eapply context_renaming_lemma' with (Delta':=Delta'); try eapply eq2.
-           try now asimpl.
-           intros z.
            Unshelve.
+           5: exact id.
+           5: exact (shift_p p).
            5: exact x'.
-           4: exact id.
-           now asimpl.
-           (* a.d. TODO got one more goal left from context_renaming_lemma' *)
-           intros x. now asimpl.
+           all: now asimpl.
+           (* instantiate (1:=id). *)
+           (* try now asimpl. *)
+           (* intros z. *)
+           (* now asimpl. *)
+           (* (* a.d. TODO got one more goal left from context_renaming_lemma' *) *)
+           (* intros x. now asimpl. *)
      }
      
   - econstructor.
@@ -639,7 +650,7 @@ Proof.
     replace A with (A[ids]) by (now asimpl). replace A' with (A'[ids]) by (now asimpl).
     eapply sub_substitution; eauto. intros x.
     asimpl. econstructor. eauto.
- - econstructor; eauto. eapply sub_substitution with (sigma := ids) in H0; eauto.
+ - econstructor; eauto. eapply sub_substitution with (sigma := ids) (Delta':=Delta') in H0; eauto.
     asimpl in H0. eapply H0. intros x. econstructor. asimpl. eapply eq.
 Qed.
 
@@ -686,7 +697,7 @@ Proof.
         -- auto_case; asimpl; eauto using sub_refl.
         -- intros x. asimpl. constructor.
       * pose proof (ty_inv_tabs _ H_ty H) as (?&?&?&?).
-        eapply T_Sub.  asimpl.
+        eapply T_Sub.  
         eapply context_morphism_lemma; eauto.
         -- auto_case; asimpl; eauto.
         -- intros z. asimpl. constructor.
