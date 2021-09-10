@@ -18,7 +18,7 @@ let ss_terms = function
   | SubstScope (_, xs) ->
     match !S.scope_type with
     | S.Unscoped -> []
-    | S.WellScoped -> xs
+    | S.Wellscoped -> xs
 
 let ss_terms_all = function
   | SubstScope (_, xs) -> xs

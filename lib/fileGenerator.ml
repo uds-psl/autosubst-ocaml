@@ -23,7 +23,7 @@ let get_preamble () =
   let* gen_fext = is_gen_fext in
   let preamble = match !S.scope_type with
     | S.Unscoped -> unscoped_preamble ^ (if gen_fext then unscoped_preamble_axioms else "")
-    | S.WellScoped -> scoped_preamble ^ (if gen_fext then scoped_preamble_axioms else "")
+    | S.Wellscoped -> scoped_preamble ^ (if gen_fext then scoped_preamble_axioms else "")
   in
   pure (preamble ^ setoid_preamble)
 
@@ -35,7 +35,7 @@ let getUps component =
   let singles = map (fun (x, y) -> (L.Single x, y)) cart in
   let blists = map (fun (x, y) -> (L.BinderList ("p", x), y)) cart in
   match !S.scope_type with
-  | S.WellScoped -> List.append singles blists
+  | S.Wellscoped -> List.append singles blists
   | S.Unscoped -> singles
 
 (* deriving a comparator for a type and packing it in a module

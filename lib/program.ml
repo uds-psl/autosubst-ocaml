@@ -19,53 +19,49 @@ signature-file:
  ** to manually check that we only receive a single input
  ** signature and -o flag. *)
 let parse_args args =
-  (* the signature is the only argument not guarded by a keyword and we only want to set it once *)
-  let infile_r = ref "" in
-  let anon_fun s =
-    if !infile_r = ""
-    then infile_r := s
-    else raise (Arg.Bad ("no additional arguments expected: " ^ s)) in
-  (* we also only allow one -o flag. Technically we could also do it for the other falgs but they are idempotent. *)
-  let outfile_r = ref "" in
-  let set_outfile s =
-    if !outfile_r = ""
-    then outfile_r := s
-    else raise (Arg.Bad ("only one -o flag expected.")) in
-  let scope_r = ref S.Unscoped in
-  (* can disable warnings here because the functions will only be called with these arguments by Arg.Symbol *)
-  let [@warning "-8"] set_scope = function
-    | "coq" -> scope_r := S.WellScoped
-    | "ucoq" -> scope_r := S.Unscoped in
-  let version_r = ref S.GE810 in
-  let [@warning "-8"] set_version = function
-    | "lt810" -> version_r := S.LT810
-    | "ge810" -> version_r := S.GE810 in
-  let gen_static_files_r = ref true in
-  let force_overwrite_r = ref false in
-  let gen_allfv_r = ref false in
-  let gen_fext_r = ref false in
-  (* let set_var_fmt s =
-   *   try
-   *     (\* just to check that it is a valid format string. we can't put a format string into a reference so we use the original string *\)
-   *     let _ = Scanf.format_from_string s "%s" in
-   *     Settings.var_fmt := s
-   *   with Scanf.Scan_failure _ ->
-   *     raise (Arg.Bad ("var constructor format must contain one %s format specifier which is replaced by the respective sort")) in *)
-  let arg_spec = Arg.[
-      ("-o", String set_outfile, "File to save output to.");
-      ("-s", Symbol (["coq"; "ucoq"], set_scope), "Generate scoped or unscoped code.");
-      ("-v", Symbol (["lt810"; "ge810"], set_version), "Which coq version to target. Either < 8.10 or >= 8.10.");
-      ("-f", Set force_overwrite_r, "Force overwrite files in the output directory.");
-      ("-no-static", Clear gen_static_files_r, "Don't put the static files like core.v, unscoped.v, etc. into the output directory.");
-      ("-allfv", Set gen_allfv_r, "Generate allfv lemmas.");
-      ("-fext", Set gen_fext_r, "Generate lemmas & tactics that use the functional extensionality axiom.");
-      (* ("-var", String set_var_fmt, "Format of the variable constructor") *)
-  ] in
-  (* have to pass in a fresh reference (or set the one from the module) to be able to call this multiple times in repl *)
-  let () = Arg.parse_argv ~current:(ref 0) args arg_spec anon_fun usage_message in
-  let infile = if !infile_r = "" then raise (Arg.Bad "Input signature file is required.") else !infile_r in
-  let outfile = if !outfile_r = "" then raise (Arg.Bad "Output file is required.") else !outfile_r in
-  S.{ infile; outfile; scope = !scope_r; gen_allfv = !gen_allfv_r; gen_fext = !gen_fext_r; gen_static_files = !gen_static_files_r; force_overwrite = !force_overwrite_r; version = !version_r }
+  let open ErrorM in
+  try
+    (* the signature is the only argument not guarded by a keyword and we only want to set it once *)
+    let infile_r = ref "" in
+    let anon_fun s =
+      if !infile_r = ""
+      then infile_r := s
+      else raise (Arg.Bad ("no additional arguments expected: " ^ s)) in
+    (* we also only allow one -o flag. Technically we could also do it for the other falgs but they are idempotent. *)
+    let outfile_r = ref "" in
+    let set_outfile s =
+      if !outfile_r = ""
+      then outfile_r := s
+      else raise (Arg.Bad ("only one -o flag expected.")) in
+    let scope_r = ref S.Unscoped in
+    (* can disable warnings here because the functions will only be called with these arguments by Arg.Symbol *)
+    let [@warning "-8"] set_scope = function
+      | "coq" -> scope_r := S.Wellscoped
+      | "ucoq" -> scope_r := S.Unscoped in
+    let version_r = ref S.GE810 in
+    let [@warning "-8"] set_version = function
+      | "lt810" -> version_r := S.LT810
+      | "ge810" -> version_r := S.GE810 in
+    let gen_static_files_r = ref true in
+    let force_overwrite_r = ref false in
+    let gen_allfv_r = ref false in
+    let gen_fext_r = ref false in
+    let arg_spec = Arg.[
+        ("-o", String set_outfile, "File to save output to.");
+        ("-s", Symbol (["coq"; "ucoq"], set_scope), "Generate scoped or unscoped code.");
+        ("-v", Symbol (["lt810"; "ge810"], set_version), "Which coq version to target. Either < 8.10 or >= 8.10.");
+        ("-f", Set force_overwrite_r, "Force overwrite files in the output directory.");
+        ("-no-static", Clear gen_static_files_r, "Don't put the static files like core.v, unscoped.v, etc. into the output directory.");
+        ("-allfv", Set gen_allfv_r, "Generate allfv lemmas.");
+        ("-fext", Set gen_fext_r, "Generate lemmas & tactics that use the functional extensionality axiom.")
+      ] in
+    (* have to pass in a fresh reference (or set the one from the module) to be able to call this multiple times in repl *)
+    let () = Arg.parse_argv ~current:(ref 0) args arg_spec anon_fun usage_message in
+    let infile = if !infile_r = "" then raise (Arg.Bad "Input signature file is required.") else !infile_r in
+    let outfile = if !outfile_r = "" then raise (Arg.Bad "Output file is required.") else !outfile_r in
+    pure S.{ infile; outfile; scope = !scope_r; gen_allfv = !gen_allfv_r; gen_fext = !gen_fext_r; gen_static_files = !gen_static_files_r; force_overwrite = !force_overwrite_r; version = !version_r }
+  with Arg.Bad e | Arg.Help e ->
+    error e
 
 
 (** Read the contents of the infile and return them. *)
@@ -110,7 +106,7 @@ let gen_static_files force_overwrite dir scope version =
   in
   let open Settings in
   let () = match scope with
-    | WellScoped ->
+    | Wellscoped ->
       let () = copy_static_file "fintype_axioms.v" in
       copy_static_file "fintype.v"
     | Unscoped ->
@@ -142,28 +138,24 @@ let main argv =
   (* print backtrace if the program crashes *)
   let () = Printexc.record_backtrace true in
   let () = GallinaGen.setup_coq () in
-  try
-    (* parse program arguments *)
-    let args = parse_args argv in
-    let () = Settings.scope_type := args.scope in
-    (* setup static files *)
-    let () =
-      let dir = Filename.dirname args.outfile in
-      let () = create_dir dir in
-      if args.gen_static_files
-      then gen_static_files args.force_overwrite dir args.scope args.version
-      else () in
-    (* parse input HOAS *)
-    let* (_, functors, _, var_fmt_assoc) as spec = read_file args.infile |> SigParser.parse_signature in
-    let () = Settings.var_fmt_assoc := var_fmt_assoc in
-    (* check if we use the "cod" functor because then we need fext also in the normal code *)
-    let args = if List.mem "cod" functors then {args with gen_fext = true} else args in
-    let* signature = SigAnalyzer.build_signature spec in
-    (* generate code *)
-    let* code, _ = FileGenerator.run_gen_code signature args.gen_allfv args.gen_fext in
-    (* write file *)
-    let () = write_file args.force_overwrite args.outfile code in
-    pure "done"
-  with
-  | Arg.Help help -> pure help
-  | Arg.Bad e -> error e
+  (* parse program arguments *)
+  let* args = parse_args argv in
+  let () = Settings.scope_type := args.scope in
+  (* setup static files *)
+  let () =
+    let dir = Filename.dirname args.outfile in
+    let () = create_dir dir in
+    if args.gen_static_files
+    then gen_static_files args.force_overwrite dir args.scope args.version
+    else () in
+  (* parse input HOAS *)
+  let* (_, functors, _, var_name_assoc) as spec = read_file args.infile |> SigParser.parse_signature in
+  let () = S.var_name_assoc := var_name_assoc in
+  (* check if we use the "cod" functor because then we need fext also in the normal code *)
+  let args = if List.mem "cod" functors then {args with gen_fext = true} else args in
+  let* signature = SigAnalyzer.build_signature spec in
+  (* generate code *)
+  let* code, _ = FileGenerator.run_gen_code signature args.gen_allfv args.gen_fext in
+  (* write file *)
+  let () = write_file args.force_overwrite args.outfile code in
+  pure "done"

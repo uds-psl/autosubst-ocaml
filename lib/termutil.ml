@@ -37,9 +37,9 @@ let fext_ s = app_ref "FunctionalExtensionality.functional_extensionality"
 (** Create a list of terms from a list of strings *)
 let mk_refs = List.map ref_
 
-let succ_ n z = function
-  | L.Single x -> if z = x then app1_ suc_ n else n
-  | L.BinderList (m, x) -> if z = x then app_ plus_ [ref_ m; n] else n
+let succ_ n sort = function
+  | L.Single bound_sort -> if sort = bound_sort then app1_ suc_ n else n
+  | L.BinderList (m, bound_sort) -> if sort = bound_sort then app_ plus_ [ref_ m; n] else n
 
 let (>>>) s t = app_ref "funcomp" [t; s]
 let (<<>>) ss ts = List.map2 (>>>) (sty_terms ss) (sty_terms ts)
@@ -53,11 +53,11 @@ let matchFin_ s f b =
   | S.Unscoped ->
     match_ s [ branch_ "S" ["n'"] (f (ref_ "n'"))
              ; branch_ "O" [] b ]
-  | S.WellScoped ->
+  | S.Wellscoped ->
     match_ s [ branch_ "Some" ["fin_n"] (f (ref_ "fin_n"))
              ; branch_ "None" [] b ]
 
-let app_sort cname scope = app_ref cname (ss_terms scope)
+let app_sort sort scope = app_ref sort (ss_terms scope)
 let app_constr cname scope rest = app_ref cname (ss_terms scope @ rest)
 let app_var_constr sort scope = app_constr (var_ sort) scope []
 (* TODO document. seems to build an application that uses the scope variabes from scoped. But in most uses in the code this seem sunecessary *)

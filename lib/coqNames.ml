@@ -12,7 +12,7 @@ module AL = AssocList
  ** to that format. Can error at runtime if user supplied a wrong format string. *)
 let var_ x =
   let default_name = Printf.sprintf "var_%s" x in
-  AL.assoc_default ~default:default_name x !Settings.var_fmt_assoc
+  AL.assoc_default ~default:default_name x !Settings.var_name_assoc
 
 let congr_ c = sepd ["congr"; c]
 

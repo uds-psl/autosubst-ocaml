@@ -21,19 +21,19 @@ module S = Settings
 let varT m =
   match !S.scope_type with
   | S.Unscoped -> nat_
-  | S.WellScoped -> fin_ m
+  | S.Wellscoped -> fin_ m
 
 (** For a given sort create a renaming type
  ** fin m -> fin n *)
 let renT m n = match !S.scope_type with
   | S.Unscoped -> arr1_ nat_ nat_
-  | S.WellScoped -> arr1_ (fin_ m) (fin_ n)
+  | S.Wellscoped -> arr1_ (fin_ m) (fin_ n)
 
 (** For a given sort create a substitution type.
  ** fin m -> tm nty nvl *)
 let substT m ns sort = match !S.scope_type with
   | S.Unscoped -> arr1_ nat_ (ref_ sort)
-  | S.WellScoped -> arr1_ (fin_ m) (app_sort sort ns)
+  | S.Wellscoped -> arr1_ (fin_ m) (app_sort sort ns)
 
 let predT = arr1_ nat_ prop_
 
@@ -50,18 +50,18 @@ let equiv_ s t =
 (* DONE I think it would be easier if ts was already a list of pairs where the first component is the corresponding substSort. I would have to change all the genRen/genSubst/... functions for that but then here it would just be a call to AssocList.find
  *
  * No, it was not easier. check the "toVar" feature branch *)
-let toVar_helper sort assoc =
+let to_var_helper sort assoc =
   match AL.assoc sort assoc with
-  | None -> error "toVar was called with incompatible sort and substitution vector. The substitution vector must contain the sort!"
+  | None -> error "to_var was called with incompatible sort and substitution vector. The substitution vector must contain the sort!"
   | Some t -> pure t
 
-let toVar sort ts =
+let to_var sort st =
   let* substSorts = substOf sort in
-  toVar_helper sort (AL.from_list (list_zip substSorts (sty_terms ts)))
+  to_var_helper sort (AL.from_list (list_zip substSorts (sty_terms st)))
 
-let toVarScope sort ts =
+let to_var_scope sort ss =
   let* substSorts = substOf sort in
-  toVar_helper sort (AL.from_list (list_zip substSorts (ss_terms_all ts)))
+  to_var_helper sort (AL.from_list (list_zip substSorts (ss_terms_all ss)))
 
 (** Return a list of variable names for the input list of positions
  ** [s0, s2, ..., sn-1] *)
@@ -139,7 +139,7 @@ let introScopeVarS name =
   let name = VarState.tfresh name in
   let binders = match !S.scope_type with
     | S.Unscoped -> []
-    | S.WellScoped -> [binder1_ ~implicit:true ~btype:nat_ name] in
+    | S.Wellscoped -> [binder1_ ~implicit:true ~btype:nat_ name] in
   (ref_ name, binders)
 
 
@@ -210,6 +210,7 @@ let genPred name sort ms =
     List.map2 (fun n t -> binder1_ ~btype:t n) names types
   )
 
+(* TODO rename *)
 (** Create an extensional equality between two substitutions and its binder
  ** H: forall x, sigma x = tau x *)
 let genEq name sigma tau =
@@ -235,7 +236,7 @@ let genEqs sort name sigmas taus f =
 let gen_var_arg sort ns =
   match !S.scope_type with
   | S.Unscoped -> pure @@ nat_
-  | S.WellScoped -> map fin_ (toVarScope sort ns)
+  | S.Wellscoped -> map fin_ (to_var_scope sort ns)
 
 (** Construction of patterns, needed for lifting -- yields a fitting pattern of S and id corresponding to the base sort and the binder
  ** TODO example *)
@@ -272,7 +273,8 @@ let patternSIdNoRen sort binder =
 let mk_var_apps sort ms =
   let* substSorts = substOf sort in
   a_map (fun substSort ->
-      map2 app_var_constr (pure substSort) (castSubstScope sort substSort ms))
+      let* ms' = castSubstScope sort substSort ms in
+      pure (app_var_constr substSort ms'))
     substSorts
 
 (** Convert a renaming to a substitution by postcomposing it with the variable constructor
