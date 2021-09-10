@@ -1,4 +1,10 @@
-Require Import core core_axioms fintype fintype_axioms.
+Require Import core fintype.
+
+Require Import core_axioms fintype_axioms.
+Require Import Setoid Morphisms Relation_Definitions.
+
+Module renSubst.
+
 Inductive ty (n_ty : nat) : Type :=
   | var_ty : fin n_ty -> ty n_ty
   | top : ty n_ty
@@ -432,7 +438,7 @@ Proof.
 exact (compRenRen_ty xi_ty zeta_ty _ (fun n => eq_refl) s).
 Qed.
 
-Lemma compRen_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
+Lemma substRen_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
   (sigma_ty : fin m_ty -> ty k_ty) (zeta_ty : fin k_ty -> fin l_ty)
   (s : ty m_ty) :
   ren_ty zeta_ty (subst_ty sigma_ty s) =
@@ -441,20 +447,48 @@ Proof.
 exact (compSubstRen_ty sigma_ty zeta_ty _ (fun n => eq_refl) s).
 Qed.
 
-Lemma renComp_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
+Lemma renSubst_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
   (xi_ty : fin m_ty -> fin k_ty) (tau_ty : fin k_ty -> ty l_ty) (s : ty m_ty)
   : subst_ty tau_ty (ren_ty xi_ty s) = subst_ty (funcomp tau_ty xi_ty) s.
 Proof.
 exact (compRenSubst_ty xi_ty tau_ty _ (fun n => eq_refl) s).
 Qed.
 
-Lemma compComp_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
+Lemma substSubst_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
   (sigma_ty : fin m_ty -> ty k_ty) (tau_ty : fin k_ty -> ty l_ty)
   (s : ty m_ty) :
   subst_ty tau_ty (subst_ty sigma_ty s) =
   subst_ty (funcomp (subst_ty tau_ty) sigma_ty) s.
 Proof.
 exact (compSubstSubst_ty sigma_ty tau_ty _ (fun n => eq_refl) s).
+Qed.
+
+Lemma rinstInst'_ty {m_ty : nat} {n_ty : nat} (xi_ty : fin m_ty -> fin n_ty)
+  (s : ty m_ty) : ren_ty xi_ty s = subst_ty (funcomp (var_ty n_ty) xi_ty) s.
+Proof.
+exact (rinst_inst_ty xi_ty _ (fun n => eq_refl) s).
+Qed.
+
+Lemma instId'_ty {m_ty : nat} (s : ty m_ty) : subst_ty (var_ty m_ty) s = s.
+Proof.
+exact (idSubst_ty (var_ty m_ty) (fun n => eq_refl) s).
+Qed.
+
+Lemma rinstId'_ty {m_ty : nat} (s : ty m_ty) : ren_ty id s = s.
+Proof.
+exact (eq_ind_r (fun t => t = s) (instId'_ty s) (rinstInst'_ty id s)).
+Qed.
+
+Lemma varL'_ty {m_ty : nat} {n_ty : nat} (sigma_ty : fin m_ty -> ty n_ty)
+  (x : fin m_ty) : subst_ty sigma_ty (var_ty m_ty x) = sigma_ty x.
+Proof.
+exact (eq_refl).
+Qed.
+
+Lemma varLRen'_ty {m_ty : nat} {n_ty : nat} (xi_ty : fin m_ty -> fin n_ty)
+  (x : fin m_ty) : ren_ty xi_ty (var_ty m_ty x) = var_ty n_ty (xi_ty x).
+Proof.
+exact (eq_refl).
 Qed.
 
 Inductive tm (n_ty n_tm : nat) : Type :=
@@ -1491,7 +1525,7 @@ exact (compRenRen_tm xi_ty xi_tm zeta_ty zeta_tm _ _ (fun n => eq_refl)
          (fun n => eq_refl) s).
 Qed.
 
-Lemma compRen_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
+Lemma substRen_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
   (sigma_ty : fin m_ty -> ty k_ty) (sigma_tm : fin m_tm -> tm k_ty k_tm)
   (zeta_ty : fin k_ty -> fin l_ty) (zeta_tm : fin k_tm -> fin l_tm)
   (s : tm m_ty m_tm) :
@@ -1503,7 +1537,7 @@ exact (compSubstRen_tm sigma_ty sigma_tm zeta_ty zeta_tm _ _
          (fun n => eq_refl) (fun n => eq_refl) s).
 Qed.
 
-Lemma renComp_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
+Lemma renSubst_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
   (xi_ty : fin m_ty -> fin k_ty) (xi_tm : fin m_tm -> fin k_tm)
   (tau_ty : fin k_ty -> ty l_ty) (tau_tm : fin k_tm -> tm l_ty l_tm)
   (s : tm m_ty m_tm) :
@@ -1514,7 +1548,7 @@ exact (compRenSubst_tm xi_ty xi_tm tau_ty tau_tm _ _ (fun n => eq_refl)
          (fun n => eq_refl) s).
 Qed.
 
-Lemma compComp_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
+Lemma substSubst_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
   (sigma_ty : fin m_ty -> ty k_ty) (sigma_tm : fin m_tm -> tm k_ty k_tm)
   (tau_ty : fin k_ty -> ty l_ty) (tau_tm : fin k_tm -> tm l_ty l_tm)
   (s : tm m_ty m_tm) :
@@ -1526,53 +1560,72 @@ exact (compSubstSubst_tm sigma_ty sigma_tm tau_ty tau_tm _ _
          (fun n => eq_refl) (fun n => eq_refl) s).
 Qed.
 
+Lemma rinstInst'_tm {m_ty m_tm : nat} {n_ty n_tm : nat}
+  (xi_ty : fin m_ty -> fin n_ty) (xi_tm : fin m_tm -> fin n_tm)
+  (s : tm m_ty m_tm) :
+  ren_tm xi_ty xi_tm s =
+  subst_tm (funcomp (var_ty n_ty) xi_ty) (funcomp (var_tm n_ty n_tm) xi_tm) s.
+Proof.
+exact (rinst_inst_tm xi_ty xi_tm _ _ (fun n => eq_refl) (fun n => eq_refl) s).
+Qed.
+
+Lemma instId'_tm {m_ty m_tm : nat} (s : tm m_ty m_tm) :
+  subst_tm (var_ty m_ty) (var_tm m_ty m_tm) s = s.
+Proof.
+exact (idSubst_tm (var_ty m_ty) (var_tm m_ty m_tm) (fun n => eq_refl)
+         (fun n => eq_refl) s).
+Qed.
+
+Lemma rinstId'_tm {m_ty m_tm : nat} (s : tm m_ty m_tm) : ren_tm id id s = s.
+Proof.
+exact (eq_ind_r (fun t => t = s) (instId'_tm s) (rinstInst'_tm id id s)).
+Qed.
+
+Lemma varL'_tm {m_ty m_tm : nat} {n_ty n_tm : nat}
+  (sigma_ty : fin m_ty -> ty n_ty) (sigma_tm : fin m_tm -> tm n_ty n_tm)
+  (x : fin m_tm) :
+  subst_tm sigma_ty sigma_tm (var_tm m_ty m_tm x) = sigma_tm x.
+Proof.
+exact (eq_refl).
+Qed.
+
+Lemma varLRen'_tm {m_ty m_tm : nat} {n_ty n_tm : nat}
+  (xi_ty : fin m_ty -> fin n_ty) (xi_tm : fin m_tm -> fin n_tm)
+  (x : fin m_tm) :
+  ren_tm xi_ty xi_tm (var_tm m_ty m_tm x) = var_tm n_ty n_tm (xi_tm x).
+Proof.
+exact (eq_refl).
+Qed.
+
 Class Up_tm X Y :=
     up_tm : X -> Y.
 
 Class Up_ty X Y :=
     up_ty : X -> Y.
 
-Definition Subst_tm {m_ty m_tm n_ty n_tm : nat} : Subst2 _ _ _ _ :=
-  @subst_tm m_ty m_tm n_ty n_tm.
+Instance Subst_tm  {m_ty m_tm n_ty n_tm : nat}: (Subst2 _ _ _ _) :=
+ (@subst_tm m_ty m_tm n_ty n_tm).
 
-Existing Instance Subst_tm.
+Instance Up_tm_tm  {m n_ty n_tm : nat}: (Up_tm _ _) :=
+ (@up_tm_tm m n_ty n_tm).
 
-Definition Up_tm_tm {m n_ty n_tm : nat} : Up_tm _ _ := @up_tm_tm m n_ty n_tm.
+Instance Up_tm_ty  {m n_ty : nat}: (Up_ty _ _) := (@up_tm_ty m n_ty).
 
-Existing Instance Up_tm_tm.
+Instance Up_ty_tm  {m n_ty n_tm : nat}: (Up_tm _ _) :=
+ (@up_ty_tm m n_ty n_tm).
 
-Definition Up_tm_ty {m n_ty : nat} : Up_ty _ _ := @up_tm_ty m n_ty.
+Instance Ren_tm  {m_ty m_tm n_ty n_tm : nat}: (Ren2 _ _ _ _) :=
+ (@ren_tm m_ty m_tm n_ty n_tm).
 
-Existing Instance Up_tm_ty.
+Instance VarInstance_tm  {n_ty n_tm : nat}: (Var _ _) := (@var_tm n_ty n_tm).
 
-Definition Up_ty_tm {m n_ty n_tm : nat} : Up_tm _ _ := @up_ty_tm m n_ty n_tm.
+Instance Subst_ty  {m_ty n_ty : nat}: (Subst1 _ _ _) := (@subst_ty m_ty n_ty).
 
-Existing Instance Up_ty_tm.
+Instance Up_ty_ty  {m n_ty : nat}: (Up_ty _ _) := (@up_ty_ty m n_ty).
 
-Definition Ren_tm {m_ty m_tm n_ty n_tm : nat} : Ren2 _ _ _ _ :=
-  @ren_tm m_ty m_tm n_ty n_tm.
+Instance Ren_ty  {m_ty n_ty : nat}: (Ren1 _ _ _) := (@ren_ty m_ty n_ty).
 
-Existing Instance Ren_tm.
-
-Definition VarInstance_tm {n_ty n_tm : nat} : Var _ _ := @var_tm n_ty n_tm.
-
-Existing Instance VarInstance_tm.
-
-Definition Subst_ty {m_ty n_ty : nat} : Subst1 _ _ _ := @subst_ty m_ty n_ty.
-
-Existing Instance Subst_ty.
-
-Definition Up_ty_ty {m n_ty : nat} : Up_ty _ _ := @up_ty_ty m n_ty.
-
-Existing Instance Up_ty_ty.
-
-Definition Ren_ty {m_ty n_ty : nat} : Ren1 _ _ _ := @ren_ty m_ty n_ty.
-
-Existing Instance Ren_ty.
-
-Definition VarInstance_ty {n_ty : nat} : Var _ _ := @var_ty n_ty.
-
-Existing Instance VarInstance_ty.
+Instance VarInstance_ty  {n_ty : nat}: (Var _ _) := (@var_ty n_ty).
 
 Notation "[ sigma_ty ; sigma_tm ]" := (subst_tm sigma_ty sigma_tm)
   ( at level 1, left associativity, only printing) : fscope.
@@ -1626,6 +1679,132 @@ Notation "x '__ty'" := (@ids _ _ VarInstance_ty x)
 Notation "x '__ty'" := (var_ty x) ( at level 5, format "x __ty") :
   subst_scope.
 
+Instance subst_tm_morphism  {m_ty m_tm : nat} {n_ty n_tm : nat}:
+ (Proper
+    (respectful (pointwise_relation _ eq)
+       (respectful (pointwise_relation _ eq) (respectful eq eq)))
+    (@subst_tm m_ty m_tm n_ty n_tm)).
+Proof.
+exact (fun f_ty g_ty Eq_ty f_tm g_tm Eq_tm s t Eq_st =>
+       eq_ind s (fun t' => subst_tm f_ty f_tm s = subst_tm g_ty g_tm t')
+         (ext_tm f_ty f_tm g_ty g_tm Eq_ty Eq_tm s) t Eq_st).
+Qed.
+
+Instance ren_tm_morphism  {m_ty m_tm : nat} {n_ty n_tm : nat}:
+ (Proper
+    (respectful (pointwise_relation _ eq)
+       (respectful (pointwise_relation _ eq) (respectful eq eq)))
+    (@ren_tm m_ty m_tm n_ty n_tm)).
+Proof.
+exact (fun f_ty g_ty Eq_ty f_tm g_tm Eq_tm s t Eq_st =>
+       eq_ind s (fun t' => ren_tm f_ty f_tm s = ren_tm g_ty g_tm t')
+         (extRen_tm f_ty f_tm g_ty g_tm Eq_ty Eq_tm s) t Eq_st).
+Qed.
+
+Instance subst_ty_morphism  {m_ty : nat} {n_ty : nat}:
+ (Proper (respectful (pointwise_relation _ eq) (respectful eq eq))
+    (@subst_ty m_ty n_ty)).
+Proof.
+exact (fun f_ty g_ty Eq_ty s t Eq_st =>
+       eq_ind s (fun t' => subst_ty f_ty s = subst_ty g_ty t')
+         (ext_ty f_ty g_ty Eq_ty s) t Eq_st).
+Qed.
+
+Instance ren_ty_morphism  {m_ty : nat} {n_ty : nat}:
+ (Proper (respectful (pointwise_relation _ eq) (respectful eq eq))
+    (@ren_ty m_ty n_ty)).
+Proof.
+exact (fun f_ty g_ty Eq_ty s t Eq_st =>
+       eq_ind s (fun t' => ren_ty f_ty s = ren_ty g_ty t')
+         (extRen_ty f_ty g_ty Eq_ty s) t Eq_st).
+Qed.
+
+Ltac auto_unfold := repeat
+                     unfold VarInstance_ty, Var, ids, Ren_ty, Ren1, ren1,
+                      Up_ty_ty, Up_ty, up_ty, Subst_ty, Subst1, subst1,
+                      VarInstance_tm, Var, ids, Ren_tm, Ren2, ren2, Up_ty_tm,
+                      Up_tm, up_tm, Up_tm_ty, Up_ty, up_ty, Up_tm_tm, Up_tm,
+                      up_tm, Subst_tm, Subst2, subst2.
+
+Tactic Notation "auto_unfold" "in" "*" := repeat
+                                           unfold VarInstance_ty, Var, ids,
+                                            Ren_ty, Ren1, ren1, Up_ty_ty,
+                                            Up_ty, up_ty, Subst_ty, Subst1,
+                                            subst1, VarInstance_tm, Var, ids,
+                                            Ren_tm, Ren2, ren2, Up_ty_tm,
+                                            Up_tm, up_tm, Up_tm_ty, Up_ty,
+                                            up_ty, Up_tm_tm, Up_tm, up_tm,
+                                            Subst_tm, Subst2, subst2 
+                                            in *.
+
+Ltac asimpl' := repeat (first
+                 [ progress setoid_rewrite substSubst_tm
+                 | progress rewrite ?substSubst_tm
+                 | progress setoid_rewrite renSubst_tm
+                 | progress rewrite ?renSubst_tm
+                 | progress setoid_rewrite substRen_tm
+                 | progress rewrite ?substRen_tm
+                 | progress setoid_rewrite renRen_tm
+                 | progress rewrite ?renRen_tm
+                 | progress setoid_rewrite substSubst_ty
+                 | progress rewrite ?substSubst_ty
+                 | progress setoid_rewrite renSubst_ty
+                 | progress rewrite ?renSubst_ty
+                 | progress setoid_rewrite substRen_ty
+                 | progress rewrite ?substRen_ty
+                 | progress setoid_rewrite renRen_ty
+                 | progress rewrite ?renRen_ty
+                 | progress setoid_rewrite varLRen'_tm
+                 | progress rewrite ?varLRen'_tm
+                 | progress setoid_rewrite varL'_tm
+                 | progress rewrite ?varL'_tm
+                 | progress setoid_rewrite rinstId'_tm
+                 | progress rewrite ?rinstId'_tm
+                 | progress setoid_rewrite instId'_tm
+                 | progress rewrite ?instId'_tm
+                 | progress setoid_rewrite varLRen'_ty
+                 | progress rewrite ?varLRen'_ty
+                 | progress setoid_rewrite varL'_ty
+                 | progress rewrite ?varL'_ty
+                 | progress setoid_rewrite rinstId'_ty
+                 | progress rewrite ?rinstId'_ty
+                 | progress setoid_rewrite instId'_ty
+                 | progress rewrite ?instId'_ty
+                 | progress
+                    unfold up_list_tm_tm, up_list_tm_ty, up_list_ty_tm,
+                     up_tm_tm, up_tm_ty, up_ty_tm, upRen_list_tm_tm,
+                     upRen_list_tm_ty, upRen_list_ty_tm, upRen_tm_tm,
+                     upRen_tm_ty, upRen_ty_tm, up_list_ty_ty, up_ty_ty,
+                     upRen_list_ty_ty, upRen_ty_ty, up_ren
+                 | progress cbn[subst_tm ren_tm subst_ty ren_ty]
+                 | progress fsimpl
+                 | repeat unfold funcomp ]).
+
+Ltac asimpl := repeat try unfold_funcomp;
+                repeat
+                 unfold VarInstance_ty, Var, ids, Ren_ty, Ren1, ren1,
+                  Up_ty_ty, Up_ty, up_ty, Subst_ty, Subst1, subst1,
+                  VarInstance_tm, Var, ids, Ren_tm, Ren2, ren2, Up_ty_tm,
+                  Up_tm, up_tm, Up_tm_ty, Up_ty, up_ty, Up_tm_tm, Up_tm,
+                  up_tm, Subst_tm, Subst2, subst2 in *; asimpl'; minimize.
+
+Tactic Notation "asimpl" "in" hyp(J) := revert J; asimpl; intros J.
+
+Tactic Notation "auto_case" := auto_case ltac:(asimpl; cbn; eauto).
+
+Ltac substify := auto_unfold; try repeat erewrite ?rinstInst'_tm;
+                  try repeat erewrite ?rinstInst'_ty.
+
+Ltac renamify := auto_unfold; try repeat erewrite <- ?rinstInst'_tm;
+                  try repeat erewrite <- ?rinstInst'_ty.
+
+End renSubst.
+
+Module fext.
+
+Import
+renSubst.
+
 Lemma rinstInst_ty {m_ty : nat} {n_ty : nat} (xi_ty : fin m_ty -> fin n_ty) :
   ren_ty xi_ty = subst_ty (funcomp (var_ty n_ty) xi_ty).
 Proof.
@@ -1666,30 +1845,30 @@ exact (FunctionalExtensionality.functional_extensionality _ _
          (fun n => renRen_ty xi_ty zeta_ty n)).
 Qed.
 
-Lemma compRen'_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
+Lemma substRen'_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
   (sigma_ty : fin m_ty -> ty k_ty) (zeta_ty : fin k_ty -> fin l_ty) :
   funcomp (ren_ty zeta_ty) (subst_ty sigma_ty) =
   subst_ty (funcomp (ren_ty zeta_ty) sigma_ty).
 Proof.
 exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun n => compRen_ty sigma_ty zeta_ty n)).
+         (fun n => substRen_ty sigma_ty zeta_ty n)).
 Qed.
 
-Lemma renComp'_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
+Lemma renSubst'_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
   (xi_ty : fin m_ty -> fin k_ty) (tau_ty : fin k_ty -> ty l_ty) :
   funcomp (subst_ty tau_ty) (ren_ty xi_ty) = subst_ty (funcomp tau_ty xi_ty).
 Proof.
 exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun n => renComp_ty xi_ty tau_ty n)).
+         (fun n => renSubst_ty xi_ty tau_ty n)).
 Qed.
 
-Lemma compComp'_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
+Lemma substSubst'_ty {k_ty : nat} {l_ty : nat} {m_ty : nat}
   (sigma_ty : fin m_ty -> ty k_ty) (tau_ty : fin k_ty -> ty l_ty) :
   funcomp (subst_ty tau_ty) (subst_ty sigma_ty) =
   subst_ty (funcomp (subst_ty tau_ty) sigma_ty).
 Proof.
 exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun n => compComp_ty sigma_ty tau_ty n)).
+         (fun n => substSubst_ty sigma_ty tau_ty n)).
 Qed.
 
 Lemma rinstInst_tm {m_ty m_tm : nat} {n_ty n_tm : nat}
@@ -1744,7 +1923,7 @@ exact (FunctionalExtensionality.functional_extensionality _ _
          (fun n => renRen_tm xi_ty xi_tm zeta_ty zeta_tm n)).
 Qed.
 
-Lemma compRen'_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
+Lemma substRen'_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
   (sigma_ty : fin m_ty -> ty k_ty) (sigma_tm : fin m_tm -> tm k_ty k_tm)
   (zeta_ty : fin k_ty -> fin l_ty) (zeta_tm : fin k_tm -> fin l_tm) :
   funcomp (ren_tm zeta_ty zeta_tm) (subst_tm sigma_ty sigma_tm) =
@@ -1752,20 +1931,20 @@ Lemma compRen'_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
     (funcomp (ren_tm zeta_ty zeta_tm) sigma_tm).
 Proof.
 exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun n => compRen_tm sigma_ty sigma_tm zeta_ty zeta_tm n)).
+         (fun n => substRen_tm sigma_ty sigma_tm zeta_ty zeta_tm n)).
 Qed.
 
-Lemma renComp'_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
+Lemma renSubst'_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
   (xi_ty : fin m_ty -> fin k_ty) (xi_tm : fin m_tm -> fin k_tm)
   (tau_ty : fin k_ty -> ty l_ty) (tau_tm : fin k_tm -> tm l_ty l_tm) :
   funcomp (subst_tm tau_ty tau_tm) (ren_tm xi_ty xi_tm) =
   subst_tm (funcomp tau_ty xi_ty) (funcomp tau_tm xi_tm).
 Proof.
 exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun n => renComp_tm xi_ty xi_tm tau_ty tau_tm n)).
+         (fun n => renSubst_tm xi_ty xi_tm tau_ty tau_tm n)).
 Qed.
 
-Lemma compComp'_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
+Lemma substSubst'_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
   (sigma_ty : fin m_ty -> ty k_ty) (sigma_tm : fin m_tm -> tm k_ty k_tm)
   (tau_ty : fin k_ty -> ty l_ty) (tau_tm : fin k_tm -> tm l_ty l_tm) :
   funcomp (subst_tm tau_ty tau_tm) (subst_tm sigma_ty sigma_tm) =
@@ -1773,8 +1952,68 @@ Lemma compComp'_tm {k_ty k_tm : nat} {l_ty l_tm : nat} {m_ty m_tm : nat}
     (funcomp (subst_tm tau_ty tau_tm) sigma_tm).
 Proof.
 exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun n => compComp_tm sigma_ty sigma_tm tau_ty tau_tm n)).
+         (fun n => substSubst_tm sigma_ty sigma_tm tau_ty tau_tm n)).
 Qed.
+
+Ltac asimpl_fext' := repeat (first
+                      [ progress setoid_rewrite substSubst_tm
+                      | progress setoid_rewrite renSubst_tm
+                      | progress setoid_rewrite substRen_tm
+                      | progress setoid_rewrite renRen_tm
+                      | progress setoid_rewrite substSubst_ty
+                      | progress setoid_rewrite renSubst_ty
+                      | progress setoid_rewrite substRen_ty
+                      | progress setoid_rewrite renRen_ty
+                      | progress setoid_rewrite substSubst'_tm
+                      | progress setoid_rewrite renSubst'_tm
+                      | progress setoid_rewrite substRen'_tm
+                      | progress setoid_rewrite renRen'_tm
+                      | progress setoid_rewrite varLRen_tm
+                      | progress setoid_rewrite varL_tm
+                      | progress setoid_rewrite rinstId_tm
+                      | progress setoid_rewrite instId_tm
+                      | progress setoid_rewrite substSubst'_ty
+                      | progress setoid_rewrite renSubst'_ty
+                      | progress setoid_rewrite substRen'_ty
+                      | progress setoid_rewrite renRen'_ty
+                      | progress setoid_rewrite varLRen_ty
+                      | progress setoid_rewrite varL_ty
+                      | progress setoid_rewrite rinstId_ty
+                      | progress setoid_rewrite instId_ty
+                      | progress
+                         unfold up_list_tm_tm, up_list_tm_ty, up_list_ty_tm,
+                          up_tm_tm, up_tm_ty, up_ty_tm, upRen_list_tm_tm,
+                          upRen_list_tm_ty, upRen_list_ty_tm, upRen_tm_tm,
+                          upRen_tm_ty, upRen_ty_tm, up_list_ty_ty, up_ty_ty,
+                          upRen_list_ty_ty, upRen_ty_ty, up_ren
+                      | progress cbn[subst_tm ren_tm subst_ty ren_ty]
+                      | fsimpl_fext ]).
+
+Ltac asimpl_fext := repeat try unfold_funcomp;
+                     repeat
+                      unfold VarInstance_ty, Var, ids, Ren_ty, Ren1, ren1,
+                       Up_ty_ty, Up_ty, up_ty, Subst_ty, Subst1, subst1,
+                       VarInstance_tm, Var, ids, Ren_tm, Ren2, ren2,
+                       Up_ty_tm, Up_tm, up_tm, Up_tm_ty, Up_ty, up_ty,
+                       Up_tm_tm, Up_tm, up_tm, Subst_tm, Subst2, subst2 
+                       in *; asimpl_fext'; repeat try unfold_funcomp.
+
+Tactic Notation "asimpl_fext" "in" hyp(J) := revert J; asimpl_fext; intros J.
+
+Ltac substify_fext := auto_unfold; try repeat erewrite ?rinstInst_tm;
+                       try repeat erewrite ?rinstInst_ty.
+
+Ltac renamify_fext := auto_unfold; try repeat erewrite <- ?rinstInst_tm;
+                       try repeat erewrite <- ?rinstInst_ty.
+
+End fext.
+
+Module interface.
+
+Export renSubst.
+
+Export
+fext.
 
 Arguments tabs {n_ty n_tm}.
 
@@ -1796,235 +2035,7 @@ Arguments top {n_ty}.
 
 Arguments var_ty {n_ty}.
 
-Ltac auto_unfold := repeat
-                     unfold VarInstance_ty, Var, ids, Ren_ty, Ren1, ren1,
-                      Up_ty_ty, Up_ty, up_ty, Subst_ty, Subst1, subst1,
-                      VarInstance_tm, Var, ids, Ren_tm, Ren2, ren2, Up_ty_tm,
-                      Up_tm, up_tm, Up_tm_ty, Up_ty, up_ty, Up_tm_tm, Up_tm,
-                      up_tm, Subst_tm, Subst2, subst2.
+End interface.
 
-Tactic Notation "auto_unfold" "in" "*" := repeat
-                                           unfold VarInstance_ty, Var, ids,
-                                            Ren_ty, Ren1, ren1, Up_ty_ty,
-                                            Up_ty, up_ty, Subst_ty, Subst1,
-                                            subst1, VarInstance_tm, Var, ids,
-                                            Ren_tm, Ren2, ren2, Up_ty_tm,
-                                            Up_tm, up_tm, Up_tm_ty, Up_ty,
-                                            up_ty, Up_tm_tm, Up_tm, up_tm,
-                                            Subst_tm, Subst2, subst2 
-                                            in *.
-
-Require Import Setoid Morphisms.
-Require Import Relation_Definitions.
-
-Instance subst_tm_morphism {m_ty n_ty m_tm n_tm:nat}:
-  Proper (pointwise_relation _ eq ==> pointwise_relation _ eq ==> eq ==> eq) (@subst_tm m_ty m_tm n_ty n_tm).
-Proof.
-  intros f f' Hf g g' Hg s s' ->.
-  apply ext_tm. apply Hf. apply Hg.
-Qed.
-
-Instance subst_ty_morphism {m_ty n_ty:nat} :
-  Proper (pointwise_relation _ eq ==> eq ==> eq) (@subst_ty m_ty n_ty).
-Proof.
-  intros f f' Hf s s' ->.
-  apply ext_ty. apply Hf.
-Qed.
-
-Instance scons_morphism {X} {n_ty:nat} (t: X) :
-  Proper (pointwise_relation _ eq ==> pointwise_relation _ eq) (fun (f: fin n_ty -> X)  => (@scons _ _ t f)).
-Proof.
-  intros f f' Hf [|].
-  cbn. apply Hf. cbn. reflexivity.
-Qed.
-
-Instance funcomp_morphism2 {X Y Z} (f: X -> Y) :
-  Proper (pointwise_relation _ eq ==> pointwise_relation _ eq) (fun g : Y -> Z => funcomp g f).
-Proof.
-  cbv - [funcomp].
-  intros g h H. setoid_rewrite H.
-  intros ?; reflexivity.
-Qed.
-  
-Instance funcomp_morphism1 {X Y Z} (f: Y -> Z) :
-  Proper (pointwise_relation _ eq ==> pointwise_relation _ eq) (fun g : X -> Y => funcomp f g).
-Proof.
-  cbv - [funcomp].
-  intros g h H. intros ?.
-  unfold funcomp. rewrite H. reflexivity.
-Qed.
-
-Lemma instId_tm' {m_ty m_tm:nat} : forall (s: tm m_ty m_tm), subst_tm var_ty var_tm s = s.
-Proof.
-  exact (fun x => idSubst_tm var_ty var_tm (fun n => eq_refl) (fun n => eq_refl) x).
-Qed.
-
-Lemma rinstId_tm' {m_ty m_tm:nat}: forall (s: tm m_ty m_tm), ren_tm id id s = s.
-Proof.
-  intros s.
-  erewrite rinst_inst_tm.
-  eapply instId_tm'.
-  intros x. reflexivity.
-  intros x. reflexivity.
-Qed.
-
-Lemma instId_ty' {m_ty :nat} : forall (s: ty m_ty), subst_ty var_ty s = s.
-Proof.
-  exact (fun x => idSubst_ty var_ty (fun n => eq_refl) x).
-Qed.
-
-Lemma rinstId_ty' {m_ty :nat}: forall (s: ty m_ty), ren_ty id s = s.
-Proof.
-  intros s.
-  erewrite rinst_inst_ty.
-  eapply instId_ty'.
-  intros x. reflexivity.
-Qed.
-
-Ltac setoidasimpl' := repeat (first
-                 (* [ progress setoid_rewrite ?compComp'_tm *)
-                 [ progress setoid_rewrite compComp_tm
-                 | progress rewrite ?compComp_tm
-                 (* | progress setoid_rewrite renComp'_tm *)
-                 | progress setoid_rewrite renComp_tm
-                 | progress rewrite ?renComp_tm
-                 (* | progress setoid_rewrite compRen'_tm *)
-                 | progress setoid_rewrite compRen_tm
-                 | progress rewrite ?compRen_tm
-                 (* | progress setoid_rewrite renRen'_tm *)
-                 | progress setoid_rewrite renRen_tm
-                 | progress rewrite ?renRen_tm
-                 (* | progress setoid_rewrite varLRen_tm *)
-                 (* | progress setoid_rewrite varL_tm *)
-                 | progress setoid_rewrite rinstId_tm'
-                 | progress setoid_rewrite instId_tm'
-                 (* | progress setoid_rewrite compComp'_ty *)
-                 | progress setoid_rewrite compComp_ty
-                 | progress rewrite ?compComp_ty
-                 (* | progress setoid_rewrite renComp'_ty *)
-                 | progress setoid_rewrite renComp_ty
-                 | progress rewrite ?renComp_ty
-                 (* | progress setoid_rewrite compRen'_ty *)
-                 | progress setoid_rewrite compRen_ty
-                 | progress rewrite ?compRen_ty
-                 (* | progress setoid_rewrite renRen'_ty *)
-                 | progress setoid_rewrite renRen_ty
-                 | progress rewrite ?renRen_ty
-                 (* | progress setoid_rewrite varLRen_ty *)
-                 (* | progress setoid_rewrite varL_ty *)
-                 | progress setoid_rewrite rinstId_ty'
-                 | progress setoid_rewrite instId_ty'
-                 | progress
-                    unfold up_list_tm_tm, up_list_tm_ty, up_list_ty_tm,
-                     up_tm_tm, up_tm_ty, up_ty_tm, upRen_list_tm_tm,
-                     upRen_list_tm_ty, upRen_list_ty_tm, upRen_tm_tm,
-                     upRen_tm_ty, upRen_ty_tm, up_list_ty_ty, up_ty_ty,
-                     upRen_list_ty_ty, upRen_ty_ty, up_ren
-                 | progress cbn[subst_tm ren_tm subst_ty ren_ty]
-                 | progress fsimpl; idtac "fsimpl"
-                 | repeat unfold funcomp; idtac "funcomp"
-                                                ]).
-
-Ltac asimpl' := repeat (first
-                 [ progress rewrite ?compComp'_tm
-                 | progress rewrite ?compComp_tm
-                 | progress rewrite ?renComp'_tm
-                 | progress rewrite ?renComp_tm
-                 | progress rewrite ?compRen'_tm
-                 | progress rewrite ?compRen_tm
-                 | progress rewrite ?renRen'_tm
-                 | progress rewrite ?renRen_tm
-                 | progress rewrite ?varLRen_tm
-                 | progress rewrite ?varL_tm
-                 | progress rewrite ?rinstId_tm
-                 | progress rewrite ?instId_tm
-                 | progress rewrite ?compComp'_ty
-                 | progress rewrite ?compComp_ty
-                 | progress rewrite ?renComp'_ty
-                 | progress rewrite ?renComp_ty
-                 | progress rewrite ?compRen'_ty
-                 | progress rewrite ?compRen_ty
-                 | progress rewrite ?renRen'_ty
-                 | progress rewrite ?renRen_ty
-                 | progress rewrite ?varLRen_ty
-                 | progress rewrite ?varL_ty
-                 | progress rewrite ?rinstId_ty
-                 | progress rewrite ?instId_ty
-                 | progress
-                    unfold up_list_tm_tm, up_list_tm_ty, up_list_ty_tm,
-                     up_tm_tm, up_tm_ty, up_ty_tm, upRen_list_tm_tm,
-                     upRen_list_tm_ty, upRen_list_ty_tm, upRen_tm_tm,
-                     upRen_tm_ty, upRen_ty_tm, up_list_ty_ty, up_ty_ty,
-                     upRen_list_ty_ty, upRen_ty_ty, up_ren
-                 | progress cbn[subst_tm ren_tm subst_ty ren_ty]
-                 | fsimpl ]).
-
-Ltac asimpl := repeat try unfold_funcomp;
-                repeat
-                 unfold VarInstance_ty, Var, ids, Ren_ty, Ren1, ren1,
-                  Up_ty_ty, Up_ty, up_ty, Subst_ty, Subst1, subst1,
-                  VarInstance_tm, Var, ids, Ren_tm, Ren2, ren2, Up_ty_tm,
-                  Up_tm, up_tm, Up_tm_ty, Up_ty, up_ty, Up_tm_tm, Up_tm,
-                  up_tm, Subst_tm, Subst2, subst2 in *; setoidasimpl';
-                repeat try unfold_funcomp.
-
-Tactic Notation "asimpl" "in" hyp(J) := revert J; asimpl; intros J.
-
-Tactic Notation "auto_case" := auto_case ltac:(asimpl; cbn; eauto).
-
-Tactic Notation "asimpl" "in" "*" := repeat
-                                      unfold VarInstance_ty, Var, ids,
-                                       Ren_ty, Ren1, ren1, Up_ty_ty, Up_ty,
-                                       up_ty, Subst_ty, Subst1, subst1,
-                                       VarInstance_tm, Var, ids, Ren_tm,
-                                       Ren2, ren2, Up_ty_tm, Up_tm, up_tm,
-                                       Up_tm_ty, Up_ty, up_ty, Up_tm_tm,
-                                       Up_tm, up_tm, Subst_tm, Subst2, subst2
-                                       in *;
-                                      repeat (first
-                                       [ progress rewrite ?compComp'_tm in *
-                                       | progress rewrite ?compComp_tm in *
-                                       | progress rewrite ?renComp'_tm in *
-                                       | progress rewrite ?renComp_tm in *
-                                       | progress rewrite ?compRen'_tm in *
-                                       | progress rewrite ?compRen_tm in *
-                                       | progress rewrite ?renRen'_tm in *
-                                       | progress rewrite ?renRen_tm in *
-                                       | progress rewrite ?varLRen_tm in *
-                                       | progress rewrite ?varL_tm in *
-                                       | progress rewrite ?rinstId_tm in *
-                                       | progress rewrite ?instId_tm in *
-                                       | progress rewrite ?compComp'_ty in *
-                                       | progress rewrite ?compComp_ty in *
-                                       | progress rewrite ?renComp'_ty in *
-                                       | progress rewrite ?renComp_ty in *
-                                       | progress rewrite ?compRen'_ty in *
-                                       | progress rewrite ?compRen_ty in *
-                                       | progress rewrite ?renRen'_ty in *
-                                       | progress rewrite ?renRen_ty in *
-                                       | progress rewrite ?varLRen_ty in *
-                                       | progress rewrite ?varL_ty in *
-                                       | progress rewrite ?rinstId_ty in *
-                                       | progress rewrite ?instId_ty in *
-                                       | progress
-                                          unfold up_list_tm_tm,
-                                           up_list_tm_ty, up_list_ty_tm,
-                                           up_tm_tm, up_tm_ty, up_ty_tm,
-                                           upRen_list_tm_tm,
-                                           upRen_list_tm_ty,
-                                           upRen_list_ty_tm, upRen_tm_tm,
-                                           upRen_tm_ty, upRen_ty_tm,
-                                           up_list_ty_ty, up_ty_ty,
-                                           upRen_list_ty_ty, upRen_ty_ty,
-                                           up_ren in *
-                                       | progress
-                                          cbn[subst_tm ren_tm subst_ty
-                                             ren_ty] in *
-                                       | fsimpl ]).
-
-Ltac substify := auto_unfold; try repeat erewrite ?rinstInst_tm;
-                  try repeat erewrite ?rinstInst_ty.
-
-Ltac renamify := auto_unfold; try repeat erewrite <- ?rinstInst_tm;
-                  try repeat erewrite <- ?rinstInst_ty.
+Export interface.
 

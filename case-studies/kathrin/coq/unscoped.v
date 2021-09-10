@@ -30,6 +30,8 @@ Definition scons {X: Type} (x : X) (xi : nat -> X) :=
         | S n => xi n
         end.
 
+Hint Opaque scons : rewrite.
+
 (** ** Type Class Instances for Notation
 Required to make notation work. *)
 

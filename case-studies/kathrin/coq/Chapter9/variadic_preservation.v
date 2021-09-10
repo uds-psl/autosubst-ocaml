@@ -29,10 +29,11 @@ Lemma step_inst {m n} (f : fin m -> tm n) (s t : tm m) :
   step s t -> step (subst_tm f s) (subst_tm f t).
 Proof.
   intros st. revert n f.  induction st; intros; cbn.
-  - apply step_beta'. asimpl.
-    unfold funcomp. setoid_rewrite scons_p_head'.
+  - apply step_beta'.
+    asimpl.
     (* TODO a.d. why is cod_map not unfolded + why does the rewrite with scons_p_head' fail. It should happen in fsimpl *)
-    asimpl. unfold cod_map. asimpl. reflexivity.
+
+    unfold cod_map. now asimpl.
   - apply step_abs. eapply IHst.
   - apply step_appL, IHst.
 Qed.

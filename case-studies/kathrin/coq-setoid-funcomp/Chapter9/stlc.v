@@ -1,4 +1,10 @@
-Require Import core core_axioms fintype fintype_axioms.
+Require Import core fintype.
+
+Require Import core_axioms fintype_axioms.
+Require Import Setoid Morphisms Relation_Definitions.
+
+Module renSubst.
+
 Inductive ty : Type :=
   | Base : ty
   | Fun : ty -> ty -> ty.
@@ -53,7 +59,7 @@ Fixpoint ren_tm {m_tm : nat} {n_tm : nat} (xi_tm : fin m_tm -> fin n_tm)
   match s with
   | var_tm _ s0 => var_tm n_tm (xi_tm s0)
   | app _ s0 s1 => app n_tm (ren_tm xi_tm s0) (ren_tm xi_tm s1)
-  | lam _ s0 s1 => lam n_tm ((fun x => x) s0) (ren_tm (upRen_tm_tm xi_tm) s1)
+  | lam _ s0 s1 => lam n_tm s0 (ren_tm (upRen_tm_tm xi_tm) s1)
   end.
 
 Lemma up_tm_tm {m : nat} {n_tm : nat} (sigma : fin m -> tm n_tm) :
@@ -74,8 +80,7 @@ Fixpoint subst_tm {m_tm : nat} {n_tm : nat} (sigma_tm : fin m_tm -> tm n_tm)
   match s with
   | var_tm _ s0 => sigma_tm s0
   | app _ s0 s1 => app n_tm (subst_tm sigma_tm s0) (subst_tm sigma_tm s1)
-  | lam _ s0 s1 =>
-      lam n_tm ((fun x => x) s0) (subst_tm (up_tm_tm sigma_tm) s1)
+  | lam _ s0 s1 => lam n_tm s0 (subst_tm (up_tm_tm sigma_tm) s1)
   end.
 
 Lemma upId_tm_tm {m_tm : nat} (sigma : fin m_tm -> tm m_tm)
@@ -106,7 +111,7 @@ subst_tm sigma_tm s = s :=
   | app _ s0 s1 =>
       congr_app (idSubst_tm sigma_tm Eq_tm s0) (idSubst_tm sigma_tm Eq_tm s1)
   | lam _ s0 s1 =>
-      congr_lam ((fun x => eq_refl x) s0)
+      congr_lam (eq_refl s0)
         (idSubst_tm (up_tm_tm sigma_tm) (upId_tm_tm _ Eq_tm) s1)
   end.
 
@@ -138,7 +143,7 @@ Fixpoint extRen_tm {m_tm : nat} {n_tm : nat} (xi_tm : fin m_tm -> fin n_tm)
       congr_app (extRen_tm xi_tm zeta_tm Eq_tm s0)
         (extRen_tm xi_tm zeta_tm Eq_tm s1)
   | lam _ s0 s1 =>
-      congr_lam ((fun x => eq_refl x) s0)
+      congr_lam (eq_refl s0)
         (extRen_tm (upRen_tm_tm xi_tm) (upRen_tm_tm zeta_tm)
            (upExtRen_tm_tm _ _ Eq_tm) s1)
   end.
@@ -173,7 +178,7 @@ Fixpoint ext_tm {m_tm : nat} {n_tm : nat} (sigma_tm : fin m_tm -> tm n_tm)
       congr_app (ext_tm sigma_tm tau_tm Eq_tm s0)
         (ext_tm sigma_tm tau_tm Eq_tm s1)
   | lam _ s0 s1 =>
-      congr_lam ((fun x => eq_refl x) s0)
+      congr_lam (eq_refl s0)
         (ext_tm (up_tm_tm sigma_tm) (up_tm_tm tau_tm) (upExt_tm_tm _ _ Eq_tm)
            s1)
   end.
@@ -207,7 +212,7 @@ Fixpoint compRenRen_tm {k_tm : nat} {l_tm : nat} {m_tm : nat}
       congr_app (compRenRen_tm xi_tm zeta_tm rho_tm Eq_tm s0)
         (compRenRen_tm xi_tm zeta_tm rho_tm Eq_tm s1)
   | lam _ s0 s1 =>
-      congr_lam ((fun x => eq_refl x) s0)
+      congr_lam (eq_refl s0)
         (compRenRen_tm (upRen_tm_tm xi_tm) (upRen_tm_tm zeta_tm)
            (upRen_tm_tm rho_tm) (up_ren_ren _ _ _ Eq_tm) s1)
   end.
@@ -250,7 +255,7 @@ Fixpoint compRenSubst_tm {k_tm : nat} {l_tm : nat} {m_tm : nat}
       congr_app (compRenSubst_tm xi_tm tau_tm theta_tm Eq_tm s0)
         (compRenSubst_tm xi_tm tau_tm theta_tm Eq_tm s1)
   | lam _ s0 s1 =>
-      congr_lam ((fun x => eq_refl x) s0)
+      congr_lam (eq_refl s0)
         (compRenSubst_tm (upRen_tm_tm xi_tm) (up_tm_tm tau_tm)
            (up_tm_tm theta_tm) (up_ren_subst_tm_tm _ _ _ Eq_tm) s1)
   end.
@@ -314,7 +319,7 @@ ren_tm zeta_tm (subst_tm sigma_tm s) = subst_tm theta_tm s :=
       congr_app (compSubstRen_tm sigma_tm zeta_tm theta_tm Eq_tm s0)
         (compSubstRen_tm sigma_tm zeta_tm theta_tm Eq_tm s1)
   | lam _ s0 s1 =>
-      congr_lam ((fun x => eq_refl x) s0)
+      congr_lam (eq_refl s0)
         (compSubstRen_tm (up_tm_tm sigma_tm) (upRen_tm_tm zeta_tm)
            (up_tm_tm theta_tm) (up_subst_ren_tm_tm _ _ _ Eq_tm) s1)
   end.
@@ -379,7 +384,7 @@ subst_tm tau_tm (subst_tm sigma_tm s) = subst_tm theta_tm s :=
       congr_app (compSubstSubst_tm sigma_tm tau_tm theta_tm Eq_tm s0)
         (compSubstSubst_tm sigma_tm tau_tm theta_tm Eq_tm s1)
   | lam _ s0 s1 =>
-      congr_lam ((fun x => eq_refl x) s0)
+      congr_lam (eq_refl s0)
         (compSubstSubst_tm (up_tm_tm sigma_tm) (up_tm_tm tau_tm)
            (up_tm_tm theta_tm) (up_subst_subst_tm_tm _ _ _ Eq_tm) s1)
   end.
@@ -419,7 +424,7 @@ Fixpoint rinst_inst_tm {m_tm : nat} {n_tm : nat}
       congr_app (rinst_inst_tm xi_tm sigma_tm Eq_tm s0)
         (rinst_inst_tm xi_tm sigma_tm Eq_tm s1)
   | lam _ s0 s1 =>
-      congr_lam ((fun x => eq_refl x) s0)
+      congr_lam (eq_refl s0)
         (rinst_inst_tm (upRen_tm_tm xi_tm) (up_tm_tm sigma_tm)
            (rinstInst_up_tm_tm _ _ Eq_tm) s1)
   end.
@@ -432,7 +437,15 @@ Proof.
 exact (compRenRen_tm xi_tm zeta_tm _ (fun n => eq_refl) s).
 Qed.
 
-Lemma compRen_tm {k_tm : nat} {l_tm : nat} {m_tm : nat}
+Lemma renRen_tm_pointwise {k_tm : nat} {l_tm : nat} {m_tm : nat}
+  (xi_tm : fin m_tm -> fin k_tm) (zeta_tm : fin k_tm -> fin l_tm)
+  :
+  pointwise_relation _ eq (funcomp (ren_tm zeta_tm) (ren_tm xi_tm)) (ren_tm (funcomp zeta_tm xi_tm)).
+Proof.
+exact (fun s => compRenRen_tm xi_tm zeta_tm _ (fun n => eq_refl) s).
+Qed.
+
+Lemma substRen_tm {k_tm : nat} {l_tm : nat} {m_tm : nat}
   (sigma_tm : fin m_tm -> tm k_tm) (zeta_tm : fin k_tm -> fin l_tm)
   (s : tm m_tm) :
   ren_tm zeta_tm (subst_tm sigma_tm s) =
@@ -441,14 +454,30 @@ Proof.
 exact (compSubstRen_tm sigma_tm zeta_tm _ (fun n => eq_refl) s).
 Qed.
 
-Lemma renComp_tm {k_tm : nat} {l_tm : nat} {m_tm : nat}
+Lemma substRen_tm_pointwise {k_tm : nat} {l_tm : nat} {m_tm : nat}
+  (sigma_tm : fin m_tm -> tm k_tm) (zeta_tm : fin k_tm -> fin l_tm)
+  :
+  pointwise_relation _ eq (funcomp (ren_tm zeta_tm) (subst_tm sigma_tm)) 
+                     (subst_tm (funcomp (ren_tm zeta_tm) sigma_tm)).
+Proof.
+exact (fun s => compSubstRen_tm sigma_tm zeta_tm _ (fun n => eq_refl) s).
+Qed.
+
+Lemma renSubst_tm {k_tm : nat} {l_tm : nat} {m_tm : nat}
   (xi_tm : fin m_tm -> fin k_tm) (tau_tm : fin k_tm -> tm l_tm) (s : tm m_tm)
   : subst_tm tau_tm (ren_tm xi_tm s) = subst_tm (funcomp tau_tm xi_tm) s.
 Proof.
 exact (compRenSubst_tm xi_tm tau_tm _ (fun n => eq_refl) s).
 Qed.
 
-Lemma compComp_tm {k_tm : nat} {l_tm : nat} {m_tm : nat}
+Lemma renSubst_tm_pointwise {k_tm : nat} {l_tm : nat} {m_tm : nat}
+  (xi_tm : fin m_tm -> fin k_tm) (tau_tm : fin k_tm -> tm l_tm)
+  : pointwise_relation _ eq (funcomp (subst_tm tau_tm) (ren_tm xi_tm)) (subst_tm (funcomp tau_tm xi_tm)).
+Proof.
+exact (fun s => compRenSubst_tm xi_tm tau_tm _ (fun n => eq_refl) s).
+Qed.
+
+Lemma substSubst_tm {k_tm : nat} {l_tm : nat} {m_tm : nat}
   (sigma_tm : fin m_tm -> tm k_tm) (tau_tm : fin k_tm -> tm l_tm)
   (s : tm m_tm) :
   subst_tm tau_tm (subst_tm sigma_tm s) =
@@ -457,24 +486,81 @@ Proof.
 exact (compSubstSubst_tm sigma_tm tau_tm _ (fun n => eq_refl) s).
 Qed.
 
+Lemma substSubst_tm_pointwise {k_tm : nat} {l_tm : nat} {m_tm : nat}
+  (sigma_tm : fin m_tm -> tm k_tm) (tau_tm : fin k_tm -> tm l_tm)
+  :
+  pointwise_relation _ eq (funcomp (subst_tm tau_tm) (subst_tm sigma_tm))
+                     (subst_tm (funcomp (subst_tm tau_tm) sigma_tm)).
+Proof.
+exact (fun s => compSubstSubst_tm sigma_tm tau_tm _ (fun n => eq_refl) s).
+Qed.
+
+Lemma rinstInst'_tm {m_tm : nat} {n_tm : nat} (xi_tm : fin m_tm -> fin n_tm)
+  (s : tm m_tm) : ren_tm xi_tm s = subst_tm (funcomp (var_tm n_tm) xi_tm) s.
+Proof.
+exact (rinst_inst_tm xi_tm _ (fun n => eq_refl) s).
+Qed.
+
+Lemma rinstInst'_tm_pointwise {m_tm : nat} {n_tm : nat} (xi_tm : fin m_tm -> fin n_tm)
+  : pointwise_relation _ eq (ren_tm xi_tm) (subst_tm (funcomp (var_tm n_tm) xi_tm)).
+Proof.
+exact (fun s => rinst_inst_tm xi_tm _ (fun n => eq_refl) s).
+Qed.
+
+Lemma instId'_tm {m_tm : nat} (s : tm m_tm) : subst_tm (var_tm m_tm) s = s.
+Proof.
+exact (idSubst_tm (var_tm m_tm) (fun n => eq_refl) s).
+Qed.
+
+Lemma instId'_tm_pointwise {m_tm : nat} : pointwise_relation _ eq (subst_tm (var_tm m_tm)) id.
+Proof.
+exact (fun s => idSubst_tm (var_tm m_tm) (fun n => eq_refl) s).
+Qed.
+
+Lemma rinstId'_tm {m_tm : nat} (s : tm m_tm) : ren_tm id s = s.
+Proof.
+exact (eq_ind_r (fun t => t = s) (instId'_tm s) (rinstInst'_tm id s)).
+Qed.
+
+Lemma rinstId'_tm_pointwise {m_tm : nat} : pointwise_relation _ eq (@ren_tm m_tm m_tm id) id.
+Proof.
+exact (fun s => eq_ind_r (fun t => t = s) (instId'_tm s) (rinstInst'_tm id s)).
+Qed.
+
+Lemma varL'_tm {m_tm : nat} {n_tm : nat} (sigma_tm : fin m_tm -> tm n_tm)
+  (x : fin m_tm) : subst_tm sigma_tm (var_tm m_tm x) = sigma_tm x.
+Proof.
+exact (eq_refl).
+Qed.
+
+Lemma varL'_tm_pointwise {m_tm : nat} {n_tm : nat} (sigma_tm : fin m_tm -> tm n_tm)
+  : pointwise_relation _ eq (funcomp (subst_tm sigma_tm) (var_tm m_tm)) sigma_tm.
+Proof.
+exact (fun x => eq_refl).
+Qed.
+
+Lemma varLRen'_tm {m_tm : nat} {n_tm : nat} (xi_tm : fin m_tm -> fin n_tm)
+  (x : fin m_tm) : ren_tm xi_tm (var_tm m_tm x) = var_tm n_tm (xi_tm x).
+Proof.
+exact (eq_refl).
+Qed.
+
+Lemma varLRen'_tm_pointwise {m_tm : nat} {n_tm : nat} (xi_tm : fin m_tm -> fin n_tm) :
+  pointwise_relation _ eq (funcomp (ren_tm xi_tm) (var_tm m_tm)) (funcomp (var_tm n_tm) xi_tm).
+Proof.
+exact (fun x => eq_refl).
+Qed.
+
 Class Up_tm X Y :=
     up_tm : X -> Y.
 
-Definition Subst_tm {m_tm n_tm : nat} : Subst1 _ _ _ := @subst_tm m_tm n_tm.
+Instance Subst_tm  {m_tm n_tm : nat}: (Subst1 _ _ _) := (@subst_tm m_tm n_tm).
 
-Existing Instance Subst_tm.
+Instance Up_tm_tm  {m n_tm : nat}: (Up_tm _ _) := (@up_tm_tm m n_tm).
 
-Definition Up_tm_tm {m n_tm : nat} : Up_tm _ _ := @up_tm_tm m n_tm.
+Instance Ren_tm  {m_tm n_tm : nat}: (Ren1 _ _ _) := (@ren_tm m_tm n_tm).
 
-Existing Instance Up_tm_tm.
-
-Definition Ren_tm {m_tm n_tm : nat} : Ren1 _ _ _ := @ren_tm m_tm n_tm.
-
-Existing Instance Ren_tm.
-
-Definition VarInstance_tm {n_tm : nat} : Var _ _ := @var_tm n_tm.
-
-Existing Instance VarInstance_tm.
+Instance VarInstance_tm  {n_tm : nat}: (Var _ _) := (@var_tm n_tm).
 
 Notation "[ sigma_tm ]" := (subst_tm sigma_tm)
   ( at level 1, left associativity, only printing) : fscope.
@@ -500,119 +586,23 @@ Notation "x '__tm'" := (@ids _ _ VarInstance_tm x)
 Notation "x '__tm'" := (var_tm x) ( at level 5, format "x __tm") :
   subst_scope.
 
-
-Lemma rinstInst_tm' {m_tm : nat} {n_tm : nat} (xi_tm : fin m_tm -> fin n_tm) :
-  forall s:tm m_tm, ren_tm xi_tm s = subst_tm (funcomp (var_tm n_tm) xi_tm) s.
+Instance subst_tm_morphism  {m_tm : nat} {n_tm : nat}:
+ (Proper (respectful (pointwise_relation _ eq) (respectful eq eq))
+    (@subst_tm m_tm n_tm)).
 Proof.
-  apply rinst_inst_tm. intros x. reflexivity.
+exact (fun f_tm g_tm Eq_tm s t Eq_st =>
+       eq_ind s (fun t' => subst_tm f_tm s = subst_tm g_tm t')
+         (ext_tm f_tm g_tm Eq_tm s) t Eq_st).
 Qed.
 
-(* Lemma rinstInst_tm {m_tm : nat} {n_tm : nat} (xi_tm : fin m_tm -> fin n_tm) : *)
-(*   ren_tm xi_tm = subst_tm (funcomp (var_tm n_tm) xi_tm). *)
-(* Proof. *)
-(* exact (FunctionalExtensionality.functional_extensionality _ _ *)
-(*          (fun x => rinst_inst_tm xi_tm _ (fun n => eq_refl) x)). *)
-(* Qed. *)
-
-Lemma instId_tm' {n_tm:nat} : forall (s: tm n_tm), subst_tm (var_tm n_tm) s = s.
+Instance ren_tm_morphism  {m_tm : nat} {n_tm : nat}:
+ (Proper (respectful (pointwise_relation _ eq) (respectful eq eq))
+    (@ren_tm m_tm n_tm)).
 Proof.
-  exact (fun x => idSubst_tm (var_tm _) (fun n => eq_refl) x).
+exact (fun f_tm g_tm Eq_tm s t Eq_st =>
+       eq_ind s (fun t' => ren_tm f_tm s = ren_tm g_tm t')
+         (extRen_tm f_tm g_tm Eq_tm s) t Eq_st).
 Qed.
-
-Lemma rinstId_tm' {n_tm:nat}: forall (s: tm n_tm), ren_tm id s = s.
-Proof.
-  intros s.
-  erewrite rinst_inst_tm. apply instId_tm'.
-  intros x. reflexivity.
-Qed.
-(* Lemma instId_tm {m_tm : nat} : subst_tm (var_tm m_tm) = id. *)
-(* Proof. *)
-(* exact (FunctionalExtensionality.functional_extensionality _ _ *)
-(*          (fun x => idSubst_tm (var_tm m_tm) (fun n => eq_refl) (id x))). *)
-(* Qed. *)
-
-(* Lemma rinstId_tm {m_tm : nat} : @ren_tm m_tm m_tm id = id. *)
-(* Proof. *)
-(* exact (eq_trans (rinstInst_tm (id _)) instId_tm). *)
-(* Qed. *)
-
-(* Lemma varL_tm' {m_tm n_tm:nat} (sigma_tm : fin m_tm -> tm n_tm) (s: tm m_tm) : *)
-(*   subst_tm (fun x => subst_tm sigma_tm (var_tm _ x)) s = subst_tm sigma_tm s. *)
-(* Proof. *)
-(*   apply ext_tm. intros x. reflexivity. *)
-(* Qed. *)
-
-Lemma varL_tm'' {m_tm n_tm:nat} (sigma_tm : fin m_tm -> tm n_tm) (x: fin m_tm) :
-  (funcomp (subst_tm sigma_tm) (var_tm _)) x = (funcomp id sigma_tm) x.
-Proof.
-  unfold funcomp. reflexivity.
-Qed.
-
-(* Lemma varL_tm {m_tm : nat} {n_tm : nat} (sigma_tm : fin m_tm -> tm n_tm) : *)
-(*   funcomp (subst_tm sigma_tm) (var_tm m_tm) = sigma_tm. *)
-(* Proof. *)
-(* exact (FunctionalExtensionality.functional_extensionality _ _ *)
-(*          (fun x => eq_refl)). *)
-(* Qed. *)
-
-(* Lemma varLRen_tm' {m_tm n_tm: nat} (xi_tm : fin m_tm -> fin n_tm) (s : tm m_tm) : *)
-(*   subst_tm (fun x => ren_tm xi_tm (var_tm _ x)) s = subst_tm (fun x => var_tm _ (xi_tm x)) s. *)
-(* Proof. *)
-(*   apply ext_tm. intros x. reflexivity. *)
-(* Qed. *)
-
-Lemma varLRen_tm'' {m_tm n_tm: nat} (xi_tm : fin m_tm -> fin n_tm) (x: fin m_tm) :
-  (funcomp (ren_tm xi_tm) (var_tm _)) x = (funcomp (var_tm _) xi_tm) x.
-Proof.
-  unfold funcomp. cbn [ ren_tm ]. reflexivity.
-Qed.
-
-(* Lemma varLRen_tm {m_tm : nat} {n_tm : nat} (xi_tm : fin m_tm -> fin n_tm) : *)
-(*   funcomp (ren_tm xi_tm) (var_tm m_tm) = funcomp (var_tm n_tm) xi_tm. *)
-(* Proof. *)
-(* exact (FunctionalExtensionality.functional_extensionality _ _ *)
-(*          (fun x => eq_refl)). *)
-(* Qed. *)
-
-(* Lemma renRen'_tm {k_tm : nat} {l_tm : nat} {m_tm : nat} *)
-(*   (xi_tm : fin m_tm -> fin k_tm) (zeta_tm : fin k_tm -> fin l_tm) : *)
-(*   funcomp (ren_tm zeta_tm) (ren_tm xi_tm) = ren_tm (funcomp zeta_tm xi_tm). *)
-(* Proof. *)
-(* exact (FunctionalExtensionality.functional_extensionality _ _ *)
-(*          (fun n => renRen_tm xi_tm zeta_tm n)). *)
-(* Qed. *)
-
-(* Lemma compRen'_tm {k_tm : nat} {l_tm : nat} {m_tm : nat} *)
-(*   (sigma_tm : fin m_tm -> tm k_tm) (zeta_tm : fin k_tm -> fin l_tm) : *)
-(*   funcomp (ren_tm zeta_tm) (subst_tm sigma_tm) = *)
-(*   subst_tm (funcomp (ren_tm zeta_tm) sigma_tm). *)
-(* Proof. *)
-(* exact (FunctionalExtensionality.functional_extensionality _ _ *)
-(*          (fun n => compRen_tm sigma_tm zeta_tm n)). *)
-(* Qed. *)
-
-(* Lemma renComp'_tm {k_tm : nat} {l_tm : nat} {m_tm : nat} *)
-(*   (xi_tm : fin m_tm -> fin k_tm) (tau_tm : fin k_tm -> tm l_tm) : *)
-(*   funcomp (subst_tm tau_tm) (ren_tm xi_tm) = subst_tm (funcomp tau_tm xi_tm). *)
-(* Proof. *)
-(* exact (FunctionalExtensionality.functional_extensionality _ _ *)
-(*          (fun n => renComp_tm xi_tm tau_tm n)). *)
-(* Qed. *)
-
-(* Lemma compComp'_tm {k_tm : nat} {l_tm : nat} {m_tm : nat} *)
-(*   (sigma_tm : fin m_tm -> tm k_tm) (tau_tm : fin k_tm -> tm l_tm) : *)
-(*   funcomp (subst_tm tau_tm) (subst_tm sigma_tm) = *)
-(*   subst_tm (funcomp (subst_tm tau_tm) sigma_tm). *)
-(* Proof. *)
-(* exact (FunctionalExtensionality.functional_extensionality _ _ *)
-(*          (fun n => compComp_tm sigma_tm tau_tm n)). *)
-(* Qed. *)
-
-Arguments lam {n_tm}.
-
-Arguments app {n_tm}.
-
-Arguments var_tm {n_tm}.
 
 Ltac auto_unfold := repeat
                      unfold VarInstance_tm, Var, ids, Ren_tm, Ren1, ren1,
@@ -624,190 +614,167 @@ Tactic Notation "auto_unfold" "in" "*" := repeat
                                             Up_tm, up_tm, Subst_tm, Subst1,
                                             subst1 in *.
 
-
-Require Import Setoid Morphisms.
-Require Import Relation_Definitions.
-
-Instance ren_morphism {m_tm n_tm:nat}:
-  Proper (pointwise_relation _ eq ==> eq ==> eq) (@ren_tm m_tm n_tm).
-Proof.
-  cbv - [ren_tm].
-  intros sigma tau H s t ->. apply extRen_tm.
-  apply H.
-Qed.
-
-Instance subst_morphism {m_tm n_tm:nat}:
-  Proper (pointwise_relation _ eq ==> eq ==> eq) (@subst_tm m_tm n_tm).
-Proof.
-  cbv - [subst_tm].
-  intros sigma tau H s t ->. apply ext_tm.
-  apply H.
-Qed.
-
-Instance scons_morphism {m_tm n_tm:nat} (t: tm m_tm) :
-  Proper (pointwise_relation _ eq ==> pointwise_relation _ eq) (fun f  => (@scons _ n_tm t f)).
-Proof.
-  cbv - [scons].
-  intros sigma tau H.
-  intros x.
-  destruct x.
-  cbn.  apply H.
-  reflexivity.
-Qed.
-
-Instance eta_morphism {X Y} :
-  Proper (pointwise_relation _ eq ==> pointwise_relation _ eq) (fun g : X -> Y => fun x => g x).
-Proof.
-  intros g g' Hg x. apply Hg.
-Qed.
-
-Instance funcomp_morphism {X Y Z} :
-  Proper (@pointwise_relation Y Z eq ==> @pointwise_relation X Y eq ==> @pointwise_relation X Z eq) funcomp.
-Proof.
-  cbv - [funcomp].
-  intros g0 g1 Hg f0 f1 Hf x.
-  unfold funcomp. rewrite Hf, Hg.
-  reflexivity.
-Qed.
-
-(* Instance funcomp_morphism2 {X Y Z} (g: Y -> Z) (f: X -> Y) : *)
-(*   Proper (eq ==> @pointwise_relation X Y eq ==> @pointwise_relation X Z eq) funcomp. *)
-(* Proof. *)
-(*   cbv - [funcomp]. *)
-(*   intros g0 g1 Hg f0 f1 Hf x. *)
-(*   unfold funcomp. rewrite Hf, Hg. *)
-(*   reflexivity. *)
-(* Qed. *)
-
-(* Instance funcomp_morphism2 {X Y Z} {g: Y -> Z} : *)
-(*   Proper (pointwise_relation _ eq ==> pointwise_relation _ eq) (@funcomp X Y Z g). *)
-(* Proof. *)
-(*   cbv - [funcomp]. *)
-(*   intros f0 f1 Hf x. *)
-(*   unfold funcomp. rewrite Hf. *)
-(*   reflexivity. *)
-(* Qed. *)
-
-(* Instance funcomp_morphism1 {X Y Z} {f: X -> Y} : *)
-(*   Proper (pointwise_relation _ eq ==> pointwise_relation _ eq) (Basics.flip (@funcomp X Y Z) f). *)
-(* Proof. *)
-(*   cbv - [funcomp]. *)
-(*   intros g0 g1 Hg x. *)
-(*   unfold funcomp. rewrite Hg. *)
-(*   reflexivity. *)
-(* Qed. *)
-
-(* Goal forall X Y Z (f f': Y -> Z) (g:X -> Y) (H: forall x, f x = f' x) (si: X -> Z) x, *)
-(*   IdC (funcomp (fun x => f x) g x) = IdC (si x). *)
-(* Proof. *)
-(*   intros * H si x. *)
-(*   (* simple apply funcomp_morphism2. *) *)
-(*   (* intros x'. rewrite H. *) *)
-(*   Set Typeclasses Debug. *)
-(*   try setoid_rewrite H. *)
-  
-(* Lemma scons_comp' {m_tm n_tm k_tm:nat} {s: tm n_tm} (sigma: fin m_tm -> tm n_tm) (tau: tm n_tm -> tm k_tm) : forall n : fin (S m_tm), (funcomp tau (scons s sigma)) n = (scons (tau s) (funcomp tau sigma)) n. *)
-(* Proof. *)
-(*   intros [n|]. reflexivity. simpl. reflexivity. *)
-(* Qed. *)
-
-Ltac eta_expand_scons_comp :=
-     repeat match goal with  
-            | [|- context[funcomp ?tau (scons ?t ?f)]] =>
-              change (funcomp tau (scons t f)) with (fun x => tau (scons t f x))
-            end.
-     (* repeat match goal with   *)
-     (* | [|- context[subst_tm ?f]] => *)
-     (*   lazymatch f with *)
-     (*   | (fun x => ?b x) => fail *)
-     (*   | _ => change (subst_tm f) with (subst_tm (fun x => f x)) *)
-     (*   end *)
-     (* end. *)
-
-Ltac eta_expand_ren_comp :=
-  try match goal with
-  | [|- context[funcomp (subst_tm ?sigma) (ren_tm ?xi)]] =>
-    change (funcomp (subst_tm sigma) (ren_tm xi)) with (fun s => subst_tm sigma (ren_tm xi s))
-  end.
-
-Ltac eta_expand_varL :=
-  try match goal with
-  | [|- context[funcomp (subst_tm ?sigma) (@var_tm ?n)]] =>
-    change (funcomp (subst_tm sigma) (@var_tm n)) with (fun x => (funcomp (subst_tm sigma) (@var_tm n)) x)
-  end.
-
-Ltac eta_expand_instId :=
-  try match goal with
-  | [|- context[subst_tm (@var_tm ?n)]] =>
-    change (subst_tm (@var_tm n)) with (fun s => (subst_tm (@var_tm n) s))
-  end.
-
-Ltac setoidasimpl' := repeat (first
-                        [
-                        (* progress rewrite ?compComp'_tm *)
-                 progress setoid_rewrite compComp_tm; idtac "compComp"
-                 (* | progress rewrite ?renComp'_tm *)
-                 | progress (eta_expand_ren_comp; setoid_rewrite renComp_tm; idtac "renComp"; eta_reduce)
-                 (* | progress rewrite ?compRen'_tm *)
-                 | progress setoid_rewrite compRen_tm; idtac "compRen"
-                 (* | progress rewrite ?renRen'_tm *)
-                 | progress setoid_rewrite renRen_tm; idtac "renRen"
-                 (* | progress setoid_rewrite scons_comp'; idtac "scons_comp" *)
-                 (* | progress rewrite ?varLRen_tm *)
-                 (* | progress setoid_rewrite varLRen_tm'; idtac "varLRen" *)
-                 (* | progress rewrite ?varL_tm *)
-                 | progress eta_expand_varL; setoid_rewrite varL_tm''; idtac "varL"
-                 (* | progress rewrite ?rinstId_tm *)
-                 | progress setoid_rewrite rinstId_tm'; idtac "rinstId"
-                 (* | progress rewrite ?instId_tm *)
-                 | progress eta_expand_instId; setoid_rewrite instId_tm'; idtac "instId"
+Ltac asimpl' := repeat (first
+                 [ progress rewrite substSubst_tm; idtac "substSubst"
+                 | progress rewrite substSubst_tm_pointwise; idtac "substSubst pointwise"
+                 (* | progress rewrite ?substSubst_tm *)
+                 | progress rewrite renSubst_tm; idtac "renSubst"
+                 | progress rewrite renSubst_tm_pointwise; idtac "renSubst pointwise"
+                 (* | progress rewrite ?renSubst_tm *)
+                 | progress rewrite substRen_tm; idtac "substRen"
+                 | progress rewrite substRen_tm_pointwise; idtac "substRen pointwise"
+                 (* | progress rewrite ?substRen_tm *)
+                 | progress rewrite renRen_tm; idtac "renRen"
+                 | progress rewrite renRen_tm_pointwise; idtac "renRen pointwise"
+                 (* | progress rewrite ?renRen_tm *)
+                 | progress rewrite varLRen'_tm_pointwise; idtac "varLRen"
+                 (* | progress rewrite ?varLRen'_tm_pointwise *)
+                 | progress rewrite varL'_tm_pointwise; idtac "varL"
+                 (* | progress rewrite ?varL'_tm_pointwise *)
+                 | progress rewrite rinstId'_tm_pointwise; idtac "rinstId"
+                 (* | progress rewrite ?rinstId'_tm_pointwise *)
+                 | progress rewrite instId'_tm_pointwise; idtac "instId"
+                 (* | progress rewrite ?instId'_tm_pointwise *)
                  | progress
                     unfold up_list_tm_tm, up_tm_tm, upRen_list_tm_tm,
                      upRen_tm_tm, up_ren; idtac "unfold"
                  | progress cbn[subst_tm ren_tm]; idtac "cbn"
-                 | progress fsimpl; idtac "fsimpl"
-                 (* | repeat unfold funcomp; idtac "funcomp" *)
-                       ]).
-
-(* Ltac asimpl' := repeat (first *)
-(*                         [ *)
-(*                         progress rewrite ?compComp'_tm; idtac "compComp'" *)
-(*                  | progress rewrite ?compComp_tm; idtac "compComp" *)
-(*                  | progress rewrite ?renComp'_tm; idtac "renComp'" *)
-(*                  | progress rewrite ?renComp_tm; idtac "renComp" *)
-(*                  | progress rewrite ?compRen'_tm; idtac "compRen'" *)
-(*                  | progress rewrite ?compRen_tm; idtac "compRen" *)
-(*                  | progress rewrite ?renRen'_tm; idtac "renRen'" *)
-(*                  | progress rewrite ?renRen_tm; idtac "renRen" *)
-(*                  | progress rewrite ?varLRen_tm; idtac "varLRen" *)
-(*                  | progress rewrite ?varL_tm; idtac "varL" *)
-(*                  | progress rewrite ?rinstId_tm; idtac "rinstId" *)
-(*                  | progress rewrite ?instId_tm; idtac "instId" *)
-(*                  | progress *)
-(*                     unfold up_list_tm_tm, up_tm_tm, upRen_list_tm_tm, *)
-(*                      upRen_tm_tm, up_ren; idtac "unfold" *)
-(*                  | progress cbn[subst_tm ren_tm]; idtac "cbn" *)
-(*                  | fsimpl; idtac "fsimpl" *)
-(*                        ]). *)
+                 | progress fsimpl; idtac "fsimpl" ]).
 
 Ltac asimpl := repeat try unfold_funcomp;
                 repeat
                  unfold VarInstance_tm, Var, ids, Ren_tm, Ren1, ren1,
                   Up_tm_tm, Up_tm, up_tm, Subst_tm, Subst1, subst1 in *;
-                setoidasimpl'; repeat try unfold_funcomp.
-
-(* Ltac oldasimpl := repeat try unfold_funcomp; *)
-(*                 repeat *)
-(*                  unfold VarInstance_tm, Var, ids, Ren_tm, Ren1, ren1, *)
-(*                   Up_tm_tm, Up_tm, up_tm, Subst_tm, Subst1, subst1 in *; *)
-(*                 asimpl'; repeat try unfold_funcomp. *)
+                asimpl'; minimize.
 
 Tactic Notation "asimpl" "in" hyp(J) := revert J; asimpl; intros J.
 
 Tactic Notation "auto_case" := auto_case ltac:(asimpl; cbn; eauto).
 
+Ltac substify := auto_unfold; try repeat erewrite ?rinstInst'_tm.
 
-Ltac substify := auto_unfold; try repeat erewrite ?rinstInst_tm'.
+Ltac renamify := auto_unfold; try repeat erewrite <- ?rinstInst'_tm.
 
-Ltac renamify := auto_unfold; try repeat erewrite <- ?rinstInst_tm'.
+End renSubst.
+
+Module fext.
+
+Import
+renSubst.
+
+Lemma rinstInst_tm {m_tm : nat} {n_tm : nat} (xi_tm : fin m_tm -> fin n_tm) :
+  ren_tm xi_tm = subst_tm (funcomp (var_tm n_tm) xi_tm).
+Proof.
+exact (FunctionalExtensionality.functional_extensionality _ _
+         (fun x => rinst_inst_tm xi_tm _ (fun n => eq_refl) x)).
+Qed.
+
+Lemma instId_tm {m_tm : nat} : subst_tm (var_tm m_tm) = id.
+Proof.
+exact (FunctionalExtensionality.functional_extensionality _ _
+         (fun x => idSubst_tm (var_tm m_tm) (fun n => eq_refl) (id x))).
+Qed.
+
+Lemma rinstId_tm {m_tm : nat} : @ren_tm m_tm m_tm id = id.
+Proof.
+exact (eq_trans (rinstInst_tm (id _)) instId_tm).
+Qed.
+
+Lemma varL_tm {m_tm : nat} {n_tm : nat} (sigma_tm : fin m_tm -> tm n_tm) :
+  funcomp (subst_tm sigma_tm) (var_tm m_tm) = sigma_tm.
+Proof.
+exact (FunctionalExtensionality.functional_extensionality _ _
+         (fun x => eq_refl)).
+Qed.
+
+Lemma varLRen_tm {m_tm : nat} {n_tm : nat} (xi_tm : fin m_tm -> fin n_tm) :
+  funcomp (ren_tm xi_tm) (var_tm m_tm) = funcomp (var_tm n_tm) xi_tm.
+Proof.
+exact (FunctionalExtensionality.functional_extensionality _ _
+         (fun x => eq_refl)).
+Qed.
+
+Lemma renRen'_tm {k_tm : nat} {l_tm : nat} {m_tm : nat}
+  (xi_tm : fin m_tm -> fin k_tm) (zeta_tm : fin k_tm -> fin l_tm) :
+  funcomp (ren_tm zeta_tm) (ren_tm xi_tm) = ren_tm (funcomp zeta_tm xi_tm).
+Proof.
+exact (FunctionalExtensionality.functional_extensionality _ _
+         (fun n => renRen_tm xi_tm zeta_tm n)).
+Qed.
+
+Lemma substRen'_tm {k_tm : nat} {l_tm : nat} {m_tm : nat}
+  (sigma_tm : fin m_tm -> tm k_tm) (zeta_tm : fin k_tm -> fin l_tm) :
+  funcomp (ren_tm zeta_tm) (subst_tm sigma_tm) =
+  subst_tm (funcomp (ren_tm zeta_tm) sigma_tm).
+Proof.
+exact (FunctionalExtensionality.functional_extensionality _ _
+         (fun n => substRen_tm sigma_tm zeta_tm n)).
+Qed.
+
+Lemma renSubst'_tm {k_tm : nat} {l_tm : nat} {m_tm : nat}
+  (xi_tm : fin m_tm -> fin k_tm) (tau_tm : fin k_tm -> tm l_tm) :
+  funcomp (subst_tm tau_tm) (ren_tm xi_tm) = subst_tm (funcomp tau_tm xi_tm).
+Proof.
+exact (FunctionalExtensionality.functional_extensionality _ _
+         (fun n => renSubst_tm xi_tm tau_tm n)).
+Qed.
+
+Lemma substSubst'_tm {k_tm : nat} {l_tm : nat} {m_tm : nat}
+  (sigma_tm : fin m_tm -> tm k_tm) (tau_tm : fin k_tm -> tm l_tm) :
+  funcomp (subst_tm tau_tm) (subst_tm sigma_tm) =
+  subst_tm (funcomp (subst_tm tau_tm) sigma_tm).
+Proof.
+exact (FunctionalExtensionality.functional_extensionality _ _
+         (fun n => substSubst_tm sigma_tm tau_tm n)).
+Qed.
+
+Ltac asimpl_fext' := repeat (first
+                      [ progress setoid_rewrite substSubst_tm
+                      | progress setoid_rewrite renSubst_tm
+                      | progress setoid_rewrite substRen_tm
+                      | progress setoid_rewrite renRen_tm
+                      | progress setoid_rewrite substSubst'_tm
+                      | progress setoid_rewrite renSubst'_tm
+                      | progress setoid_rewrite substRen'_tm
+                      | progress setoid_rewrite renRen'_tm
+                      | progress setoid_rewrite varLRen_tm
+                      | progress setoid_rewrite varL_tm
+                      | progress setoid_rewrite rinstId_tm
+                      | progress setoid_rewrite instId_tm
+                      | progress
+                         unfold up_list_tm_tm, up_tm_tm, upRen_list_tm_tm,
+                          upRen_tm_tm, up_ren
+                      | progress cbn[subst_tm ren_tm]
+                      | fsimpl_fext ]).
+
+Ltac asimpl_fext := repeat try unfold_funcomp;
+                     repeat
+                      unfold VarInstance_tm, Var, ids, Ren_tm, Ren1, ren1,
+                       Up_tm_tm, Up_tm, up_tm, Subst_tm, Subst1, subst1 
+                       in *; asimpl_fext'; repeat try unfold_funcomp.
+
+Tactic Notation "asimpl_fext" "in" hyp(J) := revert J; asimpl_fext; intros J.
+
+Ltac substify_fext := auto_unfold; try repeat erewrite ?rinstInst_tm.
+
+Ltac renamify_fext := auto_unfold; try repeat erewrite <- ?rinstInst_tm.
+
+End fext.
+
+Module interface.
+
+Export renSubst.
+
+Export
+fext.
+
+Arguments lam {n_tm}.
+
+Arguments app {n_tm}.
+
+Arguments var_tm {n_tm}.
+
+End interface.
+
+Export interface.
 

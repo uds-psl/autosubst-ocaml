@@ -8,8 +8,8 @@ Logical Relations and a case study in equivalence checking (Karl Crary, 2005)
 **)
 
 Require Export List Omega.
-  Require Import core core_axioms unscoped unscoped_axioms.
-  Import UnscopedNotations.
+Require Import core unscoped.
+Import UnscopedNotations.
 From Chapter3 Require Export utlc_pure.
 
 Ltac inv H := inversion H; subst.
@@ -108,11 +108,12 @@ Combined Scheme algeq_mut_ind from algeq_ind_2, algeqNeu_ind_2.
   (forall Gamma M1 M2 A, algeq Gamma M1 M2 A -> forall Delta xi, cont_ext Gamma xi Delta -> algeq Delta (M1⟨xi⟩) (M2⟨xi⟩) A)
 /\ (  (forall Gamma M1 M2 A, algeqNeu Gamma M1 M2 A -> forall Delta xi, cont_ext Gamma xi Delta -> algeqNeu Delta (M1⟨xi⟩) (M2 ⟨xi⟩) A)).
 Proof.
-  apply algeq_mut_ind; intros; subst; asimpl in *; try (now (econstructor; eauto)).
+  apply algeq_mut_ind; intros; subst; (* asimpl in *; *) try (now (econstructor; eauto)).
   - econstructor; [| |eauto]. all: eauto using mwhr_ren.
   - constructor.
     specialize (H _ _ (cont_ext_cons _ _ _ T H0)).
-    asimpl in *. auto.
+    (* a.d. asimpl in H instead of asimpl in * above *)
+    asimpl in H. auto.
   - destruct (H x l) as (?&->). now constructor.
 Qed.
 
@@ -270,19 +271,20 @@ Proof.
     eapply logEq_monotone; eauto.
     all: try (substify; now reflexivity).
     eapply H0. omega.
-  - simpl. intros. asimpl in *. asimpl in IHdecleq.
-    (* adrian: had to change scons notation below to not use t, gamma *)
-    Open Scope fscope.
+  - simpl. intros. asimpl in IHdecleq.
+    (* a.d.: had to change scons notation below to not use t, gamma *)
     specialize (IHdecleq Delta (t .: gamma >> ⟨xi⟩) (t' .: delta >> ⟨xi⟩)).
-    asimpl in *.
+    (* a.d. asimpl in * was unnecessary *)
+    (* asimpl in *. *)
     eapply IHdecleq.
     intros [|i] HH; asimpl; eauto.
     cbn. eapply logEq_monotone; eauto. eapply H0. simpl in *. omega.
   - simpl. now eapply H0.
-  - specialize (IHdecleq1 _ _ _ H1). asimpl in *.
+  - specialize (IHdecleq1 _ _ _ H1). (* asimpl in *. *)
     specialize (IHdecleq2 _ _ _ H1). cbn in *.
     specialize (IHdecleq1 _ _ _ _ (cont_ext_id Gamma') IHdecleq2).
-    asimpl in *. now apply IHdecleq1.
+    (* a.d. IHdecleq1 instead of * *)
+    asimpl in IHdecleq1. now apply IHdecleq1.
   - apply logeq_sym. eapply IHdecleq.
     intros i HH. now eapply logeq_sym, H0.
   - eapply logeq_trans; eauto.

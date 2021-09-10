@@ -1,7 +1,7 @@
 (** ** Reduction and Values *)
 
 Require Export ARS Coq.Program.Equality.
-Require Import core core_axioms fintype fintype_axioms.
+Require Import core fintype.
 Import ScopedNotations.
 From Chapter9 Require Export stlc.
 Set Implicit Arguments.
@@ -36,132 +36,34 @@ Proof with eauto.
 Qed.
 
 (** *** Substitutivity *)
-Require Import Setoid Morphisms.
-
-Goal forall m (s: tm (S m)), (ren_tm (var_zero .: shift) s) = s.
-Proof.
-  intros m s.
-  asimpl.
-  reflexivity.
-  Restart.
-  intros m s.
-  substify.
-  asimpl.
-  reflexivity.
-Qed.
 
 Lemma step_inst {m n} (f : fin m -> tm n) (s t : tm m) :
-  step s t -> step s[f] t[f].
+  step s t -> step (subst_tm f s) (subst_tm f t).
 Proof.
    intros st. revert n f.  induction st as  [m b s t |m A b1 b2 _ ih|m s1 s2 t _ ih|m s t1 t2 _ ih]; intros n f; cbn.
-   - apply step_beta'.
-     now asimpl.
-     (* now asimpl. *)
-     (* auto_unfold. *)
-     (* setoid_rewrite compComp_tm. *)
-     (* unfold up_list_tm_tm, up_tm_tm, upRen_list_tm_tm, *)
-     (* upRen_tm_tm, up_ren. *)
-     (* repeat match goal with *)
-     (*        | [|- context[funcomp ?tau (scons ?t ?f)]] => *)
-     (*          change (funcomp tau (scons t f)) with (fun x => tau (scons t f x)) *)
-     (*        end. *)
-     (* setoid_rewrite scons_comp'. *)
-     (* (* eta_reduce. *) *)
-     (* cbn [subst_tm ren_tm]. *)
-     (* fsimpl. *)
-     (* unfold funcomp. *)
-     (* (* TODO minimal working example where the rewrite does not work *) *)
-     (* setoid_rewrite renComp_tm. *)
-(*      (* simple apply subst_morphism; [|reflexivity]. *) *)
-(*      (* simple apply scons_morphism. *) *)
-     
-(*      Set Typeclasses Debug. *)
-     
-(*      setoid_rewrite renComp_tm. *)
-(*      Unset Printing Notations. *)
-(*      change (fun x : fin (S m) => *)
-(*         scons (subst_tm f t) *)
-(*           (fun x0 : fin m => *)
-(*            subst_tm (scons (subst_tm f t) var_tm) (ren_tm shift (f x0))) *)
-(*           x) with *)
-(*          (scons (subst_tm f t) *)
-(*           (fun x0 : fin m => *)
-(*            subst_tm (scons (subst_tm f t) var_tm) (ren_tm shift (f x0)))). *)
-(*      Set Printing Notations. *)
-(*      setoid_rewrite renComp_tm. *)
-     
-(* compComp *)
+   - apply step_beta'. now asimpl.
+     (* asimpl. *)
+(* substSubst *)
+(* varL *)
 (* unfold *)
-(* funcomp *)
-(* scons_comp *)
-(* cbn *)
+(* catchall *)
+(* funcomp assoc *)
+(* zero scons *)
 (* fsimpl *)
-(* funcomp *)
-(* cbn *)
-(* funcomp *)
-(*      (* eta_reduce. *) *)
-(*      setoid_rewrite renComp_tm. *)
-(*      reflexivity. *)
-(*      auto_unfold. *)
-(*      setoid_rewrite compComp_tm. *)
-(*      unfold funcomp. *)
-(*      eta_expand_subst; setoid_rewrite scons_comp'; eta_reduce *)
-(* compComp *)
-(* scons_comp *)
-(* cbn *)
-(* fsimpl *)
-(* funcomp *)
-(* renComp *)
-(* instId *)
-(* cbn *)
-(* funcomp *)
-(*      auto_unfold. *)
-(*      setoid_rewrite compComp_tm. *)
-(*      unfold up_list_tm_tm, up_tm_tm, upRen_list_tm_tm, *)
-(*      upRen_tm_tm, up_ren. *)
-(*      (* Unset Printing Notations. *) *)
-(*      (* TODO in order to rewrite with scons_comp' I need a syntactic match already in the goal. Unfortunately it's not enough that the subst_morophism would create a syntactic match. *)
-(*       Therefore I need to eta expand here *)
-(*       1. either change subst_tm so that it always uses an eta expanded function *)
-(*       2. or find some heruistic when to eta expand (I think I would only have to eta expand a function immediately in a subst_tm. But how to check that it is not already eta expanded?) *)
-
-(*       2. works but makes it even slower. Have to test if it works for everything*) *)
-(*      setoid_rewrite scons_comp'. *)
-(*      fsimpl. *)
-(*      (* Set Typeclasses Debug. *) *)
-(*      unfold funcomp. *)
-(*      cbn.  *)
-
-(*      (* Set Typeclasses Debug. *) *)
-(*      (* Unset Printing Notations. *) *)
-(*      (* fsimpl. *) *)
-(*      try setoid_rewrite renComp_tm. *)
-(*      apply subst_morphism; [|reflexivity]. *)
-(*      apply scons_morphism. *)
-(*      unfold funcomp. *)
-(*      intros x. rewrite renComp_tm. *)
-(*      intros x. *)
-(*      rewrite ?scons_comp'. *)
-(*      fsimpl. *)
-(*      cbn. *)
-(* compComp *)
-(* unfold *)
-(* funcomp *)
-(* fsimpl *)
-(* unfold *)
-(* funcomp *)
-(* funcomp *)
-
-(*      (* TODO scons_comp' setoid rewrite does not work yet :( *) *)
-(*      rewrite scons_comp. *)
-(*      asimpl. *)
-
-     
+(* varL *)
+     (* repeat *)
+     (*             unfold VarInstance_tm, Var, ids, Ren_tm, Ren1, ren1, *)
+     (*              Up_tm_tm, Up_tm, up_tm, Subst_tm, Subst1, subst1 in *. *)
+     (* setoid_rewrite substSubst_tm. *)
+     (* (* Hint Opaque  : rewrite. *) *)
+ 
+     (* Set Keyed Unification. *)
+     (* unfold up_tm_tm. *)
+     (* rewrite varL'_tm_pointwise. *)
   - apply step_abs. eapply ih.
   - apply step_appL, ih.
   - apply step_appR, ih.
 Qed.
-Print Assumptions step_inst.
 
 Lemma mstep_inst m n (f : fin m -> tm n) (s t : tm m) :
   star step s t -> star step (s[f]) (t[f]).
@@ -195,56 +97,6 @@ Proof.
   - destruct M; try inversion x. subst.
     destruct M1; try inversion H0. subst.
     exists (M1[M2..]). split. eauto.
-    (* myasimpl. *)
-    (* reflexivity. *)
-    (* auto_unfold. *)
-    (* rewrite renComp_tm. *)
-    (* rewrite compRen_tm. *)
-    (* unfold up_list_tm_tm, up_tm_tm, upRen_list_tm_tm, upRen_tm_tm, up_ren. *)
-    (* fsimpl. *)
-    
-    (* rewrite varLRen_tm'. *)
-(*     fsimpl. *)
-(*     reflexivity. *)
-(* renComp *)
-(* compRen *)
-(* unfold *)
-(* fsimpl *)
-(* varLRen *)
-(* fsimpl *)
-   (*  auto_unfold. *)
-   (* rewrite renComp_tm. *)
-   (* rewrite compRen_tm. *)
-   (* simple apply subst_morphism'; intros ?. *)
-   (* unfold up_list_tm_tm, up_tm_tm, upRen_list_tm_tm, upRen_tm_tm, up_ren. *)
-   (* fsimpl. *)
-   (* simple apply scons_morphism'; intros ?. *)
-   (* unfold_funcomp. *)
-   (* cbn [subst_tm ren_tm]. *)
-   (* fsimpl. *)
-   (* rewrite varLRen_tm''. *)
-   (* unfold_funcomp. *)
-   (* fsimpl. *)
-   
-(* renComp *)
-(* compRen *)
-(* subst_morph *)
-(* unfold *)
-(* fsimpl *)
-(* scons_morph *)
-(* funcomp *)
-(* cbn *)
-(* fsimpl *)
-(* funcomp *)
-(* fsimpl *)
-(* funcomp *)
-(* fsimpl *)
-(* funcomp *)
-(* fsimpl *)
-(* funcomp *)
-(* fsimpl *)
-(* funcomp *)
-(* fsimpl *)
     asimpl. reflexivity.
   - destruct M; inversion x. subst.
     edestruct (IHstep _ M) as (?&?&?); [reflexivity|].

@@ -58,7 +58,10 @@ Lemma L_close_ren_lam m n (xi: fin m -> fin n) s A :
 Proof.
   induction A; eauto.
   destruct s; try contradiction.
-  subst. intros. cbn in *. intros. asimpl. eauto.
+  subst. intros. cbn in *. intros. asimpl.
+  (* TODO eauto does not work but we can simply apply both assumptions. But why does it not work? *)
+  apply H, H0.
+  (* eauto. *)
 Qed.
 
 Lemma close_ren  :

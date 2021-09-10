@@ -1,6 +1,6 @@
 (** ** Weak Head Normalisation *)
 
-Require Import core core_axioms fintype fintype_axioms.
+Require Import core fintype.
 Import ScopedNotations.
 From Chapter9 Require Export preservation.
 
@@ -28,8 +28,7 @@ Proof.
     destruct s; try contradiction.
     intros k zeta v H''. cbn in H. specialize (H _ (xi >> zeta) _ H'').
     destruct H as (?&?&?).
-    exists x. split; eauto.
-    asimpl. eauto.
+    exists x. split; eauto. asimpl. eauto.
 Qed.
 
 Definition G {m k} (Gamma : ctx m) : (fin m -> tm k)  -> Prop :=
@@ -51,29 +50,12 @@ Proof.
     intros m. intros.
     assert (G (S1 .: Gamma) (v .: (sigma >> ren_tm xi))).     { unfold G. intros [|]; cbn; eauto.
       - cbn in *. specialize (H f). now apply L_ren. }
-    (* TODO here we don't apply ext_tm because the goal is not an equality. How do we solve this?
-     1. waybe write another tactic that does something like
-     assert (H: s[sigma] = ?x) by now asimpl.
-     rewrite H
-     which would take the instantiation as an argument (or somehow infer it maybe with `match Goal with _ |- context[ subst_tm ... ])
-
-    2. don't use simple apply in asimpl' but rather rewrite so that the normal asimpl tactic works here. But then we have the problem that ext_tm is much too general since we can rewrite every substitution with it. Maybe setoid rewriting can do it. We should somehow say that we can only rewrite with ext_tm if the substitution contains something that would be rewritten by renComp' (i.e. the one with funext)
-    To do that we could form a predicate on subsitutions P : (nat -> tm) -> Prop
-    with constructors for the atomic cases for renComp', renRen', etc. (so <xi> >> [sigma] / [sigma] >> [sigma], etc.)
-    and other congruence constructors.
-    Then declare a Proper instance to rewrite with ext_tm if the substitution fulfills the predicate.
-    This might work but to build the proof of the predicate we probably need typeclasses which will probably lead to pain.
-
-     *)
-    (* assert (M[(@var_tm (S k) var_zero) .: sigma >> (ren_tm shift)][v .: xi >> (@var_tm m)] = M[_]) by (now asimpl). *)
     asimpl.
-    (* rewrite renComp'_tm. *)
     specialize (IHC _ _ H1).
     destruct (IHC) as (v'&?&?).
     exists v'; split; eauto.
-    revert H2.
-    unfold funcomp. 
-    setoid_rewrite rinstInst_tm'. eauto using mstep_inst.
+    (* a.d. I had to unfold funcomp here to setoid rewrite with rinstInst' *)
+    revert H2. unfold funcomp. setoid_rewrite rinstInst'_tm. eauto using mstep_inst.
   - destruct (IHC1 _ _  H) as (v1&?&?).
     destruct (IHC2  _ _ H) as (v2&?&?).
     destruct v1; try contradiction.
@@ -85,5 +67,6 @@ Proof.
       eapply mstep_app; eauto. assumption.
     + eapply star_trans.
       * eright. econstructor; eauto. constructor.
+        (* a.d. asimpl directly in hypothesis instead of * *)
       * now asimpl in H4.
 Qed.
