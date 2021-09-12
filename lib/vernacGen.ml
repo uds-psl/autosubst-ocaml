@@ -112,6 +112,7 @@ let impl_arguments_ name args =
       }) args in
   Vernac [ VernacArguments (qname, impl_args, [], []) ]
 
+(* TODO somehow the imported module is printed on a new line. looks like automatic line break issue *)
 let import_ name =
   Vernac [ VernacImport (false, [ (qualid_ name, ImportAll) ]) ]
 let export_ name =

@@ -41,10 +41,9 @@ let rec genArg sort n bs = function
   | L.Atom y ->
     let* up_scopes = castUpSubstScope sort bs y n in
     pure @@ app_sort y up_scopes
-  | L.FunApp (f, p, xs) ->
-    let* xs' = a_map (genArg sort n bs) xs in
-    let p' = Option.default [] (Option.map (fun x -> [x]) p) in
-    pure @@ app_ref f (p' @ xs')
+  | L.FunApp (fname, static_args, args) ->
+    let* args' = a_map (genArg sort n bs) args in
+    pure @@ app_ref fname (static_args @ args')
 
 let genConstr sort ns L.{ cparameters; cname; cpositions } =
   let* t =
@@ -142,9 +141,10 @@ let traversal
           pure (match extra_arg with
               | None -> abs_ref "x" (no_args (ref_ "x"))
               | Some s -> no_args s)
-      | FunApp (f, p, xs) ->
-        let* res = a_map (arg_map bs None) xs in
-        pure (funsem f (res @ extra_arg_list extra_arg)) in
+      (* TODO really ignore static args here? *)
+      | FunApp (fname, _, args) ->
+        let* res = a_map (arg_map bs None) args in
+        pure (funsem fname (res @ extra_arg_list extra_arg)) in
     let ss = getPattern "s" cpositions in
     let* positions = a_map2_exn
         (fun s { binders; head; } ->

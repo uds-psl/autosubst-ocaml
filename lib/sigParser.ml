@@ -138,7 +138,8 @@ let functorArg = lift4 (fun _ n pms _ ->
     (n, pms)
   )
     quote ident (* (take_till (fun c -> Char.(c = '"'))) *)
-    (option None (sexpr >>| (fun x -> Some x)))
+    (* TODO allow multiple static args *)
+    (option [] (sexpr >>| (fun x -> [x])))
     quote
 
 (** An argument is either an identifier representing a sort or a functor application
@@ -214,8 +215,8 @@ let checkSpec (sorts, functors, ctors, var_name_assoc) =
         else checkTId x in
     let rec checkHead () = function
       | L.Atom x -> checkTId x
-      | L.FunApp (f, _, args) ->
-        checkFId f *> m_fold_ checkHead () args in
+      | L.FunApp (fname, _, args) ->
+        checkFId fname *> m_fold_ checkHead () args in
     let checkPosition () L.{ binders; head; } =
       m_fold_ checkBinder () binders
       *> checkHead () head in

@@ -12,7 +12,7 @@ type 'a tIdMap = (tId, 'a) AL.t [@@deriving show]
 
 type binder = Single of tId | BinderList of string * tId
 [@@deriving show]
-type argument_head = Atom of tId | FunApp of fId * (CG.constr_expr option [@opaque]) * (argument_head list)
+type argument_head = Atom of tId | FunApp of fId * (CG.constr_expr list [@opaque]) * (argument_head list)
 [@@deriving show]
 
 let get_bound_sort = function
@@ -20,7 +20,7 @@ let get_bound_sort = function
   | BinderList (_, x) -> x
 let rec getArgSorts = function
   | Atom x -> [x]
-  | FunApp (_, _, xs) -> List.(concat (map getArgSorts xs))
+  | FunApp (_, _, args) -> List.(concat (map getArgSorts args))
 
 type position =
   { binders : binder list;
@@ -126,7 +126,7 @@ module [@warning "-32"] Hsig_fol = struct
          }; {
              cparameters = [("p","nat")];
              cname = "Pred";
-             cpositions = [ { binders = []; head = FunApp ("cod", Some (app1_ (ref_ "fin") (ref_ "p")), [ Atom "term" ]); }]
+             cpositions = [ { binders = []; head = FunApp ("cod", [app1_ (ref_ "fin") (ref_ "p")], [ Atom "term" ]); }]
            }; {
              cparameters = [];
              cname = "Impl";
@@ -156,7 +156,7 @@ module [@warning "-32"] Hsig_fol = struct
       ); ("term", [ {
           cparameters = [("f","nat")];
           cname = "Func";
-          cpositions = [ {binders = []; head = FunApp ("cod", Some (app1_ (ref_ "fin") (ref_ "f")), [Atom "term"]); } ]
+          cpositions = [ {binders = []; head = FunApp ("cod", [app1_ (ref_ "fin") (ref_ "f")], [Atom "term"]); } ]
         } ] )
     ]
   let mySig = {
