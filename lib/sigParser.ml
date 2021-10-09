@@ -57,11 +57,12 @@ let filter_reserved i =
   then hard_fail @@ "reserved identifier: " ^ i
   else return i
 
-let check_non_empty = function
-  | "" -> hard_fail "empty identifier"
-  | s -> return s
+(** * Parsers for all the tokens we encounter. *)
 
-(** Parsers for all the tokens we encounter. *)
+(** When parsing an identifier we just take the longest valid non-empty prefix *)
+let check_non_empty_ident = function
+  | (s, "") -> fail ("empty identifier: " ^ s)
+  | (_, valid_prefix) -> return valid_prefix
 
 (** Parse an identifier using functions frm the Coq implementation.
  ** This allows the same unicode identifiers as Coq, e.g. greek letters.
@@ -79,8 +80,8 @@ let raw_ident = lex @@ scan_state ("", "") (fun (s, valid_prefix) c ->
       then Some (s', s')
       else None
     else Some (s', valid_prefix)
-  ) >>= function (_, i) -> return i (* just take the longest valid prefix *)
-    >>= check_non_empty
+  ) >>= check_non_empty_ident
+
 
 (** Most uses of the identifier parser are filtered so that they don't contain reserved keywords *)
 let ident = raw_ident >>= filter_reserved
@@ -150,8 +151,8 @@ let arghead =
          functorArg (parens (sep_by1 comma arg)))
       <|> (lift (fun i -> L.Atom i) ident))
 
-(** A position is an optional arbitrary number of binders (need parentheses in that case)
- ** and a head *)
+(** A position is either some binders and a head (all enclosed in parentheses)
+ ** or only a head. *)
 let pos =
   parens (lift2 (fun binders head -> L.{ binders; head; }) binders arghead)
   <|> lift (fun head -> L.{ binders=[]; head; }) arghead
@@ -174,12 +175,13 @@ let constructorDecl : ([> `Constructor of constructorAST ]) t =
  ** an arbitrary number of sort/functor/constructor declarations in any order.
  ** Because they can appear in any order we can just throw them in a polymorphic variant
  ** and filter them out again later *)
-let signature : specAST t = lift3 (fun _ ds _ ->
-    let ss = List.filter_map (function `Sort (s, _) -> Some s | _ -> None) ds in
-    let var_name_assoc = AL.from_list (List.filter_map (function `Sort (s, Some var_name) -> Some (s, var_name) | _ -> None) ds) in
-    let fs = List.filter_map (function `Functor f -> Some f | _ -> None) ds in
-    let cs = List.filter_map (function `Constructor c -> Some c | _ -> None) ds in
-    (ss, fs, cs, var_name_assoc))
+let signature : specAST t =
+  lift3 (fun _ ds _ ->
+      let ss = List.filter_map (function `Sort (s, _) -> Some s | _ -> None) ds in
+      let var_name_assoc = AL.from_list (List.filter_map (function `Sort (s, Some var_name) -> Some (s, var_name) | _ -> None) ds) in
+      let fs = List.filter_map (function `Functor f -> Some f | _ -> None) ds in
+      let cs = List.filter_map (function `Constructor c -> Some c | _ -> None) ds in
+      (ss, fs, cs, var_name_assoc))
     (skip_many blank_line)
     (sortDecl <|> functorDecl <|> constructorDecl |> line |> many)
     (commit *>
