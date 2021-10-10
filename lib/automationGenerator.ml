@@ -248,6 +248,7 @@ let gen_automation () =
   let* tactics = a_map (fun f -> f ()) tactic_funs in
   let* tactics_fext = a_map (fun f -> f ()) tactic_fext_funs in
   let* gen_fext = is_gen_fext in
+  let open AutosubstModules in
   pure { ren_subst_units = classes @ instances @ notations @ proper_instances @ tactics
        ; allfv_units = []
        ; fext_units = guard gen_fext tactics_fext

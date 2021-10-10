@@ -16,6 +16,7 @@ open Tactics
 open CoqNames
 open GallinaGen
 open VernacGen
+module AM = AutosubstModules
 open Termutil
 open AutomationGen
 open RWEM.Syntax
@@ -53,7 +54,7 @@ let genConstr sort ns L.{ cparameters; cname; cpositions } =
   pure @@ constructor_ cname (if list_empty cparameters then t else forall_ (createBinders cparameters) t)
 
 
-let genBody sort =
+let gen_inductive_body sort =
   let* cs = constructors sort in
   let* (ns, bns) = introScopeVar "n" sort in
   let* is_open = isOpen sort in
@@ -64,6 +65,12 @@ let genBody sort =
     else pure ctors
   in
   pure @@ inductiveBody_ sort (explicit_ bns) ~rtype:type_ ctors
+
+(** Generate a mutual inductive type spanning the given definable sorts *)
+let gen_inductive def_sorts =
+  match def_sorts with
+  | [] -> pure (Vernac [])
+  | l -> map inductive_ (a_map gen_inductive_body def_sorts)
 
 (** the proof term is just n-1 eq_trans and n ap's where n is the length of cpositions.
  ** The pattern is that with each f_equal we swap out one s_n for one t_n
@@ -80,6 +87,7 @@ let genCongruence sort L.{ cparameters; cname; cpositions } =
       xs cpositions in
   let* bss = mkBinders ss in
   let* bts = mkBinders ts in
+  (* todo rename parameters *)
   let bparameters = createImpBinders cparameters in
   let parameters' = List.(mk_refs (map fst cparameters)) in
   let ss = mk_refs ss in
@@ -169,7 +177,7 @@ let genUpRen (binder, sort) =
   let n' = succ_ n sort binder in
   let defBody = definitionBody sort binder
       (up_ren_ xi, xi)
-      (fun m _ -> app_ref "upRen_p" [ref_ m; xi], xi) in
+      (fun p _ -> app_ref "upRen_p" [ref_ p; xi], xi) in
   pure @@ lemma_ ~opaque:false (upRen_ sort binder) (bpms @ scopeBinders) (renT m' n') defBody
 
 (* TODO move to tactics and make same name as in MetaCoq *)
@@ -275,14 +283,6 @@ let genSubstitution sort =
       map_ in
   pure @@ fixpointBody_ (subst_ sort) (scopeBinders @ bs) type_ body s
 
-(* let genSubstitutions sorts =
- *   let* fs = a_map genSubstitution sorts in
- *   (\* a.d. DONE is the isRecursive still from modular syntax?
- *    * No, it's not. Assitionally, I think I found a bug in the Haskell implementation. I should not check isRecursive for the head of the component but rather for the whole component.
- *    * If we just check the head we can force wrong code generation if the head sort is not an argument of itself (e.g. if we move vl to be the first defined sort in SysF_cbv) *\)
- *   let* is_rec = isRecursive sorts in
- *   pure @@ fixpoint_ ~is_rec fs *)
-
 let allfv_def_body_functor =
   (* TODO not used atm *)
   (fun m _ -> ref_ "unimplemented", ref_ "unimplemented")
@@ -343,7 +343,7 @@ let genAllfvH name sort ps typeF f =
     SubstAllfvH (mk_refs names, f),
     List.map2 (fun n t -> binder1_ ~btype:t n) names types
   )
-  
+
 let genAllfvTriv sort =
   let* (ms, bms) = introScopeVar "m" sort in
   let* (ps, bps) = genPred "p" sort ms in
@@ -454,8 +454,8 @@ let genUpExt (binder, sort) =
       (app1_ eq n) in
   let defBody = definitionBody sort binder
       (matchFin_ (ref_ n) t eq_refl_, t (ref_ n))
-      (const2 @@ (app_ref "scons_p_congr" [ abs_ref "n" eq_refl_
-                                          ; abs_ref "n" (t (ref_ "n")) ],
+      (const2 @@ (scons_p_congr_ (abs_ref "n" (t (ref_ "n")))
+                    (abs_ref "n" eq_refl_),
                   t (ref_ n))) in
   pure @@ lemma_ (upExt_ sort binder) (bpms @ scopeBinders @ beq) ret (abs_ref "n" defBody)
 
@@ -568,7 +568,7 @@ let genUpSubstRen (binder, sort) =
   let [@warning "-8"] [ k; sigma; theta ], [ ls; ms ], [ zetas ], scopeBinders = v in
   let (eq, beq) = genEq "Eq" (sigma >>> app_ref (ren_ sort) (sty_terms zetas)) theta in
   let n = VarState.tfresh "n" in
-  let* ms = upSubstScope sort [binder] ms in
+  let* ms_up = upSubstScope sort [binder] ms in
   let* substSorts = substOf sort in
   (* TODO document *)
   let* zetas' = upSubst sort [binder] zetas in
@@ -605,11 +605,11 @@ let genUpSubstRen (binder, sort) =
                                               @ List.map (const (abs_ref "x" eq_refl_)) pat
                                               @ [ app1_ sigma n ])))
          (ap_ (app_ref (ren_ sort) pat) (app1_ eq n))) in
-  let hd = abs_ref "x" (ap_ (app_var_constr sort ms) (scons_p_head' (ref_ "x"))) in
+  let hd = abs_ref "x" (ap_ (app_var_constr sort ms_up) (scons_p_head' (ref_ "x"))) in
   let defBody = definitionBody sort binder
       (matchFin_ (ref_ n) t eq_refl_, t (ref_ n))
       (fun _ sort' -> (eqTrans_
-                         (scons_p_comp' (ref_ "n"))
+                         (scons_p_comp' (ref_ n))
                          (scons_p_congr_ (abs_ref "n" (t' (ref_ "n") sort')) hd),
                        t' (ref_ n) sort')) in
   pure @@ lemma_ (up_subst_ren_ sort binder) (bpms @ scopeBinders @ beq) ret (abs_ref "n" defBody)
@@ -643,7 +643,7 @@ let genUpSubstSubst (binder, sort) =
   let [@warning "-8"] [ k; sigma; theta ], [ ls; ms ], [ taus ], scopeBinders = v in
   let (eq, beq) = genEq "Eq" (sigma >>> app_ref (subst_ sort) (sty_terms taus)) theta in
   let n = VarState.tfresh "n" in
-  let* ms = upSubstScope sort [binder] ms in
+  (* let* ms = upSubstScope sort [binder] ms in *)
   let* ls' = upSubstScope sort [binder] ls in
   let* taus' = upSubst sort [binder] taus in
   let* pat = patternSId sort binder in
@@ -692,7 +692,7 @@ let genUpSubstSubst (binder, sort) =
                          (app_ref "scons_p_comp'" [ app_ref "zero_p" [ref_ p]
                                                     >>> app_var_constr sort ls'
                                                   ; underscore_; underscore_
-                                                  ; ref_ "n" ])
+                                                  ; ref_ n ])
                          (scons_p_congr_ (abs_ref "n" (t' (ref_ "n") sort')) hd),
                        t' (ref_ n) sort')) in
   pure @@ lemma_ (up_subst_subst_ sort binder) (bpms @ scopeBinders @ beq) ret (abs_ref "n" defBody)
@@ -724,22 +724,23 @@ let genUpSubstSubstNoRen (binder, sort) =
   let [@warning "-8"] [ k; sigma; theta ], [ ls; ms ], [ taus ], scopeBinders = v in
   let (eq, beq) = genEq "Eq" (sigma >>> app_ref (subst_ sort) (sty_terms taus)) theta in
   let n = VarState.tfresh "n" in
+  (* TODO fix variable names *)
   let* ms = upSubstScope sort [binder] ms in
   let* ls' = upSubstScope sort [binder] ls in
-  let* zeta' = upSubst sort [binder] taus in
+  let* taus_up = upSubst sort [binder] taus in
   let* pat = patternSId sort binder in
   let (pms, bpms) = binvparameters binder in
   let ret = equiv_
       (app_ref (up_ sort binder) (pms @ [sigma])
-       >>> app_ref (subst_ sort) (sty_terms zeta'))
+       >>> app_ref (subst_ sort) (sty_terms taus_up))
       (app_ref (up_ sort binder) (pms @ [theta])) in
-  let* shift = patternSIdNoRen sort binder in
+  let* patNoRen = patternSIdNoRen sort binder in
   let* substSorts = substOf sort in
   let* pat' = comp_ren_or_subst sort (SubstSubst pat) taus in
   let t n = eqTrans_
       (app_ref (compSubstSubst_ sort)
-         (pat @ sty_terms zeta'
-          @ List.map2 (>>>) shift (sty_terms zeta')
+         (pat @ sty_terms taus_up
+          @ List.map2 (>>>) patNoRen (sty_terms taus_up)
           @ List.map (const (abs_ref "x" eq_refl_)) pat
           @ [ app1_ sigma n ]))
       (eqTrans_
@@ -750,8 +751,8 @@ let genUpSubstSubstNoRen (binder, sort) =
          (ap_ (app_ref (subst_ sort) pat) (app1_ eq n))) in
   let t' n z' = eqTrans_
       (app_ref (compSubstSubst_ sort)
-         (pat @ sty_terms zeta'
-          @ List.map2 (>>>) shift (sty_terms zeta')
+         (pat @ sty_terms taus_up
+          @ List.map2 (>>>) patNoRen (sty_terms taus_up)
           @ List.map (const (abs_ref "x" eq_refl_)) pat
           @ [ app1_ sigma n ]))
       (eqTrans_
@@ -776,8 +777,8 @@ let genUpSubstSubstNoRen (binder, sort) =
                          [ app_ref "zero_p" [ref_ p] >>> (app_var_constr sort ls')
                          ; underscore_
                          ; underscore_
-                         ; ref_ "n" ])
-                      (scons_p_congr_  (abs_ref "n" (t' (ref_ "n") z')) hd),
+                         ; ref_ n ])
+                      (scons_p_congr_ (abs_ref "n" (t' (ref_ "n") z')) hd),
                     t' (ref_ n) z')) in
   pure @@ lemma_ (up_subst_subst_ sort binder) (bpms @ scopeBinders @ beq) ret (abs_ref "n" defBody)
 
@@ -798,7 +799,7 @@ let genUpRinstInst (binder, sort) =
   let n = VarState.tfresh "n" in
   let s = eqTrans_
       (app_ref "scons_p_comp'" [underscore_; underscore_; app_var_constr sort ns'; ref_ n])
-      (scons_p_congr_ (abs_ref n (t (ref_ n))) (abs_ref "z" eq_refl_)) in
+      (scons_p_congr_ (abs_ref "n" (t (ref_ "n"))) (abs_ref "z" eq_refl_)) in
   let defBody = definitionBody sort binder
       (matchFin_ (ref_ n) t eq_refl_, t (ref_ n))
       (const2 (s, t (ref_ n))) in
@@ -1044,7 +1045,7 @@ let genLemmaCompRenRen sort =
   let proof_pointwise = abs_ref "s" proof in
   pure (
     lemma_ (renRen_ sort) (scopeBinders
-                               @ [ binder1_ ~btype:(app_sort sort ms) s ])
+                           @ [ binder1_ ~btype:(app_sort sort ms) s ])
       ret proof,
     lemma_ (renRen'_ sort) scopeBinders ret' proof',
     lemma_ (renRenPointwise_ sort) scopeBinders ret_pointwise proof_pointwise
@@ -1170,127 +1171,178 @@ let genLemmaCompSubstSubst sort =
     lemma_ (substSubstPointwise_ sort) scopeBinders ret_pointwise proof_pointwise
   )
 
+(** For a given component generate the inductive type and congruence lemmas.
+ ** These will always be generated, no matter if the component has renamings/substitutions.
+ ** TODO they will not be generated if the component contains no definable sorts which to my current knowledge only happens if the component consists of e.g. "nat" so we can already only pass def_sorts to gen_code *)
+let gen_common sorts =
+  let open AM in
+  let* def_sorts = a_filter isDefinable sorts in
+  (* GENERATE INDUCTIVE TYPES *)
+  let* inductive = gen_inductive def_sorts in
+  (* GENERATE CONGRUENCE LEMMAS *)
+  let* congruences = a_concat_map genCongruences def_sorts in
+  pure { ren_subst_units = inductive :: congruences
+       ; allfv_units = []
+       ; fext_units = []
+       ; interface_units = [] }
+
+
+let gen_lemmas sorts up_list =
+  let open AM in
+  let* is_rec = isRecursive sorts in
+  let mk_fixpoint = fixpoint_ ~is_rec in
+  (* GENERATE RENAMINGS *)
+  let* upRen = a_map genUpRen up_list in
+  let* renamings = a_map genRenaming sorts in
+  (* GENERATE SUBSTITUTIONS *)
+  let* ups = a_map genUpS up_list in
+  let* substitutions = a_map genSubstitution sorts in
+  let* upId = a_map genUpId up_list in
+  let* idLemmas = a_map genIdLemma sorts in
+  (* GENERATE EXTENSIONALITY LEMMAS *)
+  let* extUpRen = a_map genUpExtRen up_list in
+  let* extRen = a_map genExtRen sorts in
+  let* extUp = a_map genUpExt up_list in
+  let* ext = a_map genExt sorts in
+  (* GENERATE COMPOSITIONALITY LEMMAS *)
+  let* upRenRen = a_map genUpRenRen up_list in
+  let* compRenRen = a_map genCompRenRen sorts in
+  let* upRenSubst = a_map genUpRenSubst up_list in
+  let* compRenSubst = a_map genCompRenSubst sorts in
+  let* upSubstRen = a_map genUpSubstRen up_list in
+  let* compSubstRen = a_map genCompSubstRen sorts in
+  let* upSubstSubst = a_map genUpSubstSubst up_list in
+  let* compSubstSubst = a_map genCompSubstSubst sorts in
+  (* Coincidence of Instantiation *)
+  let* upRinstInst = a_map genUpRinstInst up_list in
+  let* rinstInst = a_map genRinstInst sorts in
+  (* Lemmas for the rewriting system *)
+  let* lemmaInstId_fext = a_map genLemmaInstId sorts in
+  let* lemmaInstId, lemmaInstIdPointwise = a_split_map genLemmaInstId' sorts in
+  let* lemmaRinstId_fext = a_map genLemmaRinstId sorts in
+  let* lemmaRinstId, lemmaRinstIdPointwise = a_split_map genLemmaRinstId' sorts in
+  let* varSorts = a_filter isOpen sorts in
+  let* lemmaVarL_fext = a_map genLemmaVarL varSorts in
+  let* lemmaVarL, lemmaVarLPointwise = a_split_map genLemmaVarL' varSorts in
+  let* lemmaVarLRen_fext = a_map genLemmaVarLRen varSorts in
+  let* lemmaVarLRen, lemmaVarLRenPointwise = a_split_map genLemmaVarLRen' varSorts in
+  let* lemmaRenSubst_fext = a_map genLemmaRinstInst sorts in
+  let* lemmaRenSubst, lemmaRenSubstPointwise = a_split_map genLemmaRinstInst' sorts in
+  let* lemmaCompRenRen, lemmaCompRenRenFext, lemmaCompRenRenPointwise =
+    let* renRen = a_map genLemmaCompRenRen sorts in
+    pure (list_split3 renRen) in
+  let* lemmaCompSubstRen, lemmaCompSubstRenFext, lemmaCompSubstRenPointwise =
+    let* substRen = a_map genLemmaCompSubstRen sorts in
+    pure (list_split3 substRen) in
+  let* lemmaCompRenSubst, lemmaCompRenSubstFext, lemmaCompRenSubstPointwise =
+    let* renSubst = a_map genLemmaCompRenSubst sorts in
+    pure (list_split3 renSubst) in
+  let* lemmaCompSubstSubst, lemmaCompSubstSubstFext, lemmaCompSubstSubstPointwise =
+    let* substSubst = a_map genLemmaCompSubstSubst sorts in
+    pure (list_split3 substSubst) in
+  (* put the code in the respective modules *)
+  let* gen_fext = is_gen_fext in
+  pure { ren_subst_units = upRen @ [mk_fixpoint renamings] @
+                           ups @ [mk_fixpoint substitutions] @
+                           upId @ [mk_fixpoint idLemmas] @
+                           extUpRen @ [mk_fixpoint extRen] @
+                           extUp @ [mk_fixpoint ext] @
+                           upRenRen @ [mk_fixpoint compRenRen] @
+                           upRenSubst @ [mk_fixpoint compRenSubst] @
+                           upSubstRen @ [mk_fixpoint compSubstRen] @
+                           upSubstSubst @ [mk_fixpoint compSubstSubst] @
+                           upRinstInst @ [mk_fixpoint rinstInst] @
+                           lemmaCompRenRen @ lemmaCompRenRenPointwise @
+                           lemmaCompSubstRen @ lemmaCompSubstRenPointwise @
+                           lemmaCompRenSubst @ lemmaCompRenSubstPointwise @
+                           lemmaCompSubstSubst @ lemmaCompSubstSubstPointwise @
+                           lemmaRenSubst @ lemmaRenSubstPointwise @
+                           lemmaInstId @ lemmaInstIdPointwise @
+                           lemmaRinstId @ lemmaRinstIdPointwise @
+                           lemmaVarL @ lemmaVarLPointwise @
+                           lemmaVarLRen @ lemmaVarLRenPointwise
+       ; allfv_units = []
+       ; fext_units = guard gen_fext (lemmaRenSubst_fext @
+                                      lemmaInstId_fext @ lemmaRinstId_fext @
+                                      lemmaVarL_fext @ lemmaVarLRen_fext @
+                                      lemmaCompRenRenFext @ lemmaCompSubstRenFext @
+                                      lemmaCompRenSubstFext @ lemmaCompSubstSubstFext)
+       ; interface_units = [] }
+
+let gen_lemmas_no_ren sorts up_list =
+  let open AM in
+  let* is_rec = isRecursive sorts in
+  let mk_fixpoint = fixpoint_ ~is_rec in
+  (* GENERATE SUBSTITUTIONS *)
+  let* substitutions = a_map genSubstitution sorts in
+  let* upsNoRen = a_map genUpS up_list in
+  let* upId = a_map genUpId up_list in
+  let* idLemmas = a_map genIdLemma sorts in
+  (* GENERATE EXTENSIONALITY LEMMAS *)
+  let* extUp = a_map genUpExt up_list in
+  let* ext = a_map genExt sorts in
+  (* GENERATE COMPOSITIONALITY LEMMAS *)
+  let* compSubstSubst = a_map genCompSubstSubst sorts in
+  let* upSubstSubstNoRen = a_map genUpSubstSubstNoRen up_list in
+  (* Lemmas for the rewriting system *)
+  let* lemmaInstId_fext = a_map genLemmaInstId sorts in
+  let* lemmaInstId, lemmaInstIdPointwise = a_split_map genLemmaInstId' sorts in
+  let* varSorts = a_filter isOpen sorts in
+  let* lemmaVarL_fext = a_map genLemmaVarL varSorts in
+  let* lemmaVarL, lemmaVarLPointwise = a_split_map genLemmaVarL' varSorts in
+  let* lemmaCompSubstSubst, lemmaCompSubstSubstFext, lemmaCompSubstSubstPointwise =
+    let* substSubst = a_map genLemmaCompSubstSubst sorts in
+    pure (list_split3 substSubst) in
+  (* put the code in the respective modules *)
+  let* gen_fext = is_gen_fext in
+  pure { ren_subst_units = [mk_fixpoint substitutions] @ upsNoRen @
+                           upId @ [mk_fixpoint idLemmas] @
+                           extUp @ [mk_fixpoint ext] @
+                           [mk_fixpoint compSubstSubst] @ upSubstSubstNoRen @
+                           lemmaCompSubstSubst @ lemmaCompSubstSubstPointwise @
+                           lemmaInstId @ lemmaInstIdPointwise @
+                           lemmaVarL @ lemmaVarLPointwise
+       ; allfv_units = []
+       ; fext_units = guard gen_fext (lemmaInstId_fext @
+                                      lemmaVarL_fext @
+                                      lemmaCompSubstSubstFext)
+       ; interface_units = [] }
+
+
+let gen_allfv sorts up_list =
+  let open AM in
+  let* is_rec = isRecursive sorts in
+  let mk_fixpoint = fixpoint_ ~is_rec in
+  (* Code for Allfv *)
+  let* upAllfv = a_map genUpAllfv up_list in
+  let* allfvs = a_map genAllfv sorts in
+  let* upAllfvTriv = a_map genUpAllfvTriv up_list in
+  let* allfvTriv = a_map genAllfvTriv sorts in
+  (* put the code in the respective modules *)
+  let* gen_allfv = is_gen_allfv in
+  pure { ren_subst_units = []
+       ; allfv_units = guard gen_allfv (upAllfv @ [mk_fixpoint allfvs] @
+                                        upAllfvTriv @ [mk_fixpoint allfvTriv])
+       ; fext_units = []
+       ; interface_units = [] }
+
 (** This function delegates to all the different code generation functions and in the end
  ** aggregates all the returned vernacular commands. *)
-let gen_code sorts upList =
-  (* GENERATE INDUCTIVE TYPES *)
-  let* def_sorts = a_filter isDefinable sorts in
-  let* inductive = match def_sorts with
-    | [] -> pure (Vernac [])
-    | l -> map inductive_ (a_map genBody def_sorts) in
-  (* GENERATE CONGRUENCE LEMMAS *)
-  let* congruences = a_concat_map genCongruences sorts in
+let gen_code sorts up_list =
+  (* let () = print_endline (String.concat "; " (List.map (fun (b, s) -> (L.show_binder b) ^ ", " ^ s) up_list)) in *)
+  let* ind_congr = gen_common sorts in
   (* a.d. DONE if one sort in a component has a non-zero substitution vector, all of them have?
    * Yes, if the component has only one sort, the statement is trivial
    * if the component has two or more sorts, then each sort's subsitution vector contains at least the other sorts fo the component. *)
-  let* has_binders = map list_nempty (substOf (List.hd sorts)) in
-  if not has_binders
+  let* has_substs = map list_nempty (substOf (List.hd sorts)) in
+  if not has_substs
   (* return early and don't generate anything else *)
-  then pure { ren_subst_units = inductive :: congruences
-            ; allfv_units = []
-            ; fext_units = []
-            ; interface_units = [] }
+  then pure ind_congr
   else
-    (*  *)
-    let* is_rec = isRecursive sorts in
-    let mk_fixpoint = function
-      | [] -> []
-      | fix_exprs -> [fixpoint_ ~is_rec fix_exprs] in
-    (* specialized monadic mapping functions
-     * there are lemmas that we only generate if the component is recursive (or only if it's not recursive)
-     * and there are lemmas we generte in both cases.
-     * So this seems like the best way. *)
-    let* is_ren = hasRenamings (List.hd sorts) in
-    let guard_map ?(invert=false) f input =
-      if (invert <> is_ren)
-      then a_map f input
-      else pure [] in
-    let guard_split_map f input =
-      if is_ren
-      then a_split_map f input
-      else pure ([], []) in
-    (* GENERATE RENAMINGS *)
-    let* upRen = guard_map genUpRen upList in
-    let* renamings = guard_map genRenaming sorts in
-    (* GENERATE UPs *)
-    let* ups = guard_map genUpS upList in
-    let* upsNoRen = guard_map ~invert:true genUpS upList in
-    (* GENERATE SUBSTITUTIONS *)
-    let* substitutions = a_map genSubstitution sorts in
-    let* upId = a_map genUpId upList in
-    let* idLemmas = a_map genIdLemma sorts in
-    (* GENERATE EXTENSIONALITY LEMMAS *)
-    let* extUpRen = guard_map genUpExtRen upList in
-    let* extRen = guard_map genExtRen sorts in
-    let* extUp = a_map genUpExt upList in
-    let* ext = a_map genExt sorts in
-    (* GENERATE COMPOSITIONALITY LEMMAS *)
-    let* upRenRen = guard_map genUpRenRen upList in
-    let* compRenRen = guard_map genCompRenRen sorts in
-    let* upRenSubst = guard_map genUpRenSubst upList in
-    let* compRenSubst = guard_map genCompRenSubst sorts in
-    let* upSubstRen = guard_map genUpSubstRen upList in
-    let* compSubstRen = guard_map genCompSubstRen sorts in
-    let* upSubstSubst = guard_map genUpSubstSubst upList in
-    (* TODO should this really come after compSubstSubst? *)
-    let* upSubstSubstNoRen = guard_map ~invert:true genUpSubstSubstNoRen upList in
-    let* compSubstSubst = a_map genCompSubstSubst sorts in
-    (* Coincidence of Instantiation *)
-    let* upRinstInst = guard_map genUpRinstInst upList in
-    let* rinstInst = guard_map genRinstInst sorts in
-    (* Lemmas for the rewriting system *)
-    let* lemmaInstId_fext = a_map genLemmaInstId sorts in
-    let* lemmaInstId, lemmaInstIdPointwise = a_split_map genLemmaInstId' sorts in
-    let* lemmaRinstId_fext = guard_map genLemmaRinstId sorts in
-    let* lemmaRinstId, lemmaRinstIdPointwise = guard_split_map genLemmaRinstId' sorts in
-    let* varSorts = a_filter isOpen sorts in
-    let* lemmaVarL_fext = a_map genLemmaVarL varSorts in
-    let* lemmaVarL, lemmaVarLPointwise = a_split_map genLemmaVarL' varSorts in
-    let* lemmaVarLRen_fext = guard_map genLemmaVarLRen varSorts in
-    let* lemmaVarLRen, lemmaVarLRenPointwise = guard_split_map genLemmaVarLRen' varSorts in
-    let* lemmaRenSubst_fext = guard_map genLemmaRinstInst sorts in
-    let* lemmaRenSubst, lemmaRenSubstPointwise = guard_split_map genLemmaRinstInst' sorts in
-    let* lemmaCompRenRen, lemmaCompRenRenFext, lemmaCompRenRenPointwise =
-      let* renRen = guard_map genLemmaCompRenRen sorts in
-      pure (list_split3 renRen) in
-    let* lemmaCompSubstRen, lemmaCompSubstRenFext, lemmaCompSubstRenPointwise =
-      let* substRen = guard_map genLemmaCompSubstRen sorts in
-      pure (list_split3 substRen) in
-    let* lemmaCompRenSubst, lemmaCompRenSubstFext, lemmaCompRenSubstPointwise =
-      let* renSubst = guard_map genLemmaCompRenSubst sorts in
-      pure (list_split3 renSubst) in
-    let* lemmaCompSubstSubst, lemmaCompSubstSubstFext, lemmaCompSubstSubstPointwise =
-      let* substSubst = guard_map genLemmaCompSubstSubst sorts in
-      pure (list_split3 substSubst) in
-    (* Code for Allfv *)
-    let* upAllfv = a_map genUpAllfv upList in
-    let* allfvs = a_map genAllfv sorts in
-    let* upAllfvTriv = a_map genUpAllfvTriv upList in
-    let* allfvTriv = a_map genAllfvTriv sorts in
-    (* put the code in the respective modules *)
-    let* gen_allfv = is_gen_allfv in
-    let* gen_fext = is_gen_fext in
-    pure { ren_subst_units = inductive :: congruences @
-                             upRen @ mk_fixpoint renamings @
-                             ups @ mk_fixpoint substitutions @ upsNoRen @
-                             upId @ mk_fixpoint idLemmas @
-                             extUpRen @ mk_fixpoint extRen @
-                             extUp @ mk_fixpoint ext @
-                             upRenRen @ mk_fixpoint compRenRen @
-                             upRenSubst @ mk_fixpoint compRenSubst @
-                             upSubstRen @ mk_fixpoint compSubstRen @
-                             upSubstSubst @ mk_fixpoint compSubstSubst @ upSubstSubstNoRen @
-                             upRinstInst @ mk_fixpoint rinstInst @
-                             lemmaCompRenRen @ lemmaCompRenRenPointwise @ lemmaCompSubstRen @ lemmaCompSubstRenPointwise @
-                             lemmaCompRenSubst @ lemmaCompRenSubstPointwise @ lemmaCompSubstSubst @ lemmaCompSubstSubstPointwise @
-                             lemmaRenSubst @ lemmaRenSubstPointwise @
-                             lemmaInstId @ lemmaInstIdPointwise @ lemmaRinstId @ lemmaRinstIdPointwise @
-                             lemmaVarL @ lemmaVarLPointwise @ lemmaVarLRen @ lemmaVarLRenPointwise;
-           allfv_units = guard gen_allfv (upAllfv @ mk_fixpoint allfvs @
-                                          upAllfvTriv @ mk_fixpoint allfvTriv);
-           fext_units = guard gen_fext (lemmaRenSubst_fext @
-                                        lemmaInstId_fext @ lemmaRinstId_fext @
-                                        lemmaVarL_fext @ lemmaVarLRen_fext @
-                                        lemmaCompRenRenFext @ lemmaCompSubstRenFext @
-                                        lemmaCompRenSubstFext @ lemmaCompSubstSubstFext);
-           interface_units = [] }
+    let* has_ren = hasRenamings (List.hd sorts) in
+    (* let () = print_endline ("sort " ^ List.hd sorts ^ " has_ren " ^ string_of_bool has_ren) in *)
+    let* lemmas = if has_ren
+      then gen_lemmas sorts up_list
+      else gen_lemmas_no_ren sorts up_list in
+    let* allfv_lemmas = gen_allfv sorts up_list in
+    pure (AM.concat [ind_congr; lemmas; allfv_lemmas])

@@ -77,6 +77,7 @@ let abs_ref x t =
   let x' = VarState.tfresh x in
   lambda_ [binder1_ x'] t
 
+(* TODO switch args *)
 let scons_p_congr_ s t = app_ref "scons_p_congr" [t; s]
 let scons_p_comp' x = app_ref "scons_p_comp'" [underscore_; underscore_; underscore_; x]
 let scons_p_tail' x = app_ref "scons_p_tail'" [underscore_; underscore_; x]

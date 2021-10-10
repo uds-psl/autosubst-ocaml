@@ -7,14 +7,22 @@ type vernac_unit = Vernac of vernac_expr list
                  | TacticLtac of string * TacGen.t
                  | TacticNotation of string list * TacGen.t
 
-type autosubst_modules = { ren_subst_units: vernac_unit list
-                         ; allfv_units : vernac_unit list
-                         ; fext_units: vernac_unit list
-                         ; interface_units : vernac_unit list }
 
-val append_modules : autosubst_modules -> autosubst_modules -> autosubst_modules
-val initial_modules : autosubst_modules
+module AutosubstModules : sig
+  type t = { ren_subst_units: vernac_unit list
+           ; allfv_units : vernac_unit list
+           ; fext_units: vernac_unit list
+           ; interface_units : vernac_unit list }
 
+  val ren_subst_units : t -> vernac_unit list
+  val allfv_units : t -> vernac_unit list
+  val fext_units : t -> vernac_unit list
+  val interface_units : t -> vernac_unit list
+
+  val append : t -> t -> t
+  val concat : t list -> t
+  val initial_modules : t
+end
 
 val pr_vernac_expr : vernac_expr -> Pp.t
 val pr_vernac_unit : vernac_unit -> Pp.t

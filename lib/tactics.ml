@@ -262,6 +262,7 @@ let patternSIdNoRen sort binder =
   let shift = const shift_ in
   let shiftp p = const @@ app1_ shift_p_ (ref_ p) in
   up sort (fun y b _ -> match b with
+      (* TODO what does app_id result in? *)
       | L.Single bsort -> if y = bsort then shift y else app_id_ underscore_
       | L.BinderList (p, bsort) -> if y = bsort then shiftp p y else app_id_ underscore_)
     (mk_refs substSorts) binder

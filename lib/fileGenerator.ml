@@ -7,6 +7,7 @@ open Util
 module CS = CoqSyntax
 module GG = GallinaGen
 module VG = VernacGen
+module AM = VG.AutosubstModules
 module AG = AutomationGen
 module L = Language
 module S = Settings
@@ -52,25 +53,33 @@ let getUps component =
  * end *)
 
 (** Generate the fixpoints/lemmas for all the connected components *)
-let genCode components =
+let genCode () =
   let open RWEM.Syntax in
   let open RWEM in
   let open VG in
+  let open AM in
+  let* components = getComponents in
   (* prepare the exports contained in the interface module *)
   let* gen_allfv = is_gen_allfv in
-  let initial_modules = if gen_allfv then { initial_modules with interface_units = initial_modules.interface_units @ [export_ "allfv"] } else initial_modules in
+  let initial_modules = if gen_allfv
+    then { initial_modules
+           with interface_units = initial_modules.interface_units @ [export_ "allfv"] }
+    else initial_modules in
   let* gen_fext = is_gen_fext in
-  let initial_modules = if gen_fext then { initial_modules with interface_units = initial_modules.interface_units @ [export_ "fext"] } else initial_modules in
+  let initial_modules = if gen_fext
+    then { initial_modules
+           with interface_units = initial_modules.interface_units @ [export_ "fext"] }
+    else initial_modules in
   let* (_, as_modules) = m_fold (fun (done_ups, as_modules) component ->
       let* substSorts = substOf (List.hd component) in
       let new_ups = getUps substSorts in
       let ups = list_diff new_ups done_ups in
       let* new_as_modules = CodeGenerator.gen_code component ups in
-      pure @@ (ups @ done_ups, append_modules as_modules new_as_modules))
+      pure @@ (ups @ done_ups, append as_modules new_as_modules))
       ([], initial_modules) components in
   pure as_modules
 
-let make_file preamble VG.{ ren_subst_units; allfv_units; fext_units; interface_units } =
+let make_file preamble AM.{ ren_subst_units; allfv_units; fext_units; interface_units } =
   let open VG in
   let pp_code = VG.pr_vernac_units (module_ "renSubst" ren_subst_units) in
   let pp_allfv = VG.pr_vernac_units (module_ "allfv" ~imports:[ "renSubst" ] allfv_units) in
@@ -85,10 +94,9 @@ let genFile () =
   let open RWEM.Syntax in
   let open RWEM in
   let* preamble = get_preamble () in
-  let* components = getComponents in
-  let* code = genCode components in
+  let* code = genCode () in
   let* automation = AutomationGenerator.gen_automation () in
-  pure (make_file preamble (VG.append_modules code automation))
+  pure (make_file preamble (AM.append code automation))
 
 
 (** Run the computation constructed by genFile *)

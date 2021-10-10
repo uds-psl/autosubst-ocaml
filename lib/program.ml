@@ -154,6 +154,7 @@ let main argv =
   (* check if we use the "cod" functor because then we need fext also in the normal code *)
   let args = if List.mem "cod" functors then {args with gen_fext = true} else args in
   let* signature = SigAnalyzer.build_signature spec in
+  (* let () = print_endline (Language.show_signature signature) in *)
   (* generate code *)
   let* code, _ = FileGenerator.run_gen_code signature args.gen_allfv args.gen_fext in
   (* write file *)

@@ -11,18 +11,6 @@ type vernac_unit = Vernac of vernac_expr list
                  | TacticLtac of string * TacGen.t
                  | TacticNotation of string list * TacGen.t
 
-type autosubst_modules = { ren_subst_units: vernac_unit list
-                         ; allfv_units : vernac_unit list
-                         ; fext_units: vernac_unit list
-                         ; interface_units : vernac_unit list }
-
-
-let append_modules e0 e1 =
-  { ren_subst_units = e0.ren_subst_units @ e1.ren_subst_units
-  ; allfv_units = e0.allfv_units @ e1.allfv_units
-  ; fext_units = e0.fext_units @ e1.fext_units
-  ; interface_units = e0.interface_units @ e1.interface_units }
-
 (** I catch the VernacExactProof constructor because the way Coq normally prints it does not
  ** work well with proof general. So I explicitly add an `exact (...)` *)
 let pr_vernac_expr =
@@ -55,14 +43,17 @@ let lemma_ ?(opaque=true) lname lbinders ltype lbody =
   Vernac [ lbegin; lbody; lend ]
 
 let fixpoint_ ~is_rec fexprs =
-  if is_rec
-  then Vernac [ VernacFixpoint (NoDischarge, fexprs) ]
-  else match fexprs with
-    | [{ fname={ v=fname; _ }; binders; rtype; body_def=Some body; _}] ->
-      definition_ (Names.Id.to_string fname) binders ~rtype body
-    | [fexpr] -> failwith "Malformed fixpoint expression"
-    | _ -> failwith "A non recursive fixpoint degenerates to a definition so it should only have one body"
-
+  match fexprs with
+  | [] -> failwith "fixpoint called without fixpoint bodies"
+  | fexprs_nempty ->
+    if is_rec
+    then Vernac [ VernacFixpoint (NoDischarge, fexprs) ]
+    (* if the fixpoint is declared non-recursive we try to turn it into a definition *)
+    else match fexprs_nempty with
+      | [{ fname={ v=fname; _ }; binders; rtype; body_def=Some body; _}] ->
+        definition_ (Names.Id.to_string fname) binders ~rtype body
+      | [fexpr] -> failwith "Malformed fixpoint body"
+      | _ -> failwith "A non recursive fixpoint degenerates to a definition so it should only have one body"
 
 let inductive_ inductiveBodies =
   Vernac [ VernacInductive (Inductive_kw, inductiveBodies) ]
@@ -133,16 +124,52 @@ let module_ name ?(imports=[]) contents =
     @ imports @ contents
     @ [ end_module_ name ]
 
-let initial_modules =
-  { ren_subst_units = []
-  ; allfv_units = []
-  ; fext_units = []
-  ; interface_units = [ export_ "renSubst" ] }
 
-
+(* TODO add export flag so coq does not complain (see vernac/vernacexpr.ml::vernac_control)
+ * TODO document why necessary. disable and kathrin's case study should fail *)
 (** the opaqueness hints for setoid rewriting are put into the "rewrite" db *)
 let setoid_opaque_hint name =
   Vernac [ VernacHints (["rewrite"], HintsTransparency (Hints.HintsReferences [qualid_ name], false)) ]
+
+
+(** Module for the organization of an output file.
+ ** Autosubst generates a single file with several modules.
+ **
+ ** ren_subst_units: the common code (inductive types, renamings, substitutions, lemmas)
+ ** allfv_units: allfv lemma
+ ** fext_units: lemmas involving functional extensionality
+ ** interface_units: the module that exports the other modules. This is what an end-user imports in their code *)
+module AutosubstModules = struct
+  type t = { ren_subst_units: vernac_unit list
+           ; allfv_units : vernac_unit list
+           ; fext_units: vernac_unit list
+           ; interface_units : vernac_unit list }
+
+  let ren_subst_units m = m.ren_subst_units
+  let allfv_units m = m.allfv_units
+  let fext_units m = m.fext_units
+  let interface_units m = m.interface_units
+
+  let append m0 m1 =
+    { ren_subst_units = m0.ren_subst_units @ m1.ren_subst_units
+    ; allfv_units = m0.allfv_units @ m1.allfv_units
+    ; fext_units = m0.fext_units @ m1.fext_units
+    ; interface_units = m0.interface_units @ m1.interface_units }
+
+  let concat ms =
+    let open List in
+    { ren_subst_units = concat (map ren_subst_units ms)
+    ; allfv_units = concat (map allfv_units ms)
+    ; fext_units = concat (map fext_units ms)
+    ; interface_units = concat (map interface_units ms) }
+
+  let initial_modules =
+    { ren_subst_units = []
+    ; allfv_units = []
+    ; fext_units = []
+    ; interface_units = [ export_ "renSubst" ] }
+end
+
 
 (* disable unused warning *)
 module [@warning "-32"] GenTests = struct

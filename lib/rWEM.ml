@@ -119,7 +119,11 @@ let isOpen sort =
 let isDefinable sort =
   let* b = isOpen sort in
   let* cs = constructors sort in
-  pure (b || not (list_empty cs))
+  let res = (b || not (list_empty cs)) in
+  (* if not res
+   * then failwith ("sort not definable " ^ sort)
+   * else *)
+    pure res
 
 (** check if a sort has a substitution vector *)
 let hasArgs sort = (fun l -> list_empty l |> not) <$> substOf sort
@@ -165,7 +169,7 @@ let boundBinders component =
 
 (** A sort needs renamings
  ** either if it is an argument in a sort of a different component that needs renamings
- ** or if any sort of the component appears as a binder in the component  *)
+ ** or if any sort of the component appears as a binder in the component *)
 let rec hasRenamings sort =
   let* component = getComponent sort in
   let* boundBinders = boundBinders component in
@@ -181,4 +185,6 @@ let rec hasRenamings sort =
   let* bs = a_map hasRenamings occ in
   let xs_bb = list_intersection component boundBinders |> list_empty |> not in
   let bs' = list_any bs in
-  pure (xs_bb || bs')
+  let res = (xs_bb || bs') in
+  (* let () = print_endline ("renaming " ^ sort ^ (string_of_bool res)) in *)
+  pure res

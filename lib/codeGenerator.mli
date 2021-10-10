@@ -7,4 +7,4 @@ module L = Language
  ** It returns a tuple of vernacular expression lists since all the definitions using functional
  ** extensionality are separated into a different module.
  ** *)
-val gen_code : L.tId list -> (L.binder * L.tId) list -> VernacGen.autosubst_modules RWEM.t
+val gen_code : L.tId list -> (L.binder * L.tId) list -> VernacGen.AutosubstModules.t RWEM.t
