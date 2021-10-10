@@ -34,28 +34,6 @@ let lex p = p <* spaces
 (** parser that aborts parsing by commiting so we can't backtrack and then immediately failing *)
 let hard_fail msg = commit *> fail msg
 
-(** taken from Autosubst 2 *)
-let reservedIds =
-  (* Keywords according to the Coq manual *)
-  ["as"; "at"; "cofix"; "else"; "end"; "exists"; "exists2"; "fix";
-   "for"; "forall"; "fun"; "if"; "IF"; "in"; "let"; "match"; "mod";
-   "Prop"; "return"; "Set"; "then"; "Type"; "using"; "where"; "with";
-   (* Additional reserved identifiers *)
-   "lazymatch"; "multimatch"; "Definition"; "Fixpoint"; "CoFixpoint";
-   "Axiom"; "Inductive"; "CoInductive"; "Theorem"; "Class";
-   (* Identifiers used by Autosubst *)
-   "fin"; "shift"; "None"; "Some"; "scons"; "var_zero"; "fun_comp"; "ap_ren";
-   "ap"; "apc"; "up_ren_ren"; "id"; "scons_eta"; "scons_comp"; "scons_eta_id";
-   "up_ren"; "size_ind"; "lift";
-   "get_In"; "some_none_explosion"; "Some_inj"
-  ]
-
-(** check if an identifier is either in our list of keywords
- ** or one of the hardcoded Coq keywords (i.e. Type, Prop etc.) *)
-let filter_reserved i =
-  if List.mem i reservedIds || CLexer.is_keyword i
-  then hard_fail @@ "reserved identifier: " ^ i
-  else return i
 
 (** * Parsers for all the tokens we encounter. *)
 
@@ -64,7 +42,7 @@ let check_non_empty_ident = function
   | (s, "") -> fail ("empty identifier: " ^ s)
   | (_, valid_prefix) -> return valid_prefix
 
-(** Parse an identifier using functions frm the Coq implementation.
+(** Parse an identifier using functions from the Coq implementation.
  ** This allows the same unicode identifiers as Coq, e.g. greek letters.
  ** It works by taking bytes from the input stream and successively checking if they
  ** are a valid identifier.
@@ -82,9 +60,8 @@ let raw_ident = lex @@ scan_state ("", "") (fun (s, valid_prefix) c ->
     else Some (s', valid_prefix)
   ) >>= check_non_empty_ident
 
-
-(** Most uses of the identifier parser are filtered so that they don't contain reserved keywords *)
-let ident = raw_ident >>= filter_reserved
+(** Parse an identifier. *)
+let ident = lex raw_ident
 
 let arrow = lex @@ string "->"
 let colon = lex @@ char ':'
@@ -97,6 +74,8 @@ let langle = lex @@ char '<'
 let rangle = lex @@ char '>'
 let quote = lex @@ char '"'
 let comment_begin = lex @@ string "--"
+let bbind = lex @@ string "bind"
+let bin = lex @@ string "in"
 
 (** combinators which wrap another parser in braces *)
 let parens p = lparen *> p <* rparen
@@ -120,9 +99,10 @@ let sortDecl = lift4 (fun s name _ _ -> `Sort (s, name)) ident (option None var_
 let functorDecl = lift3 (fun f _ _ -> `Functor f) ident colon tfunctor
 
 (** Binders can be parsed as either a single binder or a variadic binder *)
+(** they are comma-separated and enclosed between 'bind' and 'in' *)
 let singleBinder = lift (fun i -> L.Single i) ident
 let variadicBinder = angles @@ lift3 (fun n _ t -> L.BinderList (n, t)) ident comma ident
-let binders = many1 ((singleBinder <|> variadicBinder) <* arrow)
+let binders = lift3 (fun _ bs _ -> bs) bbind (sep_by1 comma (singleBinder <|> variadicBinder)) bin
 
 (** As an argument for functors I think we allow arbitrary s-expressions that only contain identifiers
  ** e.g. (fin f) in the first-order logic example *)
@@ -188,6 +168,30 @@ let signature : specAST t =
      end_of_input <|>
      (take_till is_end_of_line >>= fun s -> hard_fail ("Could not parse the following line: "^s)))
 
+(** check is a given string is a reserved constant in Coq
+ ** we use a function from the Coq implementation that checks for constants like "Type"
+ ** and a heuristic of common predefined constants and keywords taken from Autosubst 2 *)
+let reservedIds =
+  (* Keywords according to the Coq manual *)
+  ["as"; "at"; "cofix"; "else"; "end"; "exists"; "exists2"; "fix";
+   "for"; "forall"; "fun"; "if"; "IF"; "in"; "let"; "match"; "mod";
+   "Prop"; "return"; "Set"; "then"; "Type"; "using"; "where"; "with";
+   (* Additional reserved identifiers *)
+   "lazymatch"; "multimatch"; "Definition"; "Fixpoint"; "CoFixpoint";
+   "Axiom"; "Inductive"; "CoInductive"; "Theorem"; "Class";
+   (* Identifiers used by Autosubst *)
+   "fin"; "shift"; "None"; "Some"; "scons"; "var_zero"; "fun_comp"; "ap_ren";
+   "ap"; "apc"; "up_ren_ren"; "id"; "scons_eta"; "scons_comp"; "scons_eta_id";
+   "up_ren"; "size_ind"; "lift";
+   "get_In"; "some_none_explosion"; "Some_inj"
+  ]
+
+let check_reserved s =
+  let open ErrorM in
+  if List.mem s reservedIds || CLexer.is_keyword s
+  then error ("reserved identifier: " ^ s)
+  else pure ()
+
 (** check if the spec is well formed.
  ** For that we check that all sort/functor/constructor names are unique
  ** and we go homomorphically through the constructors to check that all mentioned sorts
@@ -202,10 +206,12 @@ let checkSpec (sorts, functors, ctors, var_name_assoc) =
   then error "sort/functor/constructor names must all be different"
   else
     let checkTId tid =
+      check_reserved tid *>
       if List.mem tid sorts
       then pure ()
       else error ("unknown sort: " ^ tid) in
     let checkFId fid =
+      check_reserved fid *>
       if List.mem fid functors
       then pure ()
       else error ("unknown functor: " ^ fid) in
