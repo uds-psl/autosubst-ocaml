@@ -28,16 +28,35 @@ let get_preamble () =
   in
   pure (preamble ^ setoid_preamble)
 
-(** Generate all the liftings (= Up = fatarrow^y_x) for all pairs of sorts in the current component.
+(** Generate all the liftings (= Up = fatarrow^y_x) for all pairs of sorts in the given substitution vector.
  ** So that we can later build the lifting functions "X_ty_ty", "X_ty_vl" etc. *)
-let getUps component =
+let getUps subst_sorts =
   let open List in
-  let cart = cartesian_product component component in
+  let cart = cartesian_product subst_sorts subst_sorts in
   let singles = map (fun (x, y) -> (L.Single x, y)) cart in
   let blists = map (fun (x, y) -> (L.BinderList ("p", x), y)) cart in
   match !S.scope_type with
   | S.Wellscoped -> List.append singles blists
   | S.Unscoped -> singles
+
+(** Generate pairs of the signature's components with their liftings. *)
+let get_ups_by_component () =
+  let open RWEM.Syntax in
+  let open RWEM in
+  let* components = getComponents in
+  (* pair up components with the subsitution vector of their first sort
+   * the substitution vector is equal between all sorts of a component *)
+  let* subst_sorts_by_component = a_map (fun component ->
+      let* subst_sorts = substOf (List.hd component) in
+      pure (component, subst_sorts))
+      components in
+  (* components are sorted and we start code generation at the leftmost one *)
+  let (_, ups) = List.fold_left
+      (fun (done_ups, ups) (component, subst_sorts) ->
+         let new_ups = list_diff (getUps subst_sorts) done_ups in
+         (done_ups @ new_ups, ups @ [(component, new_ups)]))
+      ([], []) subst_sorts_by_component in
+  pure ups
 
 (* deriving a comparator for a type and packing it in a module
  * from https://stackoverflow.com/a/59266326 *)
@@ -57,27 +76,22 @@ let genCode () =
   let open RWEM.Syntax in
   let open RWEM in
   let open VG in
-  let open AM in
   let* components = getComponents in
   (* prepare the exports contained in the interface module *)
   let* gen_allfv = is_gen_allfv in
-  let initial_modules = if gen_allfv
-    then { initial_modules
-           with interface_units = initial_modules.interface_units @ [export_ "allfv"] }
-    else initial_modules in
+  let the_initial_modules = if gen_allfv
+    then AM.{ initial_modules
+              with interface_units = initial_modules.interface_units @ [export_ "allfv"] }
+    else AM.initial_modules in
   let* gen_fext = is_gen_fext in
-  let initial_modules = if gen_fext
-    then { initial_modules
-           with interface_units = initial_modules.interface_units @ [export_ "fext"] }
-    else initial_modules in
-  let* (_, as_modules) = m_fold (fun (done_ups, as_modules) component ->
-      let* substSorts = substOf (List.hd component) in
-      let new_ups = getUps substSorts in
-      let ups = list_diff new_ups done_ups in
-      let* new_as_modules = CodeGenerator.gen_code component ups in
-      pure @@ (ups @ done_ups, append as_modules new_as_modules))
-      ([], initial_modules) components in
-  pure as_modules
+  let the_initial_modules = if gen_fext
+    then AM.{ initial_modules
+              with interface_units = initial_modules.interface_units @ [export_ "fext"] }
+    else the_initial_modules in
+  (* generate the code for all component/lifting pairs *)
+  let* ups_by_component = get_ups_by_component () in
+  let* as_modules = a_map (fun (component, ups) -> CodeGenerator.gen_code component ups) ups_by_component in
+  pure (AM.concat (the_initial_modules :: as_modules))
 
 let make_file preamble AM.{ ren_subst_units; allfv_units; fext_units; interface_units } =
   let open VG in
