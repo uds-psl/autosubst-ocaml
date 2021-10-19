@@ -1,4 +1,0 @@
-[submodule "monadic"]
-	path = monadic
-	url = git@github.com:addap/monadic.git
-	branch = vendor
