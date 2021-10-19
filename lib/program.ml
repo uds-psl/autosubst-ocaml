@@ -97,12 +97,32 @@ let copy_file force_overwrite src dst =
   write_file force_overwrite dst (read_file src)
 
 
+
+(* both in the repo and then installed by opam the file structure of the project is the following
+
+    base-dir
+    - bin/
+      + autosubst
+    - share/autosubst/
+      + core.v
+      + ...
+
+  Here we construct the path to shared/autosubst based on the path to the executable.
+  HACK: Docs for [Sys.executable_name] say that it might not be an absolute path. 
+        But it is on Linux, so it works.
+        What is the best way to access the files in the share directory? *)
+let data_dir = 
+  let open Filename in
+  let base_dir = dirname (dirname (Sys.executable_name)) in
+  let data_dir = concat base_dir "share/autosubst" in
+  data_dir
+
 (** Generate the static files by copying them into the output directory. *)
 let gen_static_files force_overwrite dir scope version =
   let open Filename in
   let copy_static_file ?out_name name =
-    let out_name = Option.default name out_name in
-    copy_file force_overwrite (concat "data" name) (concat dir out_name)
+    let out_name = Option.default name out_name in (* output name is the same as input name by default *)
+    copy_file force_overwrite (concat data_dir name) (concat dir out_name)
   in
   let open Settings in
   let () = match scope with

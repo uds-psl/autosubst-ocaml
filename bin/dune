@@ -9,5 +9,5 @@
     (flags (:standard -warn-error -A))))
 
 (install
- (section bin)
- (files (main.exe as autosubst)))
+  (section bin)
+  (files (main.exe as autosubst)))
