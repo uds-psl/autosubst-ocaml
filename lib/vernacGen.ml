@@ -4,6 +4,7 @@ open AutomationGen
 open Vernacexpr
 
 module TG = TacGen
+module AL = AssocList
 
 type vernac_expr = Vernacexpr.vernac_expr
 
@@ -115,14 +116,10 @@ let start_module_ name =
 let end_module_ name =
   Vernac [ VernacEndSegment (lident_ name) ]
 
-let module_ name ?(imports=[]) contents =
-  let imports = List.map import_ imports in
-  if list_empty contents
-  then []
-  else
-    [ start_module_ name ]
-    @ imports @ contents
-    @ [ end_module_ name ]
+let module_ name contents =
+  [ start_module_ name ]
+  @ contents
+  @ [ end_module_ name ]
 
 
 (* TODO add export flag so coq does not complain (see vernac/vernacexpr.ml::vernac_control)
@@ -140,34 +137,57 @@ let setoid_opaque_hint name =
  ** fext_units: lemmas involving functional extensionality
  ** interface_units: the module that exports the other modules. This is what an end-user imports in their code *)
 module AutosubstModules = struct
-  type t = { ren_subst_units: vernac_unit list
-           ; allfv_units : vernac_unit list
-           ; fext_units: vernac_unit list
-           ; interface_units : vernac_unit list }
+  type module_tag = Core | Fext | Allfv | Extra
+  type t = (module_tag * vernac_unit list) list
 
-  let ren_subst_units m = m.ren_subst_units
-  let allfv_units m = m.allfv_units
-  let fext_units m = m.fext_units
-  let interface_units m = m.interface_units
+  let append m0 m1 = List.append m0 m1
+  let concat ms = List.concat ms
+  let empty = []
 
-  let append m0 m1 =
-    { ren_subst_units = m0.ren_subst_units @ m1.ren_subst_units
-    ; allfv_units = m0.allfv_units @ m1.allfv_units
-    ; fext_units = m0.fext_units @ m1.fext_units
-    ; interface_units = m0.interface_units @ m1.interface_units }
+  let tags = [Core; Fext; Allfv; Extra]
+  let string_of_tag = function
+    | Core -> "Core"
+    | Fext -> "Fext"
+    | Allfv -> "Allfv"
+    | Extra -> "Extra"
 
-  let concat ms =
-    let open List in
-    { ren_subst_units = concat (map ren_subst_units ms)
-    ; allfv_units = concat (map allfv_units ms)
-    ; fext_units = concat (map fext_units ms)
-    ; interface_units = concat (map interface_units ms) }
+  let add_units tag units = [(tag, units)]
 
-  let initial_modules =
-    { ren_subst_units = []
-    ; allfv_units = []
-    ; fext_units = []
-    ; interface_units = [ export_ "renSubst" ] }
+  let from_list l = l
+
+  let list_collect tag l =
+    let is_same_tag (tag', units) = if tag = tag' then Some units else None in
+    List.(concat (filter_map is_same_tag l))
+
+  (** Import statements that show the dependencies between out modules. *)
+  let imports = 
+    from_list [
+      (Fext, [import_ (string_of_tag Core)]);
+      (Allfv, [import_ (string_of_tag Core)]);
+      (Extra, [import_ (string_of_tag Core)]);
+    ]
+  
+  (** Narrow a module collection to the given tag list. *)
+  let filter_tags tags m =
+    from_list (List.(filter (fun (tag, _) -> mem tag tags) m))
+
+  let pr_modules preamble m =
+    let present_tags = List.filter (fun tag -> List.mem_assq tag m) tags in
+    (* we throw away any empty tags *)
+    let m_with_imports = filter_tags present_tags (append imports m) in
+    let module_of_tag tag =
+      let units = list_collect tag m_with_imports in
+      module_ (string_of_tag tag) units
+    in
+    let modules = List.map module_of_tag present_tags in
+    let pp_modules = List.map pr_vernac_units modules in
+    let interface_units = List.map (fun tag -> export_ (string_of_tag tag)) present_tags in
+    let interface_module = module_ "interface" (interface_units) in
+    let pp_interface = pr_vernac_units interface_module in
+    (* we export the interface module so that the user only has to Import the file. *)
+    let pp_export = pr_vernac_unit (export_ "interface") in
+    let code = Pp.((seq pp_modules) ++ pp_interface ++ pp_export) in
+    Pp.(preamble ++ code)
 end
 
 

@@ -2,6 +2,9 @@
 
 let id x = x
 
+
+let list_enumerate xs = List.mapi (fun i x -> (i, x)) xs
+
 let list_intersection xs ys =
   List.(filter (fun x -> mem x ys) xs)
 

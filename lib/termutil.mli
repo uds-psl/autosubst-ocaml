@@ -6,7 +6,7 @@ open Language
 val type_ : constr_expr
 val nat_ : constr_expr
 val true_ : constr_expr
-val trueProof_ : constr_expr
+val trueI_ : constr_expr
 val none_ : constr_expr
 val some_ : constr_expr
 val suc_ : constr_expr

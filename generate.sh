@@ -12,8 +12,8 @@ echo dune exec -- bin/main.exe signatures/fol.sig -fext -f -s coq -o case-studie
 dune exec -- bin/main.exe signatures/fol.sig -fext -f -s coq -o case-studies/examples/fol_wellscoped.v
 
 for n in utlc stlc fcbv pi num; do
-    echo dune exec -- bin/main.exe signatures/${n}.sig -fext -f -s ucoq -o case-studies/examples/${n}_unscoped.v
-    dune exec -- bin/main.exe signatures/${n}.sig -fext -f -s ucoq -o case-studies/examples/${n}_unscoped.v
+    echo dune exec -- bin/main.exe signatures/${n}.sig -fext -allfv -f -s ucoq -o case-studies/examples/${n}_unscoped.v
+    dune exec -- bin/main.exe signatures/${n}.sig -fext -allfv -f -s ucoq -o case-studies/examples/${n}_unscoped.v
 done
 
 # generate the code for Kathrin's case study.
@@ -25,9 +25,10 @@ generate_file() {
     dune exec -- bin/main.exe ${KAT}${file}.sig -o ${KAT}${file}.v -s ${scope} -no-static -fext -f
 }
 
-echo cp data/core_809.v data/core_axioms.v data/fintype.v data/fintype_axioms.v data/unscoped.v data/unscoped_axioms.v ${KAT}
-cp data/core_axioms.v data/fintype.v data/fintype_axioms.v data/unscoped.v data/unscoped_axioms.v ${KAT}
-cp data/core_809.v ${KAT}core.v
+DATA_DIR='./share/autosubst'
+echo cp ${DATA_DIR}/core_809.v ${DATA_DIR}/core_axioms.v ${DATA_DIR}/fintype.v ${DATA_DIR}/fintype_axioms.v ${DATA_DIR}/unscoped.v ${DATA_DIR}/unscoped_axioms.v ${KAT}
+cp ${DATA_DIR}/core_axioms.v ${DATA_DIR}/fintype.v ${DATA_DIR}/fintype_axioms.v ${DATA_DIR}/unscoped.v ${DATA_DIR}/unscoped_axioms.v ${KAT}
+cp ${DATA_DIR}/core_809.v ${KAT}core.v
 
 # the case study only contains one instance of unscoped code
 generate_file "Chapter3/utlc_pure" ucoq

@@ -54,8 +54,6 @@ let upExtRen_ = upNameGen upExtRen__
 let upExt_ = upNameGen upExt__
 let upId_ = upNameGen upId__
 let up_rinstInst_ = upNameGen "rinstInst_up"
-let upAllfvName = upNameGen "upAllfv"
-let upAllfvTrivName = upNameGen "upAllfvTriv"
 
 let varLFun_ x = sepd ["varL"; x]
 let varL'Fun_ x = sepd ["varL'"; x]
@@ -75,8 +73,6 @@ let rinstId'Fun_ x = sepd ["rinstId'"; x]
 let rinstId'FunPointwise_ x = sepd ["rinstId'"; x; "pointwise"]
 let up_class_ x = sepd ["up"; x]
 let up_inst_ y x = sepd ["up"; y; x]
-let allfvName x = sep "allfv" x
-let allfvTrivName x = sep "allfvTriv" x
 
 let ext_ x = sepd ["ext"; x]
 let extRen_ x = sepd ["extRen"; x]
@@ -88,3 +84,19 @@ let compSubstSubst_ x = sepd ["compSubstSubst"; x]
 
 let idSubst_ x = sepd ["idSubst"; x]
 let subst_ x = sepd ["subst"; x]
+
+
+(** Allfv Names *)
+let up_allfv_name = upNameGen "upAllfv"
+let allfv_name x = sepd ["allfv"; x]
+let congr_allfv_name c = sepd ["congrP"; c]
+let up_allfv_triv_name = upNameGen "upAllfvTriv"
+let allfv_triv_name x = sepd ["allfvTriv"; x]
+let up_allfv_impl_name = upNameGen "upAllfvImpl"
+let allfv_impl_name x = sepd ["allfvImpl"; x]
+let up_allfv_allfv_impl_name = upNameGen "upAllfvAllfvImpl"
+let allfv_allfv_impl_name x = sepd ["allfvAllfvImpl"; x]
+let up_allfv_ren_l_name = upNameGen "upAllfvRenL"
+let allfv_ren_l_name x = sepd ["allfvRenL"; x]
+let up_allfv_ren_r_name = upNameGen "upAllfvRenR"
+let allfv_ren_r_name x = sepd ["allfvRenR"; x]

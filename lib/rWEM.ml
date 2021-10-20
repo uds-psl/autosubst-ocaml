@@ -16,8 +16,8 @@ include RWE
 
 let ask = peek >>= fun (s, _, _) -> pure s
 let asks f = f <$> ask
-let is_gen_allfv = peek >>= fun (_, gen_allfv, _) -> pure gen_allfv
-let is_gen_fext = peek >>= fun (_, _, gen_fext) -> pure gen_fext
+let ask_gen_allfv = peek >>= fun (_, gen_allfv, _) -> pure gen_allfv
+let ask_gen_fext = peek >>= fun (_, _, gen_fext) -> pure gen_fext
 
 let put x = WE.put x |> elevate
 let get = WE.get |> elevate

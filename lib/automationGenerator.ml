@@ -10,6 +10,8 @@ open Termutil
 open RWEM.Syntax
 open RWEM
 
+module AM = AutosubstModules
+
 let gen_auto_unfold () =
   let* auto_unfold_functions = gets auto_unfold_functions in
   let tac = repeat_ (unfold_ auto_unfold_functions) in
@@ -247,9 +249,9 @@ let gen_automation () =
                          ; gen_renamify_fext ] in
   let* tactics = a_map (fun f -> f ()) tactic_funs in
   let* tactics_fext = a_map (fun f -> f ()) tactic_fext_funs in
-  let* gen_fext = is_gen_fext in
-  let open AutosubstModules in
-  pure { ren_subst_units = classes @ instances @ notations @ proper_instances @ tactics
-       ; allfv_units = []
-       ; fext_units = guard gen_fext tactics_fext
-       ; interface_units = arguments @ opaques }
+  let* is_gen_fext = ask_gen_fext in
+  pure AM.(from_list [
+    (Core, classes @ instances @ notations @ proper_instances @ tactics);
+    (Fext, guard is_gen_fext tactics_fext);
+    (Extra, [import_ (string_of_tag Core)] @ arguments @ opaques)
+  ])

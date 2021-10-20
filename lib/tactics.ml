@@ -50,18 +50,23 @@ let equiv_ s t =
 (* DONE I think it would be easier if ts was already a list of pairs where the first component is the corresponding substSort. I would have to change all the genRen/genSubst/... functions for that but then here it would just be a call to AssocList.find
  *
  * No, it was not easier. check the "toVar" feature branch *)
-let to_var_helper sort assoc =
-  match AL.assoc sort assoc with
-  | None -> error "to_var was called with incompatible sort and substitution vector. The substitution vector must contain the sort!"
+let to_var_helper substSort sort l =
+  let* substSorts = substOf sort in
+  let assoc = AL.from_list (List.combine substSorts l) in
+  match AL.assoc substSort assoc with
+  | None -> error (Printf.sprintf "to_var was called with incompatible sort and substitution vector. The substitution vector must contain the sort! substSort: %s\tsort: %s" substSort sort)
   | Some t -> pure t
 
 let to_var sort st =
-  let* substSorts = substOf sort in
-  to_var_helper sort (AL.from_list (list_zip substSorts (sty_terms st)))
+  to_var_helper sort sort (sty_terms st)
+
+(** For a substTy [st] which is based on [sort]'s substitution vector this
+    projects out the component of [substSort] *)
+let to_var_project substSort sort st =
+  to_var_helper substSort sort (sty_terms st)
 
 let to_var_scope sort ss =
-  let* substSorts = substOf sort in
-  to_var_helper sort (AL.from_list (list_zip substSorts (ss_terms_all ss)))
+  to_var_helper sort sort (ss_terms_all ss)
 
 (** Return a list of variable names for the input list of positions
  ** [s0, s2, ..., sn-1] *)
@@ -81,13 +86,15 @@ let bparameters binder =
 let up x f n b =
   let* xs = substOf x in
   pure @@ List.map (fun (p, n_i) -> f p b n_i) (list_zip xs n)
-let ups x f = m_fold (up x f)
+
+(* here evaluation stops ifbs is empty. Is there a better way to do this? *)
+let ups x f xs bs = m_fold (up x f) xs bs
 
 let upRen x bs xs = ups x (fun z b xi -> app_ref (upRen_ z b) (fst (bparameters b) @ [xi])) xs bs
 
 let upScope x bs terms = ups x (fun z b n -> succ_ n z b) terms bs
 
-let upPred x bs pred_names = ups x (fun z b p -> app_ref (upAllfvName z b) [p]) pred_names bs
+let upPred x bs pred_names = ups x (fun z b p -> app_ref (up_allfv_name z b) [p]) pred_names bs
 
 let upSubstS x bs xs = ups x (fun z b xi -> app_ref (up_ z b) (fst (bparameters b) @ [xi])) xs bs
 
@@ -155,9 +162,9 @@ let genSubstS name (m, ns) sort =
   let name = VarState.tfresh name in
   (ref_ name, [binder1_ ~btype:(substT m ns sort) name])
 
-let genPredS name sort =
+let genPredS ?implicit name sort =
   let name = VarState.tfresh name in
-  (ref_ name, [binder1_ ~btype:predT name])
+  (ref_ name, [binder1_ ?implicit ~btype:predT name])
 
 (** Create multiple scope variables and their binders. One for each substituting sort of the given sort
  ** Example: { m_ty : nat } { m_vl : nat } *)
@@ -201,13 +208,13 @@ let genSubst sort name (ms, ns) =
     List.map2 (fun n t -> binder1_ ~btype:t n) names types
   )
 
-let genPred name sort ms =
+let genPred ?implicit name sort ms =
   let* substSorts = substOf sort in
   let names = List.map (sep name) substSorts in
   let types = List.map (const predT) substSorts in
   pure @@ (
     SubstPred (mk_refs names),
-    List.map2 (fun n t -> binder1_ ~btype:t n) names types
+    List.map2 (fun n t -> binder1_ ?implicit ~btype:t n) names types
   )
 
 (* TODO rename *)
@@ -304,3 +311,20 @@ let map_ f ts = app_ref (sepd [f; "map"]) ts
 let mapId_ f ts = app_ref (sepd [f; "id"]) ts
 let mapExt_ f ts = app_ref (sepd [f; "ext"]) ts
 let mapComp_ f ts = app_ref (sepd [f; "comp"]) ts
+
+(* TODO move to tactics and make same name as in MetaCoq *)
+let genMatchVar (sort: L.tId) (scope: substScope) =
+  let s = VarState.tfresh "s" in
+  (s, [binder1_ ~btype:(app_sort sort scope) s])
+
+let rec genArg sort ms binders = function
+  | L.Atom head_sort ->
+    let* ms_up = castUpSubstScope sort binders head_sort ms in
+    pure @@ app_sort head_sort ms_up
+  | L.FunApp (fname, static_args, args) ->
+    let* args' = a_map (genArg sort ms binders) args in
+    pure @@ app_ref fname (static_args @ args')
+
+let createBinders = List.map (fun p -> binder1_ ~btype:(ref_ (snd p)) (fst p))
+
+let createImpBinders = List.map (fun p -> binder1_ ~implicit:true ~btype:(ref_ (snd p)) (fst p))

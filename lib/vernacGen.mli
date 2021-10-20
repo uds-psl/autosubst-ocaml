@@ -8,25 +8,46 @@ type vernac_unit = Vernac of vernac_expr list
                  | TacticNotation of string list * TacGen.t
 
 
-module AutosubstModules : sig
-  type t = { ren_subst_units: vernac_unit list
-           ; allfv_units : vernac_unit list
-           ; fext_units: vernac_unit list
-           ; interface_units : vernac_unit list }
-
-  val ren_subst_units : t -> vernac_unit list
-  val allfv_units : t -> vernac_unit list
-  val fext_units : t -> vernac_unit list
-  val interface_units : t -> vernac_unit list
-
-  val append : t -> t -> t
-  val concat : t list -> t
-  val initial_modules : t
-end
-
 val pr_vernac_expr : vernac_expr -> Pp.t
 val pr_vernac_unit : vernac_unit -> Pp.t
 val pr_vernac_units : vernac_unit list -> Pp.t
+
+(** AutosubstModules.t organizes the generated code into different modules. *)
+module AutosubstModules : sig
+  type module_tag = Core | Fext | Allfv | Extra
+  (** Tags to separate code into modules.
+      Each new code generation feature should receive its own tag. *)
+
+  type t
+  (** The type of a collection of modules *)
+
+  val string_of_tag : module_tag -> string
+  (** [string_of_tag tag] return the name of the module. *)
+
+  val add_units : module_tag -> vernac_unit list -> t
+  (** [add_units tag units] creates a singular module collection with module [tag] containing [units] *)
+
+  val from_list : (module_tag * vernac_unit list) list -> t
+  (** [from_list l] turns a list into a collection of modules. Currently an identity function. *)
+
+  val pr_modules : Pp.t -> t -> Pp.t
+  (** [pr_modules preamble m] uses Coq's pretty-printer to generate code out of the given modules.
+
+      The [preamble] is used to set global [Require Import] statements at the beginning of the
+      generated code. Only non-empty modules are printed.
+      This also adds an "interface" module where all non-empty modules are exported. *)
+
+
+  (** Monoid operations to aggregate AutosubstModules. *)
+
+  val empty : t
+  (** The empty modules. *)
+  val append : t -> t -> t
+  (** [append m0 m1] appends code in the modules of [m1] to the modules of [m0]. *)
+  val concat : t list -> t
+  (** [concat ms] extends [append] over lists. *)
+end
+
 
 val inductive_ : inductive_body list -> vernac_unit
 val fixpoint_ : is_rec:bool -> fixpoint_expr list -> vernac_unit
@@ -41,7 +62,7 @@ val ex_instance_ : string -> vernac_unit
 
 val notation_ : string -> Vernacexpr.syntax_modifier list -> ?scope:Vernacexpr.scope_name -> constr_expr -> vernac_unit
 
-val module_ : string -> ?imports:(string list) -> vernac_unit list -> vernac_unit list
+val module_ : string -> vernac_unit list -> vernac_unit list
 val import_ : string -> vernac_unit
 val export_ : string -> vernac_unit
 
