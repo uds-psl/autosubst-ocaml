@@ -1,6 +1,6 @@
 (** This module implements utility functions for generating Coq AST used in Generator *)
 open GallinaGen
-open CoqSyntax
+open ScopeTypes
 open Language
 
 val type_ : constr_expr

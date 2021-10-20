@@ -1,6 +1,6 @@
 open GallinaGen
 open CoqNames
-open CoqSyntax
+open ScopeTypes
 
 module CE = Constrexpr
 module L = Language
@@ -74,8 +74,7 @@ let app_fix ?expl cname ?(sscopes=[]) ?(scopes=[]) rest =
 let (==>) s t = List.fold_right (fun s t -> arr1_ s t) s t
 
 let abs_ref x t =
-  let x' = VarState.tfresh x in
-  lambda_ [binder1_ x'] t
+  lambda_ [binder1_ x] t
 
 (* TODO switch args *)
 let scons_p_congr_ s t = app_ref "scons_p_congr" [t; s]

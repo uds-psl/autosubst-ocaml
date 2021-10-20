@@ -10,9 +10,9 @@ module S = Settings
 type substScope = SubstScope of string list * CG.constr_exprs
 type substTy = SubstRen of CG.constr_exprs
              | SubstSubst of CG.constr_exprs
-             | SubstEq of CG.constr_exprs * (L.tId -> L.binder -> CG.constr_expr -> CG.constr_expr RWEM.t)
+             | SubstEq of CG.constr_exprs * (L.tId -> L.binder -> CG.constr_expr -> CG.constr_expr RSEM.t)
              | SubstPred of CG.constr_exprs
-             | SubstAllfvH of CG.constr_exprs * (L.tId -> L.binder -> CG.constr_expr -> CG.constr_expr RWEM.t)
+             | SubstAllfvH of CG.constr_exprs * (L.tId -> L.binder -> CG.constr_expr -> CG.constr_expr RSEM.t)
 
 let ss_terms = function
   | SubstScope (_, xs) ->

@@ -11,4 +11,4 @@ type substVars = [ `SIGMAS of scopeVars * scopeVars  | `TAUS of scopeVars * scop
 
 type vars = [ scopeVar | scopeVars | renVar | renVars | substVar | substVars ]
 
-val genVariables : string -> vars list -> (constr_expr list * CoqSyntax.substScope list * CoqSyntax.substTy list * binder_expr list) RWEM.t
+val genVariables : string -> vars list -> (constr_expr list * ScopeTypes.substScope list * ScopeTypes.substTy list * binder_expr list) RSEM.t

@@ -1,8 +1,8 @@
 (** This module also implements utility functions for code generation like TermUtil
  ** but they are mostly more complex *)
-open RWEM.Syntax
-open RWEM
-open CoqSyntax
+open RSEM.Syntax
+open RSEM
+open ScopeTypes
 open Util
 open CoqNames
 open Termutil
@@ -40,7 +40,7 @@ let predT = arr1_ nat_ prop_
 (** Create an extensional equivalence between unary functions s & t
  ** forall x, s x = t x *)
 let equiv_ s t =
-  let x = VarState.tfresh "x" in
+  let x = varName "x" in
   forall_ [binder1_ x] (eq_ (app1_ s (ref_ x))
                           (app1_ t (ref_ x)))
 
@@ -51,7 +51,7 @@ let equiv_ s t =
  *
  * No, it was not easier. check the "toVar" feature branch *)
 let to_var_helper substSort sort l =
-  let* substSorts = substOf sort in
+  let* substSorts = get_substv sort in
   let assoc = AL.from_list (List.combine substSorts l) in
   match AL.assoc substSort assoc with
   | None -> error (Printf.sprintf "to_var was called with incompatible sort and substitution vector. The substitution vector must contain the sort! substSort: %s\tsort: %s" substSort sort)
@@ -83,9 +83,9 @@ let bparameters binder =
   (terms, explicit_ binders)
 
 (* TODO I don't really understand this chain of up functions yet *)
-let up x f n b =
-  let* xs = substOf x in
-  pure @@ List.map (fun (p, n_i) -> f p b n_i) (list_zip xs n)
+let up x f ns b =
+  let* xs = get_substv x in
+  pure @@ List.map2 (fun p n_i -> f p b n_i) xs ns
 
 (* here evaluation stops ifbs is empty. Is there a better way to do this? *)
 let ups x f xs bs = m_fold (up x f) xs bs
@@ -98,9 +98,9 @@ let upPred x bs pred_names = ups x (fun z b p -> app_ref (up_allfv_name z b) [p]
 
 let upSubstS x bs xs = ups x (fun z b xi -> app_ref (up_ z b) (fst (bparameters b) @ [xi])) xs bs
 
-let up' x f n b =
-  let* xs = substOf x in
-  a_map (fun (p, n_i) -> f p b n_i) (list_zip xs n)
+let up' x f ns b =
+  let* xs = get_substv x in
+  a_map2 (fun p n_i -> f p b n_i) xs ns
 
 (* this (and the up') is finally responsible for calling the function contained in the SubstEq *)
 let upEq x bs xs f = m_fold (up' x f) xs bs
@@ -116,11 +116,11 @@ let upSubst x bs = function
   | SubstAllfvH (xs, f) -> map (fun xs -> SubstEq (xs, f)) (upAllfvH x bs xs f)
 
 let cast x y xs =
-  let* arg_x = substOf x in
-  let* arg_y = substOf y in
+  let* arg_x = get_substv x in
+  let* arg_y = get_substv y in
   pure @@ List.(fold_right (fun (x, v) ws ->
       if mem x arg_y then v :: ws else ws)
-      (list_zip arg_x xs) [])
+      (List.combine arg_x xs) [])
 
 (* TODO documentation. iirc it narrows a substitution vector *)
 let castSubstScope x y = function
@@ -140,36 +140,42 @@ let castUpSubst sort bs y arg =
   upSubst y bs arg'
 
 
+
+(** TODO document *)
+let introUntypedVar ?btype name =
+  (name, [binder1_ ?btype name])
+
 (** Create a scope variable together with a implicit binder
  ** Example: { m : nat } *)
-let introScopeVarS name =
-  let name = VarState.tfresh name in
+let genScopeVar name =
   let binders = match !S.scope_type with
     | S.Unscoped -> []
     | S.Wellscoped -> [binder1_ ~implicit:true ~btype:nat_ name] in
   (ref_ name, binders)
 
-
 (** Create a renaming variable together with a binder
  ** Example: ( xi : fin m -> fin n ) *)
-let genRenS name (m, n) =
-  let name = VarState.tfresh name in
+let genRen name (m, n) =
   (ref_ name, [binder1_ ~btype:(renT m n) name])
 
 (** Create a substitution variable for the given sort together with a binder
  ** Example: ( sigma: fin m -> tm nty nvl ) *)
-let genSubstS name (m, ns) sort =
-  let name = VarState.tfresh name in
+let genSubst name sort (m, ns) =
   (ref_ name, [binder1_ ~btype:(substT m ns sort) name])
 
-let genPredS ?implicit name sort =
-  let name = VarState.tfresh name in
+let genPred ?implicit name =
   (ref_ name, [binder1_ ?implicit ~btype:predT name])
+
+(** Create an extensional equality between two functions
+ ** Example: ( H: forall x, sigma x = tau x ) *)
+ let genEq name sigma tau =
+  ( ref_ name,
+    [binder1_ ~btype:(equiv_ sigma tau) name] )
 
 (** Create multiple scope variables and their binders. One for each substituting sort of the given sort
  ** Example: { m_ty : nat } { m_vl : nat } *)
-let introScopeVar name sort =
-  let* substSorts = substOf sort in
+let genScopeVarVect name sort =
+  let* substSorts = get_substv sort in
   let names = List.map (sep name) substSorts in
   let binders = guard (list_nempty names && Settings.is_wellscoped ())
       [binder_ ~implicit:true ~btype:nat_ names] in
@@ -183,8 +189,8 @@ let introScopeVar name sort =
 (** Create multiple renaming variables and their binders. One for each substituting sort of the given sort. The given scope variables vectors ms & ns should also contain one scope variable per substituting sort.
  ** Example: for a renaming variable xi and for a sort tm with substituting sorts ty & vl, create
  ** ( xi_ty : fin m_ty -> fin n_ty) ( xi_vl : fin m_vl -> fin n_vl ) *)
-let genRen sort name (ms, ns) =
-  let* substSorts = substOf sort in
+let genRenVect name sort (ms, ns) =
+  let* substSorts = get_substv sort in
   let names = List.map (sep name) substSorts in
   let types = List.map2 renT (ss_terms_all ms) (ss_terms_all ns) in
   pure @@ (
@@ -195,10 +201,10 @@ let genRen sort name (ms, ns) =
 (** Create multiple substitution variables and their binders. One for each substituting sort of the given sort. The given scope variables vectors ms & ns should also contain one scope variable per substituting sort.
  ** Example: for a substitution variable sigma and for a sort tm with substituting sorts ty & vl, create
  ** ( sigmaty : fin mty -> ty nty ) ( sigmavl : fin mvl -> vl nty nvl ) *)
-let genSubst sort name (ms, ns) =
-  let* substSorts = substOf sort in
+let genSubstVect name sort (ms, ns) =
+  let* substSorts = get_substv sort in
   let names = List.map (sep name) substSorts in
-  let* types = a_map2_exn (fun substSort m ->
+  let* types = a_map2 (fun substSort m ->
       (* Here we filter the vector ns to include only the substitution sorts relevant for substSort *)
       let* ns' = castSubstScope sort substSort ns in
       pure @@ substT m ns' substSort)
@@ -208,8 +214,8 @@ let genSubst sort name (ms, ns) =
     List.map2 (fun n t -> binder1_ ~btype:t n) names types
   )
 
-let genPred ?implicit name sort ms =
-  let* substSorts = substOf sort in
+let genPredVect ?implicit name sort ms =
+  let* substSorts = get_substv sort in
   let names = List.map (sep name) substSorts in
   let types = List.map (const predT) substSorts in
   pure @@ (
@@ -217,18 +223,10 @@ let genPred ?implicit name sort ms =
     List.map2 (fun n t -> binder1_ ?implicit ~btype:t n) names types
   )
 
-(* TODO rename *)
-(** Create an extensional equality between two substitutions and its binder
- ** H: forall x, sigma x = tau x *)
-let genEq name sigma tau =
-  let name = VarState.tfresh name in
-  ( ref_ name,
-    [binder1_ ~btype:(equiv_ sigma tau) name] )
-
 (** Create multiple extensional equalities between two substitutions and their binders. One for each of the substituting sorts of the given sort
  ** ( Hty : forall x, sigmaty x = tauty x ) ( Hvl : forall x, sigmavl x = tauvl x ) *)
-let genEqs sort name sigmas taus f =
-  let* substSorts = substOf sort in
+let genEqVect name sort sigmas taus f =
+  let* substSorts = get_substv sort in
   let names = List.map (sep name) substSorts in
   let types = List.map2 equiv_ sigmas taus in
   pure @@ (
@@ -248,7 +246,7 @@ let gen_var_arg sort ns =
 (** Construction of patterns, needed for lifting -- yields a fitting pattern of S and id corresponding to the base sort and the binder
  ** TODO example *)
 let patternSId sort binder =
-  let* substSorts = substOf sort in
+  let* substSorts = get_substv sort in
   let* hasRen = hasRenamings sort in
   let shift y = if hasRen
     then shift_
@@ -265,7 +263,7 @@ let patternSId sort binder =
     (mk_refs substSorts) binder
 
 let patternSIdNoRen sort binder =
-  let* substSorts = substOf sort in
+  let* substSorts = get_substv sort in
   let shift = const shift_ in
   let shiftp p = const @@ app1_ shift_p_ (ref_ p) in
   up sort (fun y b _ -> match b with
@@ -279,7 +277,7 @@ let patternSIdNoRen sort binder =
  **
  ** e.g. [ var_ty m_ty; var_vl m_ty m_vl ] *)
 let mk_var_apps sort ms =
-  let* substSorts = substOf sort in
+  let* substSorts = get_substv sort in
   a_map (fun substSort ->
       let* ms' = castSubstScope sort substSort ms in
       pure (app_var_constr substSort ms'))
@@ -288,20 +286,20 @@ let mk_var_apps sort ms =
 (** Convert a renaming to a substitution by postcomposing it with the variable constructor
  ** of the given sort. The domain of xis is the given ns *)
 let substify sort ns xis =
-  let* substSorts = substOf sort in
-  a_map2_exn (fun substSort xi ->
+  let* substSorts = get_substv sort in
+  a_map2 (fun substSort xi ->
       let* ns' = castSubstScope sort substSort ns in
       pure (xi >>> app_var_constr substSort ns'))
     substSorts (sty_terms xis)
 
 (** Compose a renaming with a substitution *)
 let comp_ren_or_subst sort sty1s sty2s =
-  let* substSorts = substOf sort in
+  let* substSorts = get_substv sort in
   let* ren_or_subst_ = match sty1s with
     | SubstRen _ -> pure ren_
     | SubstSubst _ -> pure subst_
     | _ -> error "comp_ren_or_subst called with wrong subst_ty" in
-  a_map2_exn (fun substSort sty2 ->
+  a_map2 (fun substSort sty2 ->
       let* sty1s' = castSubst sort substSort sty1s in
       pure @@ (sty2 >>> app_ref (ren_or_subst_ substSort) (sty_terms sty1s')))
     substSorts (sty_terms sty2s)
@@ -314,7 +312,7 @@ let mapComp_ f ts = app_ref (sepd [f; "comp"]) ts
 
 (* TODO move to tactics and make same name as in MetaCoq *)
 let genMatchVar (sort: L.tId) (scope: substScope) =
-  let s = VarState.tfresh "s" in
+  let s = varName "s" in
   (s, [binder1_ ~btype:(app_sort sort scope) s])
 
 let rec genArg sort ms binders = function

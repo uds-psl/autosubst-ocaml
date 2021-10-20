@@ -60,8 +60,6 @@ let list_split3 l =
   (x0, x1, x2)
 
 
-let list_zip xs ys = List.combine xs ys
-
 let rec list_of_length x = function
   | 0 -> []
   | n -> x :: list_of_length x (n - 1)
@@ -81,3 +79,6 @@ let guard b l =
   if b then l else []
 
 let string_of_char c = String.make 1 c
+
+
+let varName name = name

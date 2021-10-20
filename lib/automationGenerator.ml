@@ -7,8 +7,8 @@ open TacGen
 open ClassGen
 open NotationGen
 open Termutil
-open RWEM.Syntax
-open RWEM
+open RSEM.Syntax
+open RSEM
 
 module AM = AutosubstModules
 
@@ -138,12 +138,6 @@ let gen_renamify () =
   let tac = then_ (calltac_ "auto_unfold" :: rewrites) in
   pure @@ TacticLtac ("renamify", tac)
 
-let gen_arguments_clear () =
-  let* arguments = gets arguments in
-  if Settings.is_wellscoped () then
-    pure @@ List.map (fun (name, _) -> clear_arguments_ name) arguments
-  else pure []
-
 let gen_arguments () =
   let* arguments = gets arguments in
   if Settings.is_wellscoped () then
@@ -172,20 +166,20 @@ let gen_proper_instances () =
   let gen_instance (sort, fun_sort, ext_sort) =
     let* v = Variables.genVariables sort [ `MS; `NS ] in
     let [@warning "-8"] [], [ ms; ns ], [], scopeBinders = v in
-    let* substSorts = substOf sort in
+    let* substSorts = get_substv sort in
     let iname = sep (fun_sort) "morphism" in
     let signature = List.fold_right (fun _ signature ->
         app_ref "respectful" [ app_ref "pointwise_relation" [ underscore_; ref_ "eq" ]
                              ; signature ])
         substSorts (app_ref "respectful" [ ref_ "eq"; ref_ "eq" ]) in
     let itype = app_ref "Proper" [ signature; app_fix ~expl:true (fun_sort) ~sscopes:[ ms; ns ] [] ] in
-    (* a.d. TODO right now this is the easiest way to generate all the names. all the other functions liek genRen are too generalized and we can't use the binders they return. So we generate them again fresh *)
+    (* a.d. TODO right now this is the easiest way to generate all the names. all the other functions like genRen are too generalized and we can't use the binders they return. So we generate them again fresh *)
     let fs = mk_refs @@ List.map (sep "f") substSorts in
     let gs = mk_refs @@ List.map (sep "g") substSorts in
     let eqs = mk_refs @@ List.map (sep "Eq") substSorts in
-    let s = VarState.tfresh "s" in
-    let t = VarState.tfresh "t" in
-    let eq_st = VarState.tfresh "Eq_st" in
+    let s = varName "s" in
+    let t = varName "t" in
+    let eq_st = varName "Eq_st" in
     let proof_binders = binder_ (List.fold_right (fun substSort binders ->
         [ sep "f" substSort; sep "g" substSort; sep "Eq" substSort ] @ binders)
         substSorts [ s; t; eq_st ]) in
@@ -226,7 +220,7 @@ let gen_notations () =
     notation_ (notation_string sort ntype) (notation_modifiers sort ntype) ~scope:(notation_scope ntype) (notation_body sort ntype) in
   pure @@ List.map gen_notation notations
 
-let gen_automation () =
+let generate () =
   let* arguments = gen_arguments () in
   let* opaques = gen_opaques () in
   let* classes = gen_classes () in
@@ -239,12 +233,12 @@ let gen_automation () =
                     ; gen_asimpl
                     ; gen_asimpl_hyp
                     ; gen_auto_case
-                    (* ; gen_asimpl_star *)
                     ; gen_substify
                     ; gen_renamify ] in
   let tactic_fext_funs = [ gen_asimpl_fext'
                          ; gen_asimpl_fext
                          ; gen_asimpl_fext_hyp
+                         ; gen_auto_case_fext
                          ; gen_substify_fext
                          ; gen_renamify_fext ] in
   let* tactics = a_map (fun f -> f ()) tactic_funs in

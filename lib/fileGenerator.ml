@@ -4,7 +4,7 @@
  **  *)
 open Util
 
-module CS = CoqSyntax
+module CS = ScopeTypes
 module GG = GallinaGen
 module VG = VernacGen
 module AM = VG.AutosubstModules
@@ -20,8 +20,8 @@ let setoid_preamble = "Require Import Setoid Morphisms Relation_Definitions.\n\n
 
 
 let get_preamble () =
-  let open RWEM.Syntax in
-  let open RWEM in
+  let open RSEM.Syntax in
+  let open RSEM in
   let* is_gen_fext = ask_gen_fext in
   let preamble = match !S.scope_type with
     | S.Unscoped -> unscoped_preamble ^ (if is_gen_fext then unscoped_preamble_axioms else "")
@@ -44,13 +44,13 @@ let getUps subst_sorts =
 
 (** Generate pairs of the signature's components with their liftings. *)
 let get_ups_by_component () =
-  let open RWEM.Syntax in
-  let open RWEM in
-  let* components = getComponents in
+  let open RSEM.Syntax in
+  let open RSEM in
+  let* components = get_components in
   (* pair up components with the subsitution vector of their first sort
    * the substitution vector is equal between all sorts of a component *)
   let* subst_sorts_by_component = a_map (fun component ->
-      let* subst_sorts = substOf (List.hd component) in
+      let* subst_sorts = get_substv (List.hd component) in
       pure (component, subst_sorts))
       components in
   (* components are sorted and we start code generation at the leftmost one *)
@@ -76,25 +76,25 @@ let get_ups_by_component () =
 
 (** Generate the fixpoints/lemmas for all the connected components *)
 let genCode () =
-  let open RWEM.Syntax in
-  let open RWEM in
-  let* components = getComponents in
+  let open RSEM.Syntax in
+  let open RSEM in
+  let* components = get_components in
   (* generate the code for all component/lifting pairs *)
   let* ups_by_component = get_ups_by_component () in
-  let* as_modules = a_map (fun (component, ups) -> CodeGenerator.gen_code component ups) ups_by_component in
+  let* as_modules = a_map (fun (component, ups) -> CodeGenerator.generate component ups) ups_by_component in
   pure (AM.concat as_modules)
 
 
 (** Generate the Coq file. Here we convert the Coq AST to pretty print expressions and then to strings. *)
 let genFile () =
-  let open RWEM.Syntax in
-  let open RWEM in
+  let open RSEM.Syntax in
+  let open RSEM in
   let* preamble = get_preamble () in
   let* code = genCode () in
-  let* automation = AutomationGenerator.gen_automation () in
+  let* automation = AutomationGenerator.generate () in
   let pp = AM.(pr_modules (Pp.str preamble) (append code automation)) in
   pure (Pp.string_of_ppcmds pp)
 
 
 (** Run the computation constructed by genFile *)
-let run_gen_code hsig gen_allfv gen_fext = RWEM.rwe_run (genFile ()) (hsig, gen_allfv, gen_fext) AG.initial
+let run_gen_code hsig fl_allfv fl_fext = RSEM.rse_run (genFile ()) (hsig, { fl_allfv; fl_fext }) AG.initial

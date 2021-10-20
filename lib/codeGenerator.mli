@@ -1,10 +1,7 @@
-(** This module implements all the functions that generate inductive types,
- ** definitions, fixpoints and lemmas. *)
-module L = Language
+(** This module implements all the code generation functions for
+    inductive types, instantiation operations and rewriting lemmas. *)
 
-(** For a given component and list of liftings, generate all the vernacular expressions
- ** for the inductive types, definitions and fixpoints.
- ** It returns a tuple of vernacular expression lists since all the definitions using functional
- ** extensionality are separated into a different module.
- ** *)
-val gen_code : L.tId list -> (L.binder * L.tId) list -> VernacGen.AutosubstModules.t RWEM.t
+
+val generate : Language.tId list -> (Language.binder * Language.tId) list -> VernacGen.AutosubstModules.t RSEM.t
+(** [generate component up_list] generates for a given component and list of liftings, the inductive types, instantiation operations and rewriting lemmas.
+    The code is returned in a module collection. *)
