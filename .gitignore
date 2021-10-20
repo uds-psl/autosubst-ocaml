@@ -81,3 +81,5 @@ output_submission
 
 case-studies/examples/*.v
 **/.auctex-auto/
+
+.vscode
