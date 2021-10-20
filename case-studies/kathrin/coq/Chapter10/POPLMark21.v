@@ -246,8 +246,6 @@ Proof with asimpl;eauto.
     eapply IHHH2.
     + auto_case; try apply sub_refl.
       eapply sub_weak; try reflexivity. eapply H.
-    (* a.d. TODO another instance of a goal already solved before asimpl *)
-    (* now asimpl. *)
     + auto_case. destruct (H' f);  eauto using transitivity_ren.
       rewrite H0. now left.
   - econstructor; eauto. intros l T' HH.
@@ -268,14 +266,7 @@ Proof with asimpl;eauto.
     + asimpl. eapply sub_narrow; try eapply H0.
       * auto_case.
         eapply sub_weak with (xi := ↑); try reflexivity; eauto.
-        (* adrian: as of 7b3472c the goal is already solved by eauto
-         TODO find out why
-         as of dd2f061 it's not solved anymore *)
-        (* ad of now it's solved again         *)
-        (* now asimpl. *)
       * intros [x|]; try cbn; eauto. right. apply transitivity_ren. apply transitivity_ren. eauto.
-  (* but as of dd2f061 this is already solved *)
-    (* + asimpl in H1_0. auto. *)
   - depind H0... depind H3...
     econstructor; eauto. intros.
     destruct (H5 _ _ H6) as (T&?&?). rewrite in_map_iff in H7.
@@ -593,46 +584,23 @@ Proof.
   - cbn. econstructor; eauto. now apply in_map.
   - cbn. asimpl. apply letpat_ty  with (A0 := A⟨xi⟩) (Gamma'0 := Gamma' >> ⟨xi⟩); eauto.
     +  unfold funcomp. substify.
-       (* DONE a.d. in this case substify should use setoid_rewrite instead of normal rewrite *)
-      (* unfold funcomp. setoid_rewrite rinstInst'_ty. eauto. *)
        eauto.
-    (* a.d. TODO the following only works with fext asimpl *)
     + asimpl. eapply IHty2; eauto.
-      (* auto_unfold. *)
-      (* unfold upRen_p.  *)
-      (* Unset Printing Notations. *)
-      (* this setoid rewrite unfold scons_p but I don't know why.
-       the varL'_ty lemma is an equality with subst_ty and scons_p does not use subst_ty in its definition *)
-      (* the problem seems to be that varL'_ty holds directly by voncertibility and the setoid rewrite also evaluates the lhs of varL'_ty which is then just subst_ty x = subst_ty x.
-       Although I still don't understand where tha actual rewrite then happens b/c subst_ty does not appear in the goal.
-       But we can fix this behavior by making either scons_p or subst_ty opaque for setoid rewriting. *)
-      (* Hint Opaque scons_p : rewrite. *)
-      (* Hint Opaque subst_ty : rewrite. *)
-      (* Print HintDb rewrite. *)
-      Fail setoid_rewrite varL'_ty.
       * intros z.
-        (* adrian: had to add the following line to make it compile.*)
+        (* a.d.: had to add the following line to make it compile.*)
         unfold dctx in Gamma, Gamma0. unfold upRen_p.
         (* https://coq.zulipchat.com/#narrow/stream/237656-Coq-devs.20.26.20plugin.20devs/topic/Change.20of.20case.20representation/near/220411671 *)
         (* TODO why does setoid_rewrite H' fail even though it works when I just apply the morphism *)
-        (* TODO why does setoid_rewrite scons_p_head' fail? but it works when I apply the morphism *)
+        (*      why does setoid_rewrite scons_p_head' fail? but it works when I apply the morphism *)
         asimpl.
         setoid_rewrite (scons_p_comp' _ _ _ z).
-        (* TODO do this in asimpl? the problem seems to be that scons_p_comp' does not want to rewrite if the goal is in the forall-form. So either we turn it into pointwise-form or we do the above and rewrite with the argument (I think one of the rewrites in Kathrin's fsimpl also does this so she might have had a similar problem) *)
+        (* can we apply pointwise_forall in asimpl?
+           the problem seems to be that scons_p_comp' does not want to rewrite if the goal is in the forall-form. 
+           So either we turn it into pointwise-form or we do the above and rewrite with the argument (I think one of the rewrites in Kathrin's fsimpl also does this so she might have had a similar problem) *)
         apply pointwise_forall.
         asimpl.
         unfold funcomp.
         now setoid_rewrite H'.
-        (* (* Set Typeclasses Debug. *) *)
-        (* (* try setoid_rewrite scons_p_tail'. *) *)
-        (* (* asimpl. *) *)
-        (* simple apply scons_p_morphism. *)
-        (* -- now setoid_rewrite scons_p_head'. *)
-        (* -- setoid_rewrite scons_p_tail'. now setoid_rewrite H'. *)
-        (* Info 3 asimpl_fext. *)
-        (* (* TODO actually I did not have to use fext here since the goal compates the output of scons_p and we have a morphism *) *)
-        (* apply scons_p_morphism; easy. *)
-        (* f_equal. fext. eauto. *)
   - econstructor. eauto. eapply sub_weak; eauto.
 Qed.
 
@@ -688,12 +656,6 @@ Proof.
            5: exact (shift_p p).
            5: exact x'.
            all: now asimpl.
-           (* instantiate (1:=id). *)
-           (* try now asimpl. *)
-           (* intros z. *)
-           (* now asimpl. *)
-           (* (* a.d. TODO got one more goal left from context_renaming_lemma' *) *)
-           (* intros x. now asimpl. *)
      }
      
   - econstructor.
@@ -807,10 +769,7 @@ Proof.
       * intros. asimpl. constructor. now apply sub_refl.
       * intros. destruct (destruct_fin x) as [[]|[]]; subst.
         -- asimpl. eapply pat_ty_eval; eauto.
-           (* a.d. TODO had to exact Gamma' twice below. Apparenly it's not inferred somewhere *)
-           (* exact Gamma'. *)
         -- asimpl. constructor.
-           (* exact Gamma'. *)
     + eapply T_Sub; eauto.
   - depind H_ty; [|eapply T_Sub; eauto].
     econstructor; eauto.

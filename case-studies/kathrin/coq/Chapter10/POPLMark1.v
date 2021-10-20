@@ -131,13 +131,6 @@ Proof with asimpl;eauto.
     + asimpl. eapply sub_narrow; try eapply H0.
       * auto_case. apply sub_refl.
         eapply sub_weak with (xi := ↑); try reflexivity; eauto.
-        (* adrian: as of 7b3472c the goal is already solved by eauto
-         TODO find out why
-         as of dd2f061 it's not solved anymore
-         as of now it's solved again
-         seems to have to do with unfolding funcomp
-         it's really because of funcomp. If I want to base my lemmas around folded funcomp and the pointwise predicate I must not call the unfold_funcomp tactic in asimpl *)
-        (* now asimpl. *)
       * intros [x|]; try cbn; eauto. right. apply transitivity_ren. apply transitivity_ren. eauto.
     + asimpl in H1_0. auto.
 Qed.
@@ -401,9 +394,6 @@ Proof.
         eapply context_morphism_lemma; try eapply H_ty; eauto.
         -- auto_case.
            ++ asimpl. constructor. apply sub_refl.
-        (* a.d. TODO why is this already solved?
-         now it's not solved anymore *)
-           (* ++ now asimpl. *)
         -- intros x. asimpl. constructor.
       * pose proof (ty_inv_tabs _ H_ty H) as (?&?&?&?).
         eapply T_Sub; eauto. 

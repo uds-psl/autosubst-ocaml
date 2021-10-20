@@ -164,7 +164,6 @@ Lemma anti_rename:
  /\ (forall n (M N: tm n), SNRed M N -> forall n' (R: fin n' -> fin n) M', M = ren_tm R M' -> exists N', N = ren_tm R N' /\ SNRed M' N').
 Proof.
   apply SN_multind; intros; repeat invTm; (* asimpl in *; *) subst; eauto.
-  (* a.d. asimpl * does not exist anymore. was not needed here anyways *)
   - destruct (H0 _ _ _ (eq_refl _)) as (M''&->&?).
     eapply SRed; eauto.
   - asimpl in H.
@@ -181,7 +180,6 @@ Lemma rename :
   /\   (forall n (M: tm n),  SNe M -> forall n' (R: fin n -> fin n'), SNe (ren_tm R M))
   /\ (forall n (M N: tm n), SNRed M N -> forall n' (R: fin n -> fin n'), SNRed (ren_tm R M) (ren_tm R N)).
 Proof.
-  (* a.d. moved asimpl before intros to remove the `in *` *)
   apply SN_multind; asimpl; intros; eauto.
   - constructor.
   - intros. subst. constructor. auto. now asimpl.
@@ -199,10 +197,6 @@ Proof.
       instantiate (1 := p..).
       instantiate (1 := id).
       substify.
-      (* TODO incorporate in asimpl tactic so that we reject goals with evars *)
-      (* match goal with *)
-      (* | [|- ?x] => assert_fails (has_evar x) *)
-      (* end. *)
       now asimpl.
     + eapply SRed. exact H. eapply IHSN. reflexivity.
 Qed.

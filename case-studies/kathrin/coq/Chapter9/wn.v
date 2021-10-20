@@ -54,8 +54,9 @@ Proof.
     specialize (IHC _ _ H1).
     destruct (IHC) as (v'&?&?).
     exists v'; split; eauto.
-    (* a.d. I had to unfold funcomp here to setoid rewrite with rinstInst' *)
-    revert H2. unfold funcomp. setoid_rewrite rinstInst'_tm. eauto using mstep_inst.
+    (* DONE a.d. I had to unfold funcomp here to setoid rewrite with rinstInst' *)
+    revert H2.
+    substify. eauto.
   - destruct (IHC1 _ _  H) as (v1&?&?).
     destruct (IHC2  _ _ H) as (v2&?&?).
     destruct v1; try contradiction.
@@ -67,6 +68,5 @@ Proof.
       eapply mstep_app; eauto. assumption.
     + eapply star_trans.
       * eright. econstructor; eauto. constructor.
-        (* a.d. asimpl directly in hypothesis instead of * *)
       * now asimpl in H4.
 Qed.

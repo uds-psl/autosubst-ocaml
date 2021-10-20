@@ -146,7 +146,7 @@ Proof.
       * apply typing_ren with (Gamma := T .: Gamma'); [intros [i|]; simpl; congruence | assumption] .
       * asimpl. apply IH.
         intros [i|]; eauto. cbn. unfold funcomp.
-        (* adrian: had to insert the following line *)
+        (* a.d.: had to insert the following line *)
         change (fun x : fin k' => @var_tm k'0 (xi x)) with (funcomp var_tm xi).
         asimpl.
         renamify. apply L.ren with (Gamma := Gamma'); eauto.

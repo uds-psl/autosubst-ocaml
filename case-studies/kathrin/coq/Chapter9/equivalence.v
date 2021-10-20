@@ -114,7 +114,6 @@ Proof.
   - econstructor; [| |eauto]. all: eauto using mwhr_ren.
   - constructor.
     specialize (H _ _ (cont_ext_cons _ _ _ T H0)).
-    (* a.d. asimpl in H instead of asimpl in * above *)
     asimpl in H. auto.
   - destruct (H x l) as (?&->). now constructor.
 Qed.
@@ -275,10 +274,7 @@ Proof.
     all: try (substify; now reflexivity).
     eapply H0. omega.
   - simpl. intros. asimpl in IHdecleq.
-    (* a.d.: had to change scons notation below to not use t, gamma *)
     specialize (IHdecleq Delta (t .: gamma >> ⟨xi⟩) (t' .: delta >> ⟨xi⟩)).
-    (* a.d. asimpl in * was unnecessary *)
-    (* asimpl in *. *)
     eapply IHdecleq.
     intros [|i] HH; asimpl; eauto.
     cbn. eapply logEq_monotone; unfold funcomp; eauto. eapply H0. simpl in *. omega.
@@ -286,7 +282,6 @@ Proof.
   - specialize (IHdecleq1 _ _ _ H1). (* asimpl in *. *)
     specialize (IHdecleq2 _ _ _ H1). cbn in *.
     specialize (IHdecleq1 _ _ _ _ (cont_ext_id Gamma') IHdecleq2).
-    (* a.d. IHdecleq1 instead of * *)
     asimpl in IHdecleq1. now apply IHdecleq1.
   - apply logeq_sym. eapply IHdecleq.
     intros i HH. now eapply logeq_sym, H0.

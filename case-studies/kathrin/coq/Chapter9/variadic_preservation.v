@@ -42,7 +42,7 @@ Proof.
   intros st. revert n f.  induction st; intros; cbn.
   - apply step_beta'.
     asimpl.
-    (* TODO a.d. why is cod_map not unfolded + why does the rewrite with scons_p_head' fail. It should happen in fsimpl *)
+    (* DONE a.d. cod_map not unfolded because it's part of core_axioms *)
     unfold cod_map.
     now asimpl.
   - apply step_abs. eapply IHst.

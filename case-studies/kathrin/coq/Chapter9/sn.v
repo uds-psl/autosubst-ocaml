@@ -101,7 +101,7 @@ Proof.
     + intros V m . intros. apply H1.
       intros [|]; intros; cbn; eauto.
       * unfold funcomp. asimpl.
-        (* adrian: I had to add the following line so that renamify works *)
+        (* a.d.: I had to add the following line so that renamify works *)
         change (fun x0 : fin k => @var_tm m (xi x0)) with (funcomp var_tm xi).
         renamify. eauto.
         eapply close_ren. eauto.

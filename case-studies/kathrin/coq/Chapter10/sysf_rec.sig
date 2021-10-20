@@ -1,4 +1,3 @@
--- adrian: the functor application in recty does not work yet
 -- Signature for System F
 
 -- the types
