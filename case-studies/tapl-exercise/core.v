@@ -89,3 +89,40 @@ Ltac minimize :=
          | [|- context[fun x => ?f x]] => change (fun x => f x) with f (* eta reduction *)
          | [|- context[fun x => ?g (?f x)]] => change (fun x => g (f x)) with (funcomp g f) (* funcomp folding *)
          end.
+
+(* had to add this tactic abbreviation because I could not print a setoid_rewrite with the arrow *)
+Ltac setoid_rewrite_left t := setoid_rewrite <- t.
+
+Ltac check_no_evars :=
+  match goal with
+  | [|- ?x] => assert_fails (has_evar x)
+  end.
+
+Require Import Setoid Morphisms.
+
+Lemma pointwise_forall {X Y:Type} (f g: X -> Y) :
+  (pointwise_relation _ eq f g) -> forall x, f x = g x.
+Proof.
+  trivial.
+Qed.
+
+Instance funcomp_morphism {X Y Z} :
+  Proper (@pointwise_relation Y Z eq ==> @pointwise_relation X Y eq ==> @pointwise_relation X Z eq) funcomp.
+Proof.
+  cbv - [funcomp].
+  intros g0 g1 Hg f0 f1 Hf x.
+  unfold funcomp. rewrite Hf, Hg.
+  reflexivity.
+Qed.
+
+Instance funcomp_morphism2 {X Y Z} :
+  Proper (@pointwise_relation Y Z eq ==> @pointwise_relation X Y eq ==> eq ==> eq) funcomp.
+Proof.
+  intros g0 g1 Hg f0 f1 Hf ? x ->.
+  unfold funcomp. rewrite Hf, Hg.
+  reflexivity.
+Qed.
+
+Ltac unfold_funcomp := match goal with
+                           | |-  context[(funcomp ?f ?g) ?s] => change ((funcomp f g) s) with (f (g s))
+                           end.

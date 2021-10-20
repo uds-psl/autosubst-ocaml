@@ -1,9 +1,25 @@
+
+(** 
+  We were able to mechanize the first two steps of Exercise 23.6.3 of Types and Programming Languages (page 356)
+  Autosubst was a great help because it lowers the burden of starting to work on an exercise.
+  If I didn't have Autosubst available, I would not have attempted to mechanize the exercise 
+    because the substitution boilerplate is so tedious.
+
+  Andrej told me that the rest of the steps (3-7) are probably very hard to prove in Coq 
+  because they are always talking about "forms" which is hard to control in Coq.
+    
+  I tried around a little bit, defining more well-formed predicates.
+  It went nowehere, though, because writing proofs with them is hard.  
+  But this is not a failing of Autosubst.
+  *)
+
 Require Import sysf.
 Require Import core unscoped.
 Require List.
 Import List.ListNotations.
 Open Scope list.
 
+(* we define an erasure of system F into the lambda calculus *)
 Inductive utlc :=
 | var_utlc : nat -> utlc
 | app_utlc : utlc -> utlc -> utlc
@@ -63,30 +79,12 @@ Proof.
 Qed.
 
 (*** Util ***)
-Lemma up_tm_tm_var_tm : forall x, up_tm_tm var_tm x = var_tm x.
-Proof.
-  intros [|x].
-  - cbn. reflexivity.
-  - cbn. reflexivity.
-Qed.
-
-Lemma up_ty_tm_var_tm : forall x, up_ty_tm var_tm x = var_tm x.
-Proof.
-  intros [|x].
-  - cbn. reflexivity.
-  - cbn. reflexivity.
-Qed.
-
-Lemma upRen_id : forall x, upRen_ty_ty id x = x.
-Proof.
-  intros [|x].
-  - reflexivity.
-  - cbn. reflexivity.
-Qed.
 
 Lemma ren_id : forall s, ren_ty id s = s.
 Proof.
-  induction s.
+  now asimpl.
+  (* instead of asimpl the below script also works *)
+  (* induction s.
   - reflexivity.
   - cbn. rewrite IHs1, IHs2. reflexivity.
   - cbn. erewrite (extRen_ty (upRen_ty_ty id) id _ s).
@@ -94,14 +92,7 @@ Proof.
     Unshelve.
     intros [|x].
     + cbn. reflexivity.
-    + cbn. reflexivity.
-Qed.
-
-Lemma up_tm_ty_sigma : forall sigma x , up_tm_ty sigma x = sigma x.
-Proof.
-  intros *.
-  unfold up_tm_ty, funcomp.
-  rewrite ren_id. reflexivity.
+    + cbn. reflexivity. *)
 Qed.
 
 Lemma nth_error_map {X Y:Type} : forall (l:list X) (f: X -> Y) y n,
@@ -205,24 +196,29 @@ Proof.
     specialize (H _ _ HTx0).
     specialize (List.map_nth_error (ren_ty S) _ _ H).
     (* now autoubst should be enough to form Hren into the goal *)
-    rewrite renRen_ty. intros Hren.
+    rewrite HTx1.
+    now asimpl.
+    (* instead of asimpl, we can use the below script. *)
+    (* rewrite renRen_ty. intros Hren.
     subst Tx.
     rewrite renRen_ty.
     rewrite (extRen_ty _ (funcomp S xi)).
     exact Hren.
     intros [|n].
     + cbn. reflexivity.
-    + cbn. reflexivity.
+    + cbn. reflexivity. *)
   - cbn.
     (* this should be the substitution lemma we want to prove *)
     assert (ren_ty xi (subst_ty (scons T2 var_ty) T1) = subst_ty (scons (ren_ty xi T2) var_ty) (ren_ty (upRen_ty_ty xi) T1)) as ->.
     {
-      rewrite compRen_ty.
+      now asimpl. 
+      (* instead of asimpl we can use the below script *)
+      (* rewrite compRen_ty.
       rewrite renComp_ty.
       apply ext_ty.
       intros [|x].
       - cbn. reflexivity.
-      - cbn. reflexivity.
+      - cbn. reflexivity. *)
     }
     constructor.
     apply IHHtype.
@@ -240,14 +236,17 @@ Proof.
   - cbn. apply H, H0.
   - cbn. constructor.
     rewrite (ext_tm _ _ sigma (up_tm_tm tau)).
-    2: apply up_tm_ty_sigma.
+    2: {
+      now asimpl.
+    }
     2: intros x; reflexivity.
     apply IHHtype.
     unfold up_tm_tm.
     intros [|x] T Hx.
     + cbn. constructor. cbn.
       injection Hx. intros ->. reflexivity.
-    + cbn. rewrite <- ren_id.
+    + cbn. 
+      rewrite <- ren_id.
       eapply context_renaming_lemma.
       2: apply H, Hx.
       intros [|n] Tn Hn.
@@ -267,9 +266,10 @@ Proof.
     specialize (H _ _ HTx0).
     unfold up_ty_tm, up_ty_ty, funcomp.
     rewrite HTx1.
-    rewrite renComp_ty. unfold funcomp. cbn.
-    change (fun x0 => ren_ty shift (sigma x0)) with (funcomp (ren_ty shift) sigma).
-    rewrite <- compRen_ty.
+    asimpl.
+    (* rewrite renComp_ty. unfold funcomp. cbn.
+    change (fun x0 => ren_ty shift (sigma x0)) with (funcomp (ren_ty shift) sigma). *)
+    rewrite <- substRen_ty.
     eapply context_renaming_lemma.
     2: exact H.
     intros [|n] Tn Hn.
@@ -281,7 +281,9 @@ Proof.
   - cbn.
     assert (subst_ty sigma (subst_ty (scons T2 var_ty) T1) = subst_ty (scons (subst_ty sigma T2) var_ty) (subst_ty (up_ty_ty sigma) T1)) as ->.
     {
-      rewrite compComp_ty.
+      now asimpl.
+      (* instead of asimpl the below script also works *)
+      (* rewrite compComp_ty.
       rewrite compComp_ty.
       apply ext_ty.
       intros [|x].
@@ -294,7 +296,7 @@ Proof.
         intros n; reflexivity.
         intros [|n].
         cbn. reflexivity.
-        cbn. reflexivity.
+        cbn. reflexivity. *)
     }
     constructor.
     apply IHHtype.
@@ -302,6 +304,9 @@ Proof.
     apply H, Hx.
 Qed.
 
+(* it was pleasantly simple to prove preservation which I can then use to prove some part of the TAPL exercise.
+   It is a bit strange that I have to sometime `rewrite <- idSubst` or `rewrite <- ren_id` to be able to 
+      apply the context_renaming_lemma/context_morphism_lemma *)
 Lemma sysf_preservation :
   forall Gamma s s' T, has_type Gamma s T -> eval s s' -> has_type Gamma s' T.
 Proof.
@@ -333,26 +338,26 @@ Proof.
     specialize (@nth_error_map ty _ _ _ _ _ H) as (T1' & HT1 & HT1').
     rewrite HT1'.
     (* from here the lemmas from autosubst should suffice *)
-    erewrite compRenSubst_ty.
-    rewrite idSubst_ty.
+    asimpl.
     constructor. apply HT1.
-    2: reflexivity.
-    intros [|n].
-    + cbn. reflexivity.
-    + cbn. reflexivity.
 Qed.
 
-(*** non-typability of omega ***)
+(* characterization of exposed terms *)
 Inductive exposed : tm -> Prop :=
 | ex_var : forall n, exposed (var_tm n)
 | ex_lam : forall T s, exposed (lam T s)
 | ex_app : forall s t, exposed (app s t).
 
+(* A predicate on terms that should model the "sequences" from TAPL.
+  The first nat represents the nested type applications
+  The second nat represents the nested type abstractions
+*)
 Inductive wf : tm -> nat -> nat -> Prop :=
 | wf_empty : forall u, exposed u -> wf u 0 0
 | wf_tapp : forall s T l, wf s 0 l -> wf (tapp s T) 0 (S l)
 | wf_tlam : forall s n l, wf s n l -> wf (tlam s) (S n) l.
 
+(* definition of erasure into utlc *)
 Fixpoint erase (s: tm) : utlc :=
   match s with
   | var_tm n => var_utlc n
@@ -362,6 +367,7 @@ Fixpoint erase (s: tm) : utlc :=
   | tapp t _ => erase t
   end.
 
+(* This should be a correct formalization of exercise 23.6.3 1) *)
 Lemma lemma_23_6_3_1:
   forall Gamma t T m, has_type Gamma t T -> erase t = m ->
                  exists Gamma' s T', has_type Gamma' s T' /\ erase s = m. 
@@ -378,56 +384,10 @@ Proof.
     apply (IHt _ T0 H0 eq_refl).
 Qed.
 
+Print Assumptions lemma_23_6_3_1.
+
 Import UnscopedNotations.
-Lemma has_type_subst:
-  forall (t0 : ty) (Gamma : list ty) (T1 : ty) (s0 : tm),
-    has_type (List.map (ren_ty S) Gamma) s0 T1 ->
-    has_type Gamma (subst_tm (scons t0 var_ty) var_tm s0) (subst_ty (scons t0 var_ty) T1).
-Proof.
-  intros * Hhas_type.
-  induction s0 in t0, T1, Gamma, Hhas_type |- *.
-  - inversion Hhas_type; subst.
-    cbn. constructor.
-    (* should work because of H0 we know T1 is the n'th element from Gamma where all indices have been incremented so in T1[t0..] the t0 is thrown away and all indices are decremented *)
-    specialize (@nth_error_map ty _ _ _ _ _ H0) as (T1' & HT1 & HT1').
-    rewrite HT1'.
-    (* from here the lemmas from autosubst should suffice *)
-    erewrite compRenSubst_ty.
-    rewrite idSubst_ty. assumption.
-    2: reflexivity.
-    intros [|x].
-    + cbn. reflexivity.
-    + cbn. reflexivity.
-  - cbn. 
-    inversion Hhas_type; subst.
-    eapply has_type_app.
-    specialize (IHs0_1 t0 _ (arr T0 T1) H1). cbn in IHs0_1. apply IHs0_1.
-    specialize (IHs0_2 t0 _ T0 H3). apply IHs0_2.
-  - inversion Hhas_type; subst.
-    cbn.
-      (* something is wrong here :( *)
-    (* rewrite compSubstSubst_ty with (theta_ty := scons (subst_ty (scons t0 var_ty) t) (scons t0 var_ty)). *)
-    (* rewrite <- compSubstSubst_ty with (theta_ty := scons (subst_ty (scons t0 var_ty) t) (scons t0 var_ty)) (sigma_ty := (scons (subst_ty (scons t0 var_ty) t) var_ty)) (tau_ty := scons t0 var_ty). *)
-    (* 3: { *)
-    (*   intros [|x]. *)
-    (*   - cbn. reflexivity. *)
-    (*   - cbn. reflexivity. *)
-    (* } *)
-    (* 2: { *)
-    (*   intros [|x]. *)
-    (*   - cbn. *)
-    (* } *)
-    
-    admit.
-  - inversion Hhas_type; subst.
-    cbn. constructor.
-    rewrite (ext_tm (up_tm_ty (scons t0 var_ty)) (up_tm_tm var_tm) (scons t0 var_ty) var_tm (up_tm_ty_sigma (scons t0 var_ty)) up_tm_tm_var_tm s0).
-    apply IHs0. cbn.
-    assert (ren_ty S (subst_ty (scons t0 var_ty) t) = t) by admit.
-    rewrite H. apply H2.
-  - inversion Hhas_type; subst.
-    admit.
-Abort. 
+
 
 Lemma erase_subst: forall s m sigma_ty,
     erase s = m -> erase (subst_tm sigma_ty var_tm s) = m.
@@ -440,13 +400,17 @@ Proof.
     assumption.
   - cbn. apply (IHs _ sigma_ty Herase).
   - cbn.
-    rewrite (ext_tm (up_tm_ty sigma_ty) (up_tm_tm var_tm) (up_tm_ty sigma_ty) var_tm (fun x => eq_refl) up_tm_tm_var_tm s).
+    (* I think need a morphism for ersae to apply my asimpl but I don't really care about functional extensionality *)
+    asimpl_fext.
     specialize (IHs (erase s) (up_tm_ty sigma_ty) eq_refl).
+    asimpl in IHs.
     rewrite IHs. assumption.
   - cbn.
-    rewrite (ext_tm _ _ (up_ty_ty sigma_ty) var_tm (fun x => eq_refl) up_ty_tm_var_tm s).
+    asimpl_fext.
     rewrite (IHs (erase s) _ eq_refl). assumption.
 Qed.
+
+Print Assumptions erase_subst.
     
 Lemma wf_subst: forall s n l sigma_ty,
     wf s n l -> wf (subst_tm sigma_ty var_tm s) n l.
@@ -463,10 +427,11 @@ Proof.
   - inversion Hwf. constructor. constructor.
   - inversion Hwf. inversion H.
     subst. cbn. constructor.
-    rewrite (ext_tm _ _ (up_ty_ty sigma_ty) var_tm (fun x => eq_refl) up_ty_tm_var_tm).
-    apply IHs, H0.
+    apply (IHs n0 l), H0.
 Qed.
 
+
+(* This should be a correct formalization of exercise 23.6.3 2) *)
 Lemma lemma_23_6_3_2:
   forall Gamma t T m, has_type Gamma t T -> erase t = m ->
                  exists s n l, has_type Gamma s T /\ erase s = m /\ wf s n l.
@@ -490,8 +455,8 @@ Proof.
         enough (has_type Gamma (tapp (tlam s0) t0) (subst_ty (t0 .: var_ty) T1)).
         apply (sysf_preservation _ _ _ _ H). constructor.
         constructor. apply IH0.
-        (* shit the substitutivity of erasure and wf does not seem to hold :(
-         NO IT DOES but not in general *)
+        (* At first I thought the substitutivity of erasure and wf does not hold.
+           It does not seem to hold in general but we only need a special case *)
       * (* substitutivity of erasure, subtituting does no change structure so this should be easy case analysis on s0 *)
         apply erase_subst. exact IH1.
       * (* substitutivity of well-formedness, same as erasure it does not change the structure of s0 so it should be easy *)
@@ -505,6 +470,8 @@ Proof.
     + apply IH1.
     + constructor. assumption.
 Qed.
+
+Print Assumptions lemma_23_6_3_2.
 
 Require Import Arith Lia.
 Lemma bin_size_ind (f : nat -> nat -> nat) (P : nat -> nat -> Type) :
@@ -527,21 +494,21 @@ Inductive wf'' : tm -> tm -> nat -> nat -> Prop :=
 | wf''_tapp : forall s u T n l, wf'' s u n l -> wf'' (tapp s T) u n (S l)
 | wf''_tlam : forall s u n l, wf'' s u n l -> wf'' (tlam s) u (S n) l.
 
-(* Lemma wf''_exposed : forall t u n l, wf'' t u n l -> exposed u. *)
-(* Proof. *)
-(*   intros t u n l. revert t u. revert n l. *)
-(*   refine (bin_size_ind (fun x y => x + y) _ _). *)
-(*   intros n l IH t u Hwf. *)
-(*   destruct (n + l) as [|nl] eqn:E. *)
-(*   - apply plus_is_O in E as [En El]. subst n l. *)
-(*     inversion Hwf. exact H. *)
-(*   - inversion Hwf; subst. *)
-(*     + exact H. *)
-(*     + eapply IH. 2: exact H. *)
-(*       lia. *)
-(*     + eapply IH. 2: exact H. *)
-(*       lia. *)
-(* Qed. *)
+Lemma wf''_exposed : forall t u n l, wf'' t u n l -> exposed u.
+Proof.
+  intros t u n l. revert t u. revert n l.
+  refine (bin_size_ind (fun x y => x + y) _ _).
+  intros n l IH t u Hwf.
+  destruct (n + l) as [|nl] eqn:E.
+  - apply plus_is_O in E as [En El]. subst n l.
+    inversion Hwf. exact H.
+  - inversion Hwf; subst.
+    + exact H.
+    + eapply IH. 2: exact H.
+      lia.
+    + eapply IH. 2: exact H.
+      lia.
+Qed.
 
 Lemma wf''_complete : forall t, exists r n l, wf'' t r n l.
 Proof.
@@ -557,51 +524,3 @@ Proof.
     constructor. exact IH.
 Qed.
 
-Lemma wf'_exposed : forall t r n l, exposed r -> wf' t r n l -> wf t n l.
-Proof.
-Admitted.
-
-Lemma wf'_r_tapp : forall t r n l, (exists T, wf' t (tapp r T) n l) <-> wf' t r n (S l).
-Admitted.
-
-Lemma wf'_r_tlam : forall t r n, wf' t (tlam r) n 0 -> wf' t r (S n) 0.
-Admitted.
-
-Lemma lemma_23_6_3_2':
-  forall Gamma t T m, has_type Gamma t T -> erase t = m ->
-                 exists s n l, has_type Gamma s T /\ erase s = m /\ wf s n l.
-Proof.
-  enough (forall Gamma t T m,
-             has_type Gamma t T ->
-             erase t = m ->
-             forall n__rs l__rs r s n__tr l__tr,
-             wf' t r n__tr l__tr ->
-             wf'' r s n__rs l__rs ->
-         exists s n l, has_type Gamma s T /\ erase s = m /\ wf s n l).
-  { intros * Htype Herase.
-    specialize (wf''_complete t) as (r & n & l & Hr).
-    apply (H Gamma t T m Htype Herase n l t r 0 0).
-    constructor.
-    exact Hr. }
-  (* intros n__rs l__rs. induction (n__rs + l__rs) as [|nl]; intros * Htype Herase Htr Hrs. *)
-  (* now we do binary induction on n & l, then case analysis on whether n + l is 0 *)
-  intros * Htype Herase.
-  refine (bin_size_ind (fun x y => x + y) _ _).
-  intros n__rs l__rs IH r s n__tr l__tr Htr Hrs.
-  inversion Hrs; subst r s n__rs l__rs.
-  - specialize (wf'_exposed t u n__tr l__tr H Htr) as Hwf.
-    exists t, n__tr, l__tr. repeat split; assumption.
-  - assert (H': wf' t s0 n__tr (S l__tr)).
-    { apply wf'_r_tapp. exists T0. apply Htr. }
-    apply (IH n l ltac:(lia) s0 u n__tr (S l__tr) H' H). 
-  - destruct l__tr as [|l__tr'].
-    + (* no type applications in t *)
-      apply wf'_r_tlam in Htr.
-      apply (IH n l ltac:(lia) s0 u (S n__tr) 0 Htr H).
-    + (* here we reduce and probably need preservation *)
-      (* but seems ugly to prove *)
-      rewrite <- wf'_r_tapp in Htr. destruct Htr as [T0 Htr].
-      eapply (IH n l ltac:(lia) _ _ n__tr l__tr' _ H).
-      Unshelve.
-      (* does not seem provable from here. I would need a t' in the conclusion and then show that the (tapp (tlam s0) T0) is inside t and this evaluates to t'. Easy on paper but very uncomfortable in Coq *)
-Abort.
