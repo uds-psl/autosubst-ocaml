@@ -74,13 +74,9 @@ let getPattern name positions =
   List.mapi (fun i _ -> name ^ string_of_int i) positions
 
 (** Extract the extra shifting argument from a BinderList. *)
-let binvparameters = function
+let blist_args ?(implicit=true) = function
   | L.Single x -> ([], [])
-  | L.BinderList (m, _) -> ([ref_ m], [binder1_ ~implicit:true ~btype:nat_ m])
-
-let bparameters binder =
-  let (terms, binders) = binvparameters binder in
-  (terms, explicit_ binders)
+  | L.BinderList (m, _) -> ([ref_ m], [binder1_ ~implicit:implicit ~btype:nat_ m])
 
 (* TODO I don't really understand this chain of up functions yet *)
 let up x f ns b =
@@ -90,13 +86,13 @@ let up x f ns b =
 (* here evaluation stops ifbs is empty. Is there a better way to do this? *)
 let ups x f xs bs = m_fold (up x f) xs bs
 
-let upRen x bs xs = ups x (fun z b xi -> app_ref (upRen_ z b) (fst (bparameters b) @ [xi])) xs bs
+let upRen x bs xs = ups x (fun z b xi -> app_ref (upRen_ z b) (fst (blist_args ~implicit:false b) @ [xi])) xs bs
 
 let upScope x bs terms = ups x (fun z b n -> succ_ n z b) terms bs
 
 let upPred x bs pred_names = ups x (fun z b p -> app_ref (up_allfv_name z b) [p]) pred_names bs
 
-let upSubstS x bs xs = ups x (fun z b xi -> app_ref (up_ z b) (fst (bparameters b) @ [xi])) xs bs
+let upSubstS x bs xs = ups x (fun z b xi -> app_ref (up_ z b) (fst (blist_args ~implicit:false b) @ [xi])) xs bs
 
 let up' x f ns b =
   let* xs = get_substv x in
@@ -174,11 +170,11 @@ let genPred ?implicit name =
 
 (** Create multiple scope variables and their binders. One for each substituting sort of the given sort
  ** Example: { m_ty : nat } { m_vl : nat } *)
-let genScopeVarVect name sort =
+let genScopeVarVect ?(implicit=true) name sort =
   let* substSorts = get_substv sort in
   let names = List.map (sep name) substSorts in
   let binders = guard (list_nempty names && Settings.is_wellscoped ())
-      [binder_ ~implicit:true ~btype:nat_ names] in
+      [binder_ ~implicit:implicit ~btype:nat_ names] in
   pure @@ (
     SubstScope (names, mk_refs names),
     (* Fix for wrong translation of sorts that don't have a substitution vector.

@@ -82,13 +82,6 @@ let scons_p_comp' x = app_ref "scons_p_comp'" [underscore_; underscore_; undersc
 let scons_p_tail' x = app_ref "scons_p_tail'" [underscore_; underscore_; x]
 let scons_p_head' x = app_ref "scons_p_head'" [ underscore_; underscore_; x]
 
-(** Convert an implicit binder to an explicit one *)
-let explicitS_ = function
-  | CE.CLocalAssum (bnames, _, btype) -> CE.CLocalAssum (bnames, CE.Default Glob_term.Explicit, btype)
-  | _ -> failwith "We only use CLocalAssum in autosubst!"
-
-(** Convert a list of binders to explicit binders *)
-let explicit_ = List.map explicitS_
 
 (** Construct the body of a definition depending on if the given sort matches the one in the binder *)
 let definitionBody sort binder (singleMatch, singleNoMatch) f_listMatch =

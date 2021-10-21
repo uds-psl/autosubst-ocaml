@@ -55,7 +55,5 @@ val scons_p_comp' : constr_expr -> constr_expr
 val scons_p_tail' : constr_expr -> constr_expr
 val scons_p_head' : constr_expr -> constr_expr
 
-val explicit_ : binder_expr list -> binder_expr list
-
 val definitionBody : identifier -> L.binder -> (constr_expr * constr_expr)
   -> (identifier -> identifier -> constr_expr * constr_expr) -> constr_expr

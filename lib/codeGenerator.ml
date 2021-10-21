@@ -45,7 +45,7 @@ let genConstr sort ns L.{ cparameters; cname; cpositions } =
 
 let gen_inductive_body sort =
   let* ctors = get_constructors sort in
-  let* (ns, bns) = genScopeVarVect "n" sort in
+  let* (ns, bns) = genScopeVarVect ~implicit:false "n" sort in
   let* is_open = check_open sort in
   let* ctors = a_map (genConstr sort ns) ctors in
   let* ctors = if is_open
@@ -53,7 +53,7 @@ let gen_inductive_body sort =
       pure (varCtor :: ctors)
     else pure ctors
   in
-  pure @@ inductiveBody_ sort (explicit_ bns) ~rtype:type_ ctors
+  pure @@ inductiveBody_ sort bns ~rtype:type_ ctors
 
 (** Generate a mutual inductive type spanning the given definable sorts *)
 let gen_inductive def_sorts =
@@ -161,7 +161,7 @@ let genUpRen (binder, sort) =
   let [@warning "-8"] [ m; n; xi ], [], [], scopeBinders = v in
   (** register upRen for unfolding *)
   let* () = tell_unfold_function (upRen_ sort binder) in
-  let (_, bpms) = bparameters binder in
+  let (_, bpms) = blist_args ~implicit:false binder in
   let m' = succ_ m sort binder in
   let n' = succ_ n sort binder in
   let defBody = definitionBody sort binder
@@ -233,7 +233,7 @@ let genUpS (binder, sort) =
   let* () = tell_unfold_function (up_ sort binder) in
   (* TODO what does upSubstT do here? *)
   let* sigma = upSubstT binder sort ns sigma in
-  let (_, bpms) = bparameters binder in
+  let (_, bpms) = blist_args ~implicit:false binder in
   let m' = succ_ m sort binder in
   let* ns' = upSubstScope sort [binder] ns in
   pure @@ lemma_ ~opaque:false (up_ sort binder) (bpms @ scopeBinders) (substT m' ns' sort) sigma
@@ -276,7 +276,7 @@ let genUpId (binder, sort) =
   let (eq, beq) = genEq "Eq" sigma (app_var_constr sort ms) in
   let n = varName "n" in
   let* ms' = upSubstScope sort [binder] ms in
-  let (pms, bpms) = binvparameters binder in
+  let (pms, bpms) = blist_args binder in
   let ret = equiv_
       (app_ref (up_ sort binder) (pms @ [sigma]))
       (app_var_constr sort ms') in
@@ -309,7 +309,7 @@ let genUpExtRen (binder, sort) =
   let* v = V.genVariables sort [ `M; `N; `XI (`M, `N); `ZETA (`M, `N) ] in
   let [@warning "-8"] [ m; n; xi; zeta ], [], [], scopeBinders = v in
   let (eq, b_eq) = genEq "Eq" xi zeta in
-  let (pms, bpms) = binvparameters binder in
+  let (pms, bpms) = blist_args binder in
   let ret = equiv_
       (app_ref (upRen_ sort binder) (pms @ [xi]))
       (app_ref (upRen_ sort binder) (pms @ [zeta])) in
@@ -346,7 +346,7 @@ let genUpExt (binder, sort) =
   let* v = V.genVariables sort [ `M; `NS; `SIGMA (`M, `NS); `TAU (`M, `NS) ] in
   let [@warning "-8"] [ m; sigma; tau ], [ ns ], [], scopeBinders = v in
   let (eq, beq) = genEq "Eq" sigma tau in
-  let (pms, bpms) = binvparameters binder in
+  let (pms, bpms) = blist_args binder in
   let ret = equiv_
       (app_ref (up_ sort binder) (pms @ [sigma]))
       (app_ref (up_ sort binder) (pms @ [tau])) in
@@ -383,7 +383,7 @@ let genUpRenRen (binder, sort) =
   let* v = V.genVariables sort [ `K; `L; `M; `XI (`K, `L); `ZETA (`L, `M); `RHO (`K, `M) ] in
   let [@warning "-8"] [ k; l; m; xi; zeta; rho ], [], [], scopeBinders = v in
   let (eq, beq) = genEq "Eq" (xi >>> zeta) rho in
-  let (pms, bpms) = binvparameters binder in
+  let (pms, bpms) = blist_args binder in
   let ret = equiv_
       (app_ref (upRen_ sort binder) (pms @ [xi])
        >>> app_ref (upRen_ sort binder) (pms @ [zeta]))
@@ -429,7 +429,7 @@ let genUpRenSubst (binder, sort) =
   let n = varName "n" in
   (* TODO is this really not used? *)
   (* let* ms = upSubstScope sort [binder] ms in *)
-  let (pms, bpms) = binvparameters binder in
+  let (pms, bpms) = blist_args binder in
   let ret = equiv_
       (app_ref (upRen_ sort binder) (pms @ [xi])
        >>> app_ref (up_ sort binder) (pms @ [tau]))
@@ -477,7 +477,7 @@ let genUpSubstRen (binder, sort) =
   (* TODO document *)
   let* zetas' = upSubst sort [binder] zetas in
   let* pat = patternSId sort binder in
-  let (pms, bpms) = binvparameters binder in
+  let (pms, bpms) = blist_args binder in
   let ret = equiv_
       (app_ref (up_ sort binder) (pms @ [sigma])
        >>> app_ref (ren_ sort) (sty_terms zetas'))
@@ -551,7 +551,7 @@ let genUpSubstSubst (binder, sort) =
   let* ls' = upSubstScope sort [binder] ls in
   let* taus' = upSubst sort [binder] taus in
   let* pat = patternSId sort binder in
-  let (pms, bpms) = binvparameters binder in
+  let (pms, bpms) = blist_args binder in
   (* TODO document *)
   let ret = equiv_
       (app_ref (up_ sort binder) (pms @ [sigma])
@@ -633,7 +633,7 @@ let genUpSubstSubstNoRen (binder, sort) =
   let* ls' = upSubstScope sort [binder] ls in
   let* taus_up = upSubst sort [binder] taus in
   let* pat = patternSId sort binder in
-  let (pms, bpms) = binvparameters binder in
+  let (pms, bpms) = blist_args binder in
   let ret = equiv_
       (app_ref (up_ sort binder) (pms @ [sigma])
        >>> app_ref (subst_ sort) (sty_terms taus_up))
@@ -695,7 +695,7 @@ let genUpRinstInst (binder, sort) =
   let (sigma, bsigma) = genSubst "sigma" sort (m, ns) in
   let (eq, beq) = genEq "Eq" (xi >>> app_var_constr sort ns) sigma in
   let* ns' = upSubstScope sort [binder] ns in
-  let (pms, bpms) = binvparameters binder in
+  let (pms, bpms) = blist_args binder in
   let ret = equiv_
       (app_ref (upRen_ sort binder) (pms @ [xi]) >>> app_var_constr sort ns')
       (app_ref (up_ sort binder) (pms @ [sigma])) in
