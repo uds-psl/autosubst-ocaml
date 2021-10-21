@@ -1497,6 +1497,8 @@ Ltac asimpl_fext := check_no_evars; repeat try unfold_funcomp;
 
 Tactic Notation "asimpl_fext" "in" hyp(J) := revert J; asimpl_fext; intros J.
 
+Tactic Notation "auto_case_fext" := auto_case ltac:(asimpl_fext; cbn; eauto).
+
 Ltac substify_fext := auto_unfold; try repeat erewrite ?rinstInst_tm;
                        try repeat erewrite ?rinstInst_ty.
 

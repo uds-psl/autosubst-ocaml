@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+### EXAMPLES
 # generate code for the example signatures
 for n in utlc stlc fcbv variadic pi num fol; do
     echo dune exec -- bin/main.exe signatures/${n}.sig -fext -f -s coq -o case-studies/examples/${n}_wellscoped.v
@@ -13,6 +14,13 @@ for n in utlc stlc fcbv pi num; do
     dune exec -- bin/main.exe signatures/${n}.sig -fext -allfv -f -s ucoq -o case-studies/examples/${n}_unscoped.v
 done
 
+
+### TAPL
+# generate code for the tapl exercise
+echo dune exec -- bin/main.exe case-studies/tapl-exercise/sysf.sig -o case-studies/tapl-exercise/sysf.v -f -s ucoq -fext
+dune exec -- bin/main.exe case-studies/tapl-exercise/sysf.sig -o case-studies/tapl-exercise/sysf.v -f -s ucoq -fext
+
+### KATRIN
 # generate the code for Kathrin's case study.
 KAT="case-studies/kathrin/coq/"
 DATA_DIR="./share/autosubst"
