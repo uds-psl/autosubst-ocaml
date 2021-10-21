@@ -247,5 +247,5 @@ let generate () =
   pure AM.(from_list [
     (Core, classes @ instances @ notations @ proper_instances @ tactics);
     (Fext, guard is_gen_fext tactics_fext);
-    (Extra, [import_ (string_of_tag Core)] @ arguments @ opaques)
+    (Extra, arguments @ opaques)
   ])

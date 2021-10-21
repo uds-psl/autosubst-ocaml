@@ -1509,8 +1509,6 @@ End Fext.
 
 Module Extra.
 
-Import Core.
-
 Import
 Core.
 

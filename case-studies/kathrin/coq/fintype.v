@@ -51,6 +51,7 @@ Definition scons {X : Type} {n : nat} (x : X) (f : fin n -> X) (m : fin (S n)) :
   | Some i => f i
   end.
 
+#[ export ]
 Hint Opaque scons : rewrite.
 
 (** ** Type Class Instances for Notation *)
@@ -220,6 +221,7 @@ Proof.
       * exact g.
 Defined.
 
+#[ export ]
 Hint Opaque scons_p : rewrite.
 
 Instance scons_p_morphism {X: Type} {m n:nat} :
