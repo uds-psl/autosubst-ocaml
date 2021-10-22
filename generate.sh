@@ -32,9 +32,15 @@ generate_file() {
     dune exec -- bin/main.exe ${KAT}${file}.sig -o ${KAT}${file}.v -s ${scope} -no-static -fext -f
 }
 
-echo cp ${DATA_DIR}/core_809.v ${DATA_DIR}/core_axioms.v ${DATA_DIR}/fintype.v ${DATA_DIR}/fintype_axioms.v ${DATA_DIR}/unscoped.v ${DATA_DIR}/unscoped_axioms.v ${KAT}
+echo cp ${DATA_DIR}/core.v ${DATA_DIR}/core_axioms.v ${DATA_DIR}/fintype.v ${DATA_DIR}/fintype_axioms.v ${DATA_DIR}/unscoped.v ${DATA_DIR}/unscoped_axioms.v ${KAT}
 cp ${DATA_DIR}/core_axioms.v ${DATA_DIR}/fintype.v ${DATA_DIR}/fintype_axioms.v ${DATA_DIR}/unscoped.v ${DATA_DIR}/unscoped_axioms.v ${KAT}
-cp ${DATA_DIR}/core_809.v ${KAT}core.v
+cp ${DATA_DIR}/core.v ${KAT}core.v
+
+echo altering static files for Coq 8.9
+sed -i -E -e 's/Declare Scope fscope./(* not supported in Coq 8.9 *)/' -e 's/Declare Scope subst_scope./(* not supported in Coq 8.9 *)/' ${KAT}core.v
+sed -i -E -e 's/#\[ export \]//' ${KAT}unscoped.v
+sed -i -E -e 's/#\[ export \]//' ${KAT}fintype.v
+
 
 # the case study only contains one instance of unscoped code
 generate_file "Chapter3/utlc_pure" ucoq

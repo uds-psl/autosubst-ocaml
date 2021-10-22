@@ -1,6 +1,6 @@
 
 (** 
-  We were able to mechanize the first two steps of Exercise 23.6.3 of Types and Programming Languages (page 356)
+  We were able to mechanize the first three steps of Exercise 23.6.3 of Types and Programming Languages (page 356)
   Autosubst was a great help because it lowers the burden of starting to work on an exercise.
   If I didn't have Autosubst available, I would not have attempted to mechanize the exercise 
     because the substitution boilerplate is so tedious.
@@ -80,21 +80,6 @@ Qed.
 
 (*** Util ***)
 
-Lemma ren_id : forall s, ren_ty id s = s.
-Proof.
-  now asimpl.
-  (* instead of asimpl the below script also works *)
-  (* induction s.
-  - reflexivity.
-  - cbn. rewrite IHs1, IHs2. reflexivity.
-  - cbn. erewrite (extRen_ty (upRen_ty_ty id) id _ s).
-    rewrite IHs. reflexivity.
-    Unshelve.
-    intros [|x].
-    + cbn. reflexivity.
-    + cbn. reflexivity. *)
-Qed.
-
 Lemma nth_error_map {X Y:Type} : forall (l:list X) (f: X -> Y) y n,
     List.nth_error (List.map f l) n = Some y ->
     exists x, List.nth_error l n = Some x /\ y = f x.
@@ -138,6 +123,7 @@ Proof.
   - exists s. reflexivity.
 Qed.
 
+(* turns out I don't even need the progress lemma *)
 Lemma sysf_progress :
   forall s T, has_type [] s T -> isval s \/ exists s', eval s s'.
 Proof.
@@ -246,14 +232,14 @@ Proof.
     + cbn. constructor. cbn.
       injection Hx. intros ->. reflexivity.
     + cbn. 
-      rewrite <- ren_id.
+      rewrite <- rinstId'_ty.
       eapply context_renaming_lemma.
       2: apply H, Hx.
       intros [|n] Tn Hn.
       * cbn. destruct Gamma'. discriminate Hn. cbn in Hn.
-        injection Hn. intros ->. rewrite ren_id. reflexivity.
+        injection Hn. intros ->. now asimpl.
       * cbn. destruct Gamma'. discriminate Hn. cbn in Hn.
-        rewrite Hn. rewrite ren_id. reflexivity.
+        rewrite Hn. now asimpl.
   - cbn. econstructor.
     + apply IHHtype1.
       intros x T Hx. apply H, Hx.
@@ -305,7 +291,7 @@ Proof.
 Qed.
 
 (* it was pleasantly simple to prove preservation which I can then use to prove some part of the TAPL exercise.
-   It is a bit strange that I have to sometime `rewrite <- idSubst` or `rewrite <- ren_id` to be able to 
+   It is a bit strange that I have to sometime `rewrite <- idSubst` to be able to 
       apply the context_renaming_lemma/context_morphism_lemma *)
 Lemma sysf_preservation :
   forall Gamma s s' T, has_type Gamma s T -> eval s s' -> has_type Gamma s' T.
@@ -524,3 +510,19 @@ Proof.
     constructor. exact IH.
 Qed.
 
+
+Lemma lemma_23_6_3_3 :
+  forall Gamma t m n T, exposed t -> has_type Gamma t T -> erase t = app_utlc m n ->
+    exists s u U, has_type Gamma s (arr U T) /\ erase s = m /\ 
+                  has_type Gamma u U /\ erase u = n /\ 
+                  t = app s u.
+Proof.  
+  intros Gamma t. revert Gamma.
+  destruct t; intros * Hext HTt Hert; 
+    try discriminate Hert. (* takes care of cases where erase does not change the constructor. *)
+  - inversion HTt; subst.
+    inversion Hert; subst. 
+    exists t1, t2, T1; repeat split; assumption.
+  - inversion Hext. (* tapp is thrown away by erase but cannot be exposed. *)
+  - inversion Hext. (* tlam is thrown away by erase but cannot be exposed. *)
+Qed.

@@ -554,7 +554,6 @@ Instance pat_ty_morphism {m p:nat} :
 Proof.
   intros pat0 pat1 -> T0 T1 -> f f' Hf H.
 Admitted.
-(* Require Import core_axioms fintype_axioms. *)
 
 Lemma context_renaming_lemma m m' n n' (Delta: ctx m') (Gamma: dctx n' m')                                                   (s: tm m n) A (xi : fin m -> fin m') (zeta: fin n -> fin n') Delta' (Gamma' : dctx n m):
   (forall x, (Delta' x)⟨xi⟩ = Delta (xi x)) ->

@@ -151,12 +151,119 @@ where "'SUB' Delta |- A <: B" := (sub Delta A B).
 Hint Constructors sub.
 
 
+(** Generated with Marcel's induction generation program. 
+    Unfortunately there were two problems when generating the induction scheme:
+    1. we were not able to run the program with the wellscoped syntax directly.
+       Instead, we had to generate the scheme for an unscoped variant and manually convert to wellscoped syntax.
+    2. It did not generate the most general recursion scheme.
+       In the recty case, SUB occurs under an exists and we also need an induction hypothesis for that occurrence.
+       I think I should be able to use `MetaCoq Run Derive Container for _`
+         but that did not work with `ex`.
+ *)
+ Definition sub_induct : forall
+ (p : forall (n:nat) (Delta : fin n -> ty n) (H H0 : ty n),
+     SUB Delta |- H <: H0 -> Prop),
+ (* top *)
+ (forall n (Delta : fin n -> ty n) (A : ty n), p n Delta A top (SA_top Delta A)) ->
+ (* refl *)
+ (forall n (Delta : fin n -> ty n) (x : fin n), p n Delta (var_ty x) (var_ty x) (SA_Refl Delta x)) ->
+ (* trans *)
+ (forall n (Delta : fin n -> ty n) (x : fin n) (B : ty n) (H : SUB Delta |- Delta x <: B),
+     p n Delta (Delta x) B H -> p n Delta (var_ty x) B (SA_Trans Delta x B H)) ->
+ (* arrow *)
+ (forall n (Delta : fin n -> ty n) (A1 A2 B1 B2 : ty n) (H : SUB Delta |- B1 <: A1),
+     p n Delta B1 A1 H ->
+     forall H0 : SUB Delta |- A2 <: B2,
+     p n Delta A2 B2 H0 ->
+     p n Delta (arr A1 A2) (arr B1 B2) (SA_arrow Delta A1 A2 B1 B2 H H0)) ->
+ (* all *)
+ (forall n (Delta : fin n -> ty n) (A1 : ty n) (A2 : ty (S n)) (B1 : ty n) (B2 : ty (S n)) (H : SUB Delta |- B1 <: A1),
+     p n Delta B1 A1 H ->
+     forall H0 : SUB (funcomp (ren_ty shift) (scons B1 Delta)) |- A2 <: B2,
+     p (S n) (funcomp (ren_ty shift) (scons B1 Delta)) A2 B2 H0 ->
+     p n Delta (all A1 A2) (all B1 B2) (SA_all Delta A1 A2 B1 B2 H H0)) ->
+ (* recty *)
+ (forall n (Delta : fin n -> ty n) (xs ys : list (nat * ty n)) 
+     (H : forall (l : nat) (T' : ty n), In (l, T') ys -> 
+     exists (T : ty n), In (l, T) xs /\ SUB Delta |- T <: T')
+     (Hind : forall (l : nat) (T' : ty n), In (l, T') ys -> 
+         exists (T : ty n), In (l, T) xs /\ 
+             exists (d: SUB Delta |- T <: T'), p n Delta T T' d) 
+     (H0 : unique xs) (H1 : unique ys),
+     p n Delta (recty xs) (recty ys) (SA_rec Delta xs ys H H0 H1)) ->
+ (* target *)
+ forall n (Delta : fin n -> ty n) (H H0 : ty n) (inst : SUB Delta |- H <: H0),
+ p n Delta H H0 inst.
+Proof.
+ refine (
+fun
+p
+H_SA_top
+H_SA_Refl
+H_SA_Trans
+H_SA_arrow
+H_SA_all
+H_SA_rec =>
+fix
+f n (Delta : fin n -> ty n) (H H0 : ty n) (inst : SUB Delta |- H <: H0) {struct inst} :
+p n Delta H H0 inst :=
+match
+ inst as inst0 in (SUB _ |- H1 <: H2) return (p n Delta H1 H2 inst0)
+with
+| SA_top _ A => H_SA_top _ Delta A
+| SA_Refl _ x => H_SA_Refl _ Delta x
+| SA_Trans _ x B x0 => H_SA_Trans _ Delta x B x0 (f _ Delta (Delta x) B x0)
+| SA_arrow _ A1 A2 B1 B2 x x0 =>
+   H_SA_arrow _ Delta A1 A2 B1 B2 x (f _ Delta B1 A1 x) x0 (f _ Delta A2 B2 x0)
+| SA_all _ A1 A2 B1 B2 x x0 =>
+   H_SA_all _ Delta A1 A2 B1 B2 x (f _ Delta B1 A1 x) x0
+     (f _ (funcomp (ren_ty shift) (scons B1 Delta)) A2 B2 x0)
+| SA_rec _ xs ys x x0 x1 => _
+end).
+refine (H_SA_rec _ Delta xs ys x _ x0 x1).
+intros l T' Hin.
+specialize (x l T' Hin) as (T & HT0 & HT1).
+exists T. split.
+apply HT0.
+exists HT1.
+apply (f _ Delta _ _ HT1).
+Defined.
+
 Require Import Setoid Morphisms.
 Instance sub_morphism {n}:
-  Proper (pointwise_relation _ eq ==> eq ==> eq ==> Basics.impl) (@sub n).
+Proper (pointwise_relation _ eq ==> eq ==> eq ==> Basics.impl) (@sub n).
 Proof.
-    (* TODO I think here I actually need a stronger induction lemma though I'm not sure how to do it with two lists. Marcel's Bachelor thesis can probably help *)
-Admitted.
+intros Gamma Gamma' HGamma T T' -> t t' ->.
+intros H.
+(* forall n (Delta : fin n -> ty n) (H H0 : ty n) (inst : SUB Delta |- H <: H0), *)
+refine (sub_induct 
+       (fun n' (Delta : fin n' -> ty n') (H H0 : ty n') (d: SUB Delta |- H <: H0) =>
+         forall (Delta' : fin n' -> ty n') (Heq: pointwise_relation _ eq Delta Delta'), SUB Delta' |- H <: H0)
+       _ _ _ _ _ _
+       n Gamma T' t' H Gamma' HGamma).
+- constructor.
+- constructor.
+- constructor.
+
+rewrite <- Heq. apply H1. apply Heq.
+- constructor.
+ apply H1, Heq.
+ apply H3, Heq.
+- constructor.
+ apply H1, Heq.
+ apply H3.
+ intros [|]. cbn. rewrite Heq. reflexivity.
+ cbn. reflexivity.
+- constructor.
+ + intros.
+   specialize (Hind l T'0 H3) as (T & HT0 & HT1).
+   exists T. split.
+   apply HT0.
+   destruct HT1 as [_ HT1].
+   apply (HT1 Delta' Heq).
+ + assumption.
+ + assumption.
+Qed.
 
 Lemma sub_rec :  forall P : forall n : nat, ctx n -> ty n -> ty n -> Prop,
        (forall (n : nat) (Delta : ctx n) (A : ty n), P n Delta A top) ->
@@ -318,7 +425,9 @@ Variable pat_ty : forall {m} (p: nat), pat m -> ty m ->  (fin p -> (ty m)) -> Pr
 Variable pat_eval : forall {m n} p, pat m -> tm m n -> (fin p -> (tm m n)) -> Prop.
 Variable pat_ty_subst: forall {m n} (sigma: fin m -> ty n) p pt A Gamma, pat_ty m p pt A Gamma -> pat_ty n p (pt[sigma]) (A[sigma]) (Gamma >>  subst_ty sigma).
 
-
+(* a.d. we need the following setoid morphism
+  But we cannot prove it because pat_ty is an assumption anyways.
+*)
 Instance pat_ty_morphism {m p} :
   Proper (eq ==> eq ==> pointwise_relation _ eq ==> Basics.impl) (@pat_ty m p).
 Proof.
@@ -352,10 +461,10 @@ Inductive has_ty {m n} (Delta : ctx m) (Gamma : dctx  n m) : tm m n -> ty m -> P
     TY Delta;Gamma |- s : B
 where "'TY' Delta ; Gamma |- s : A" := (has_ty Delta Gamma s A).
 
-Instance has_ty_morphism {m n} :
+(* Instance has_ty_morphism {m n} :
   Proper (pointwise_relation _ eq ==> pointwise_relation _ eq ==> eq ==> eq ==> Basics.impl) (@has_ty m n).
 Proof.
-Admitted.
+Admitted. *)
 
 Lemma T_Var' {m n} (Delta : ctx m) (Gamma : dctx n m) x :
   forall A, A = Gamma x -> TY Delta;Gamma |- var_tm x : A.
@@ -382,10 +491,10 @@ Inductive eval {m n} : tm m n -> tm m n -> Prop :=
 | E_Rec l ts t t' : EV t => t' -> In (l,t) ts -> EV (rectm ts) => rectm (update ts l t')                  | E_LetL p pt s s' t : EV s => s' -> EV (letpat p pt s t) => (letpat p pt s'  t)
 where "'EV' s => t" := (eval s t).
 
-Instance eval_morphism {m n}:
+(* Instance eval_morphism {m n}:
   Proper (eq ==> eq ==> Basics.impl) (@eval m n).
 Proof.
-Admitted.
+Admitted. *)
 
 (** Assumptions of progress and typing on patterns. *)
 Variable pat_progress : forall p pt s A Gamma, TY empty; empty |- s : A -> pat_ty _ p pt A Gamma -> exists sigma, pat_eval _ _ p pt s sigma.

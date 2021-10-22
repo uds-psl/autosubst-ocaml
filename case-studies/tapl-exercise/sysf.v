@@ -240,6 +240,60 @@ subst_ty tau_ty (subst_ty sigma_ty s) = subst_ty theta_ty s :=
            (up_ty_ty theta_ty) (up_subst_subst_ty_ty _ _ _ Eq_ty) s0)
   end.
 
+Lemma renRen_ty (xi_ty : nat -> nat) (zeta_ty : nat -> nat) (s : ty) :
+  ren_ty zeta_ty (ren_ty xi_ty s) = ren_ty (funcomp zeta_ty xi_ty) s.
+Proof.
+exact (compRenRen_ty xi_ty zeta_ty _ (fun n => eq_refl) s).
+Qed.
+
+Lemma renRen'_ty_pointwise (xi_ty : nat -> nat) (zeta_ty : nat -> nat) :
+  pointwise_relation _ eq (funcomp (ren_ty zeta_ty) (ren_ty xi_ty))
+    (ren_ty (funcomp zeta_ty xi_ty)).
+Proof.
+exact (fun s => compRenRen_ty xi_ty zeta_ty _ (fun n => eq_refl) s).
+Qed.
+
+Lemma renSubst_ty (xi_ty : nat -> nat) (tau_ty : nat -> ty) (s : ty) :
+  subst_ty tau_ty (ren_ty xi_ty s) = subst_ty (funcomp tau_ty xi_ty) s.
+Proof.
+exact (compRenSubst_ty xi_ty tau_ty _ (fun n => eq_refl) s).
+Qed.
+
+Lemma renSubst_ty_pointwise (xi_ty : nat -> nat) (tau_ty : nat -> ty) :
+  pointwise_relation _ eq (funcomp (subst_ty tau_ty) (ren_ty xi_ty))
+    (subst_ty (funcomp tau_ty xi_ty)).
+Proof.
+exact (fun s => compRenSubst_ty xi_ty tau_ty _ (fun n => eq_refl) s).
+Qed.
+
+Lemma substRen_ty (sigma_ty : nat -> ty) (zeta_ty : nat -> nat) (s : ty) :
+  ren_ty zeta_ty (subst_ty sigma_ty s) =
+  subst_ty (funcomp (ren_ty zeta_ty) sigma_ty) s.
+Proof.
+exact (compSubstRen_ty sigma_ty zeta_ty _ (fun n => eq_refl) s).
+Qed.
+
+Lemma substRen_ty_pointwise (sigma_ty : nat -> ty) (zeta_ty : nat -> nat) :
+  pointwise_relation _ eq (funcomp (ren_ty zeta_ty) (subst_ty sigma_ty))
+    (subst_ty (funcomp (ren_ty zeta_ty) sigma_ty)).
+Proof.
+exact (fun s => compSubstRen_ty sigma_ty zeta_ty _ (fun n => eq_refl) s).
+Qed.
+
+Lemma substSubst_ty (sigma_ty : nat -> ty) (tau_ty : nat -> ty) (s : ty) :
+  subst_ty tau_ty (subst_ty sigma_ty s) =
+  subst_ty (funcomp (subst_ty tau_ty) sigma_ty) s.
+Proof.
+exact (compSubstSubst_ty sigma_ty tau_ty _ (fun n => eq_refl) s).
+Qed.
+
+Lemma substSubst_ty_pointwise (sigma_ty : nat -> ty) (tau_ty : nat -> ty) :
+  pointwise_relation _ eq (funcomp (subst_ty tau_ty) (subst_ty sigma_ty))
+    (subst_ty (funcomp (subst_ty tau_ty) sigma_ty)).
+Proof.
+exact (fun s => compSubstSubst_ty sigma_ty tau_ty _ (fun n => eq_refl) s).
+Qed.
+
 Lemma rinstInst_up_ty_ty (xi : nat -> nat) (sigma : nat -> ty)
   (Eq : forall x, funcomp (var_ty) xi x = sigma x) :
   forall x, funcomp (var_ty) (upRen_ty_ty xi) x = up_ty_ty sigma x.
@@ -264,60 +318,6 @@ Fixpoint rinst_inst_ty (xi_ty : nat -> nat) (sigma_ty : nat -> ty)
         (rinst_inst_ty (upRen_ty_ty xi_ty) (up_ty_ty sigma_ty)
            (rinstInst_up_ty_ty _ _ Eq_ty) s0)
   end.
-
-Lemma renRen_ty (xi_ty : nat -> nat) (zeta_ty : nat -> nat) (s : ty) :
-  ren_ty zeta_ty (ren_ty xi_ty s) = ren_ty (funcomp zeta_ty xi_ty) s.
-Proof.
-exact (compRenRen_ty xi_ty zeta_ty _ (fun n => eq_refl) s).
-Qed.
-
-Lemma renRen'_ty_pointwise (xi_ty : nat -> nat) (zeta_ty : nat -> nat) :
-  pointwise_relation _ eq (funcomp (ren_ty zeta_ty) (ren_ty xi_ty))
-    (ren_ty (funcomp zeta_ty xi_ty)).
-Proof.
-exact (fun s => compRenRen_ty xi_ty zeta_ty _ (fun n => eq_refl) s).
-Qed.
-
-Lemma substRen_ty (sigma_ty : nat -> ty) (zeta_ty : nat -> nat) (s : ty) :
-  ren_ty zeta_ty (subst_ty sigma_ty s) =
-  subst_ty (funcomp (ren_ty zeta_ty) sigma_ty) s.
-Proof.
-exact (compSubstRen_ty sigma_ty zeta_ty _ (fun n => eq_refl) s).
-Qed.
-
-Lemma substRen_ty_pointwise (sigma_ty : nat -> ty) (zeta_ty : nat -> nat) :
-  pointwise_relation _ eq (funcomp (ren_ty zeta_ty) (subst_ty sigma_ty))
-    (subst_ty (funcomp (ren_ty zeta_ty) sigma_ty)).
-Proof.
-exact (fun s => compSubstRen_ty sigma_ty zeta_ty _ (fun n => eq_refl) s).
-Qed.
-
-Lemma renSubst_ty (xi_ty : nat -> nat) (tau_ty : nat -> ty) (s : ty) :
-  subst_ty tau_ty (ren_ty xi_ty s) = subst_ty (funcomp tau_ty xi_ty) s.
-Proof.
-exact (compRenSubst_ty xi_ty tau_ty _ (fun n => eq_refl) s).
-Qed.
-
-Lemma renSubst_ty_pointwise (xi_ty : nat -> nat) (tau_ty : nat -> ty) :
-  pointwise_relation _ eq (funcomp (subst_ty tau_ty) (ren_ty xi_ty))
-    (subst_ty (funcomp tau_ty xi_ty)).
-Proof.
-exact (fun s => compRenSubst_ty xi_ty tau_ty _ (fun n => eq_refl) s).
-Qed.
-
-Lemma substSubst_ty (sigma_ty : nat -> ty) (tau_ty : nat -> ty) (s : ty) :
-  subst_ty tau_ty (subst_ty sigma_ty s) =
-  subst_ty (funcomp (subst_ty tau_ty) sigma_ty) s.
-Proof.
-exact (compSubstSubst_ty sigma_ty tau_ty _ (fun n => eq_refl) s).
-Qed.
-
-Lemma substSubst_ty_pointwise (sigma_ty : nat -> ty) (tau_ty : nat -> ty) :
-  pointwise_relation _ eq (funcomp (subst_ty tau_ty) (subst_ty sigma_ty))
-    (subst_ty (funcomp (subst_ty tau_ty) sigma_ty)).
-Proof.
-exact (fun s => compSubstSubst_ty sigma_ty tau_ty _ (fun n => eq_refl) s).
-Qed.
 
 Lemma rinstInst'_ty (xi_ty : nat -> nat) (s : ty) :
   ren_ty xi_ty s = subst_ty (funcomp (var_ty) xi_ty) s.
@@ -910,6 +910,90 @@ subst_tm theta_ty theta_tm s :=
            (up_subst_subst_ty_tm _ _ _ _ Eq_tm) s0)
   end.
 
+Lemma renRen_tm (xi_ty : nat -> nat) (xi_tm : nat -> nat)
+  (zeta_ty : nat -> nat) (zeta_tm : nat -> nat) (s : tm) :
+  ren_tm zeta_ty zeta_tm (ren_tm xi_ty xi_tm s) =
+  ren_tm (funcomp zeta_ty xi_ty) (funcomp zeta_tm xi_tm) s.
+Proof.
+exact (compRenRen_tm xi_ty xi_tm zeta_ty zeta_tm _ _ (fun n => eq_refl)
+         (fun n => eq_refl) s).
+Qed.
+
+Lemma renRen'_tm_pointwise (xi_ty : nat -> nat) (xi_tm : nat -> nat)
+  (zeta_ty : nat -> nat) (zeta_tm : nat -> nat) :
+  pointwise_relation _ eq
+    (funcomp (ren_tm zeta_ty zeta_tm) (ren_tm xi_ty xi_tm))
+    (ren_tm (funcomp zeta_ty xi_ty) (funcomp zeta_tm xi_tm)).
+Proof.
+exact (fun s =>
+       compRenRen_tm xi_ty xi_tm zeta_ty zeta_tm _ _ (fun n => eq_refl)
+         (fun n => eq_refl) s).
+Qed.
+
+Lemma renSubst_tm (xi_ty : nat -> nat) (xi_tm : nat -> nat)
+  (tau_ty : nat -> ty) (tau_tm : nat -> tm) (s : tm) :
+  subst_tm tau_ty tau_tm (ren_tm xi_ty xi_tm s) =
+  subst_tm (funcomp tau_ty xi_ty) (funcomp tau_tm xi_tm) s.
+Proof.
+exact (compRenSubst_tm xi_ty xi_tm tau_ty tau_tm _ _ (fun n => eq_refl)
+         (fun n => eq_refl) s).
+Qed.
+
+Lemma renSubst_tm_pointwise (xi_ty : nat -> nat) (xi_tm : nat -> nat)
+  (tau_ty : nat -> ty) (tau_tm : nat -> tm) :
+  pointwise_relation _ eq
+    (funcomp (subst_tm tau_ty tau_tm) (ren_tm xi_ty xi_tm))
+    (subst_tm (funcomp tau_ty xi_ty) (funcomp tau_tm xi_tm)).
+Proof.
+exact (fun s =>
+       compRenSubst_tm xi_ty xi_tm tau_ty tau_tm _ _ (fun n => eq_refl)
+         (fun n => eq_refl) s).
+Qed.
+
+Lemma substRen_tm (sigma_ty : nat -> ty) (sigma_tm : nat -> tm)
+  (zeta_ty : nat -> nat) (zeta_tm : nat -> nat) (s : tm) :
+  ren_tm zeta_ty zeta_tm (subst_tm sigma_ty sigma_tm s) =
+  subst_tm (funcomp (ren_ty zeta_ty) sigma_ty)
+    (funcomp (ren_tm zeta_ty zeta_tm) sigma_tm) s.
+Proof.
+exact (compSubstRen_tm sigma_ty sigma_tm zeta_ty zeta_tm _ _
+         (fun n => eq_refl) (fun n => eq_refl) s).
+Qed.
+
+Lemma substRen_tm_pointwise (sigma_ty : nat -> ty) (sigma_tm : nat -> tm)
+  (zeta_ty : nat -> nat) (zeta_tm : nat -> nat) :
+  pointwise_relation _ eq
+    (funcomp (ren_tm zeta_ty zeta_tm) (subst_tm sigma_ty sigma_tm))
+    (subst_tm (funcomp (ren_ty zeta_ty) sigma_ty)
+       (funcomp (ren_tm zeta_ty zeta_tm) sigma_tm)).
+Proof.
+exact (fun s =>
+       compSubstRen_tm sigma_ty sigma_tm zeta_ty zeta_tm _ _
+         (fun n => eq_refl) (fun n => eq_refl) s).
+Qed.
+
+Lemma substSubst_tm (sigma_ty : nat -> ty) (sigma_tm : nat -> tm)
+  (tau_ty : nat -> ty) (tau_tm : nat -> tm) (s : tm) :
+  subst_tm tau_ty tau_tm (subst_tm sigma_ty sigma_tm s) =
+  subst_tm (funcomp (subst_ty tau_ty) sigma_ty)
+    (funcomp (subst_tm tau_ty tau_tm) sigma_tm) s.
+Proof.
+exact (compSubstSubst_tm sigma_ty sigma_tm tau_ty tau_tm _ _
+         (fun n => eq_refl) (fun n => eq_refl) s).
+Qed.
+
+Lemma substSubst_tm_pointwise (sigma_ty : nat -> ty) (sigma_tm : nat -> tm)
+  (tau_ty : nat -> ty) (tau_tm : nat -> tm) :
+  pointwise_relation _ eq
+    (funcomp (subst_tm tau_ty tau_tm) (subst_tm sigma_ty sigma_tm))
+    (subst_tm (funcomp (subst_ty tau_ty) sigma_ty)
+       (funcomp (subst_tm tau_ty tau_tm) sigma_tm)).
+Proof.
+exact (fun s =>
+       compSubstSubst_tm sigma_ty sigma_tm tau_ty tau_tm _ _
+         (fun n => eq_refl) (fun n => eq_refl) s).
+Qed.
+
 Lemma rinstInst_up_ty_tm (xi : nat -> nat) (sigma : nat -> tm)
   (Eq : forall x, funcomp (var_tm) xi x = sigma x) :
   forall x, funcomp (var_tm) (upRen_ty_tm xi) x = up_ty_tm sigma x.
@@ -959,90 +1043,6 @@ Fixpoint rinst_inst_tm (xi_ty : nat -> nat) (xi_tm : nat -> nat)
            (up_ty_ty sigma_ty) (up_ty_tm sigma_tm)
            (rinstInst_up_ty_ty _ _ Eq_ty) (rinstInst_up_ty_tm _ _ Eq_tm) s0)
   end.
-
-Lemma renRen_tm (xi_ty : nat -> nat) (xi_tm : nat -> nat)
-  (zeta_ty : nat -> nat) (zeta_tm : nat -> nat) (s : tm) :
-  ren_tm zeta_ty zeta_tm (ren_tm xi_ty xi_tm s) =
-  ren_tm (funcomp zeta_ty xi_ty) (funcomp zeta_tm xi_tm) s.
-Proof.
-exact (compRenRen_tm xi_ty xi_tm zeta_ty zeta_tm _ _ (fun n => eq_refl)
-         (fun n => eq_refl) s).
-Qed.
-
-Lemma renRen'_tm_pointwise (xi_ty : nat -> nat) (xi_tm : nat -> nat)
-  (zeta_ty : nat -> nat) (zeta_tm : nat -> nat) :
-  pointwise_relation _ eq
-    (funcomp (ren_tm zeta_ty zeta_tm) (ren_tm xi_ty xi_tm))
-    (ren_tm (funcomp zeta_ty xi_ty) (funcomp zeta_tm xi_tm)).
-Proof.
-exact (fun s =>
-       compRenRen_tm xi_ty xi_tm zeta_ty zeta_tm _ _ (fun n => eq_refl)
-         (fun n => eq_refl) s).
-Qed.
-
-Lemma substRen_tm (sigma_ty : nat -> ty) (sigma_tm : nat -> tm)
-  (zeta_ty : nat -> nat) (zeta_tm : nat -> nat) (s : tm) :
-  ren_tm zeta_ty zeta_tm (subst_tm sigma_ty sigma_tm s) =
-  subst_tm (funcomp (ren_ty zeta_ty) sigma_ty)
-    (funcomp (ren_tm zeta_ty zeta_tm) sigma_tm) s.
-Proof.
-exact (compSubstRen_tm sigma_ty sigma_tm zeta_ty zeta_tm _ _
-         (fun n => eq_refl) (fun n => eq_refl) s).
-Qed.
-
-Lemma substRen_tm_pointwise (sigma_ty : nat -> ty) (sigma_tm : nat -> tm)
-  (zeta_ty : nat -> nat) (zeta_tm : nat -> nat) :
-  pointwise_relation _ eq
-    (funcomp (ren_tm zeta_ty zeta_tm) (subst_tm sigma_ty sigma_tm))
-    (subst_tm (funcomp (ren_ty zeta_ty) sigma_ty)
-       (funcomp (ren_tm zeta_ty zeta_tm) sigma_tm)).
-Proof.
-exact (fun s =>
-       compSubstRen_tm sigma_ty sigma_tm zeta_ty zeta_tm _ _
-         (fun n => eq_refl) (fun n => eq_refl) s).
-Qed.
-
-Lemma renSubst_tm (xi_ty : nat -> nat) (xi_tm : nat -> nat)
-  (tau_ty : nat -> ty) (tau_tm : nat -> tm) (s : tm) :
-  subst_tm tau_ty tau_tm (ren_tm xi_ty xi_tm s) =
-  subst_tm (funcomp tau_ty xi_ty) (funcomp tau_tm xi_tm) s.
-Proof.
-exact (compRenSubst_tm xi_ty xi_tm tau_ty tau_tm _ _ (fun n => eq_refl)
-         (fun n => eq_refl) s).
-Qed.
-
-Lemma renSubst_tm_pointwise (xi_ty : nat -> nat) (xi_tm : nat -> nat)
-  (tau_ty : nat -> ty) (tau_tm : nat -> tm) :
-  pointwise_relation _ eq
-    (funcomp (subst_tm tau_ty tau_tm) (ren_tm xi_ty xi_tm))
-    (subst_tm (funcomp tau_ty xi_ty) (funcomp tau_tm xi_tm)).
-Proof.
-exact (fun s =>
-       compRenSubst_tm xi_ty xi_tm tau_ty tau_tm _ _ (fun n => eq_refl)
-         (fun n => eq_refl) s).
-Qed.
-
-Lemma substSubst_tm (sigma_ty : nat -> ty) (sigma_tm : nat -> tm)
-  (tau_ty : nat -> ty) (tau_tm : nat -> tm) (s : tm) :
-  subst_tm tau_ty tau_tm (subst_tm sigma_ty sigma_tm s) =
-  subst_tm (funcomp (subst_ty tau_ty) sigma_ty)
-    (funcomp (subst_tm tau_ty tau_tm) sigma_tm) s.
-Proof.
-exact (compSubstSubst_tm sigma_ty sigma_tm tau_ty tau_tm _ _
-         (fun n => eq_refl) (fun n => eq_refl) s).
-Qed.
-
-Lemma substSubst_tm_pointwise (sigma_ty : nat -> ty) (sigma_tm : nat -> tm)
-  (tau_ty : nat -> ty) (tau_tm : nat -> tm) :
-  pointwise_relation _ eq
-    (funcomp (subst_tm tau_ty tau_tm) (subst_tm sigma_ty sigma_tm))
-    (subst_tm (funcomp (subst_ty tau_ty) sigma_ty)
-       (funcomp (subst_tm tau_ty tau_tm) sigma_tm)).
-Proof.
-exact (fun s =>
-       compSubstSubst_tm sigma_ty sigma_tm tau_ty tau_tm _ _
-         (fun n => eq_refl) (fun n => eq_refl) s).
-Qed.
 
 Lemma rinstInst'_tm (xi_ty : nat -> nat) (xi_tm : nat -> nat) (s : tm) :
   ren_tm xi_ty xi_tm s =
@@ -1244,18 +1244,18 @@ Tactic Notation "auto_unfold" "in" "*" := repeat
 Ltac asimpl' := repeat (first
                  [ progress setoid_rewrite substSubst_tm_pointwise
                  | progress setoid_rewrite substSubst_tm
-                 | progress setoid_rewrite renSubst_tm_pointwise
-                 | progress setoid_rewrite renSubst_tm
                  | progress setoid_rewrite substRen_tm_pointwise
                  | progress setoid_rewrite substRen_tm
+                 | progress setoid_rewrite renSubst_tm_pointwise
+                 | progress setoid_rewrite renSubst_tm
                  | progress setoid_rewrite renRen'_tm_pointwise
                  | progress setoid_rewrite renRen_tm
                  | progress setoid_rewrite substSubst_ty_pointwise
                  | progress setoid_rewrite substSubst_ty
-                 | progress setoid_rewrite renSubst_ty_pointwise
-                 | progress setoid_rewrite renSubst_ty
                  | progress setoid_rewrite substRen_ty_pointwise
                  | progress setoid_rewrite substRen_ty
+                 | progress setoid_rewrite renSubst_ty_pointwise
+                 | progress setoid_rewrite renSubst_ty
                  | progress setoid_rewrite renRen'_ty_pointwise
                  | progress setoid_rewrite renRen_ty
                  | progress setoid_rewrite varLRen'_tm_pointwise
@@ -1309,6 +1309,36 @@ Module Fext.
 Import
 Core.
 
+Lemma renRen'_ty (xi_ty : nat -> nat) (zeta_ty : nat -> nat) :
+  funcomp (ren_ty zeta_ty) (ren_ty xi_ty) = ren_ty (funcomp zeta_ty xi_ty).
+Proof.
+exact (FunctionalExtensionality.functional_extensionality _ _
+         (fun n => renRen_ty xi_ty zeta_ty n)).
+Qed.
+
+Lemma renSubst'_ty (xi_ty : nat -> nat) (tau_ty : nat -> ty) :
+  funcomp (subst_ty tau_ty) (ren_ty xi_ty) = subst_ty (funcomp tau_ty xi_ty).
+Proof.
+exact (FunctionalExtensionality.functional_extensionality _ _
+         (fun n => renSubst_ty xi_ty tau_ty n)).
+Qed.
+
+Lemma substRen'_ty (sigma_ty : nat -> ty) (zeta_ty : nat -> nat) :
+  funcomp (ren_ty zeta_ty) (subst_ty sigma_ty) =
+  subst_ty (funcomp (ren_ty zeta_ty) sigma_ty).
+Proof.
+exact (FunctionalExtensionality.functional_extensionality _ _
+         (fun n => substRen_ty sigma_ty zeta_ty n)).
+Qed.
+
+Lemma substSubst'_ty (sigma_ty : nat -> ty) (tau_ty : nat -> ty) :
+  funcomp (subst_ty tau_ty) (subst_ty sigma_ty) =
+  subst_ty (funcomp (subst_ty tau_ty) sigma_ty).
+Proof.
+exact (FunctionalExtensionality.functional_extensionality _ _
+         (fun n => substSubst_ty sigma_ty tau_ty n)).
+Qed.
+
 Lemma rinstInst_ty (xi_ty : nat -> nat) :
   ren_ty xi_ty = subst_ty (funcomp (var_ty) xi_ty).
 Proof.
@@ -1341,34 +1371,42 @@ exact (FunctionalExtensionality.functional_extensionality _ _
          (fun x => eq_refl)).
 Qed.
 
-Lemma renRen'_ty (xi_ty : nat -> nat) (zeta_ty : nat -> nat) :
-  funcomp (ren_ty zeta_ty) (ren_ty xi_ty) = ren_ty (funcomp zeta_ty xi_ty).
+Lemma renRen'_tm (xi_ty : nat -> nat) (xi_tm : nat -> nat)
+  (zeta_ty : nat -> nat) (zeta_tm : nat -> nat) :
+  funcomp (ren_tm zeta_ty zeta_tm) (ren_tm xi_ty xi_tm) =
+  ren_tm (funcomp zeta_ty xi_ty) (funcomp zeta_tm xi_tm).
 Proof.
 exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun n => renRen_ty xi_ty zeta_ty n)).
+         (fun n => renRen_tm xi_ty xi_tm zeta_ty zeta_tm n)).
 Qed.
 
-Lemma substRen'_ty (sigma_ty : nat -> ty) (zeta_ty : nat -> nat) :
-  funcomp (ren_ty zeta_ty) (subst_ty sigma_ty) =
-  subst_ty (funcomp (ren_ty zeta_ty) sigma_ty).
+Lemma renSubst'_tm (xi_ty : nat -> nat) (xi_tm : nat -> nat)
+  (tau_ty : nat -> ty) (tau_tm : nat -> tm) :
+  funcomp (subst_tm tau_ty tau_tm) (ren_tm xi_ty xi_tm) =
+  subst_tm (funcomp tau_ty xi_ty) (funcomp tau_tm xi_tm).
 Proof.
 exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun n => substRen_ty sigma_ty zeta_ty n)).
+         (fun n => renSubst_tm xi_ty xi_tm tau_ty tau_tm n)).
 Qed.
 
-Lemma renSubst'_ty (xi_ty : nat -> nat) (tau_ty : nat -> ty) :
-  funcomp (subst_ty tau_ty) (ren_ty xi_ty) = subst_ty (funcomp tau_ty xi_ty).
+Lemma substRen'_tm (sigma_ty : nat -> ty) (sigma_tm : nat -> tm)
+  (zeta_ty : nat -> nat) (zeta_tm : nat -> nat) :
+  funcomp (ren_tm zeta_ty zeta_tm) (subst_tm sigma_ty sigma_tm) =
+  subst_tm (funcomp (ren_ty zeta_ty) sigma_ty)
+    (funcomp (ren_tm zeta_ty zeta_tm) sigma_tm).
 Proof.
 exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun n => renSubst_ty xi_ty tau_ty n)).
+         (fun n => substRen_tm sigma_ty sigma_tm zeta_ty zeta_tm n)).
 Qed.
 
-Lemma substSubst'_ty (sigma_ty : nat -> ty) (tau_ty : nat -> ty) :
-  funcomp (subst_ty tau_ty) (subst_ty sigma_ty) =
-  subst_ty (funcomp (subst_ty tau_ty) sigma_ty).
+Lemma substSubst'_tm (sigma_ty : nat -> ty) (sigma_tm : nat -> tm)
+  (tau_ty : nat -> ty) (tau_tm : nat -> tm) :
+  funcomp (subst_tm tau_ty tau_tm) (subst_tm sigma_ty sigma_tm) =
+  subst_tm (funcomp (subst_ty tau_ty) sigma_ty)
+    (funcomp (subst_tm tau_ty tau_tm) sigma_tm).
 Proof.
 exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun n => substSubst_ty sigma_ty tau_ty n)).
+         (fun n => substSubst_tm sigma_ty sigma_tm tau_ty tau_tm n)).
 Qed.
 
 Lemma rinstInst_tm (xi_ty : nat -> nat) (xi_tm : nat -> nat) :
@@ -1408,77 +1446,39 @@ exact (FunctionalExtensionality.functional_extensionality _ _
          (fun x => eq_refl)).
 Qed.
 
-Lemma renRen'_tm (xi_ty : nat -> nat) (xi_tm : nat -> nat)
-  (zeta_ty : nat -> nat) (zeta_tm : nat -> nat) :
-  funcomp (ren_tm zeta_ty zeta_tm) (ren_tm xi_ty xi_tm) =
-  ren_tm (funcomp zeta_ty xi_ty) (funcomp zeta_tm xi_tm).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun n => renRen_tm xi_ty xi_tm zeta_ty zeta_tm n)).
-Qed.
-
-Lemma substRen'_tm (sigma_ty : nat -> ty) (sigma_tm : nat -> tm)
-  (zeta_ty : nat -> nat) (zeta_tm : nat -> nat) :
-  funcomp (ren_tm zeta_ty zeta_tm) (subst_tm sigma_ty sigma_tm) =
-  subst_tm (funcomp (ren_ty zeta_ty) sigma_ty)
-    (funcomp (ren_tm zeta_ty zeta_tm) sigma_tm).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun n => substRen_tm sigma_ty sigma_tm zeta_ty zeta_tm n)).
-Qed.
-
-Lemma renSubst'_tm (xi_ty : nat -> nat) (xi_tm : nat -> nat)
-  (tau_ty : nat -> ty) (tau_tm : nat -> tm) :
-  funcomp (subst_tm tau_ty tau_tm) (ren_tm xi_ty xi_tm) =
-  subst_tm (funcomp tau_ty xi_ty) (funcomp tau_tm xi_tm).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun n => renSubst_tm xi_ty xi_tm tau_ty tau_tm n)).
-Qed.
-
-Lemma substSubst'_tm (sigma_ty : nat -> ty) (sigma_tm : nat -> tm)
-  (tau_ty : nat -> ty) (tau_tm : nat -> tm) :
-  funcomp (subst_tm tau_ty tau_tm) (subst_tm sigma_ty sigma_tm) =
-  subst_tm (funcomp (subst_ty tau_ty) sigma_ty)
-    (funcomp (subst_tm tau_ty tau_tm) sigma_tm).
-Proof.
-exact (FunctionalExtensionality.functional_extensionality _ _
-         (fun n => substSubst_tm sigma_ty sigma_tm tau_ty tau_tm n)).
-Qed.
-
 Ltac asimpl_fext' := repeat (first
                       [ progress setoid_rewrite substSubst_tm_pointwise
                       | progress setoid_rewrite substSubst_tm
-                      | progress setoid_rewrite renSubst_tm_pointwise
-                      | progress setoid_rewrite renSubst_tm
                       | progress setoid_rewrite substRen_tm_pointwise
                       | progress setoid_rewrite substRen_tm
+                      | progress setoid_rewrite renSubst_tm_pointwise
+                      | progress setoid_rewrite renSubst_tm
                       | progress setoid_rewrite renRen'_tm_pointwise
                       | progress setoid_rewrite renRen_tm
                       | progress setoid_rewrite substSubst_ty_pointwise
                       | progress setoid_rewrite substSubst_ty
-                      | progress setoid_rewrite renSubst_ty_pointwise
-                      | progress setoid_rewrite renSubst_ty
                       | progress setoid_rewrite substRen_ty_pointwise
                       | progress setoid_rewrite substRen_ty
+                      | progress setoid_rewrite renSubst_ty_pointwise
+                      | progress setoid_rewrite renSubst_ty
                       | progress setoid_rewrite renRen'_ty_pointwise
                       | progress setoid_rewrite renRen_ty
-                      | progress setoid_rewrite substSubst'_tm
-                      | progress setoid_rewrite renSubst'_tm
-                      | progress setoid_rewrite substRen'_tm
-                      | progress setoid_rewrite renRen'_tm
                       | progress setoid_rewrite varLRen_tm
                       | progress setoid_rewrite varL_tm
                       | progress setoid_rewrite rinstId_tm
                       | progress setoid_rewrite instId_tm
-                      | progress setoid_rewrite substSubst'_ty
-                      | progress setoid_rewrite renSubst'_ty
-                      | progress setoid_rewrite substRen'_ty
-                      | progress setoid_rewrite renRen'_ty
+                      | progress setoid_rewrite substSubst'_tm
+                      | progress setoid_rewrite substRen'_tm
+                      | progress setoid_rewrite renSubst'_tm
+                      | progress setoid_rewrite renRen'_tm
                       | progress setoid_rewrite varLRen_ty
                       | progress setoid_rewrite varL_ty
                       | progress setoid_rewrite rinstId_ty
                       | progress setoid_rewrite instId_ty
+                      | progress setoid_rewrite substSubst'_ty
+                      | progress setoid_rewrite substRen'_ty
+                      | progress setoid_rewrite renSubst'_ty
+                      | progress setoid_rewrite renRen'_ty
                       | progress
                          unfold up_tm_tm, up_tm_ty, up_ty_tm, upRen_tm_tm,
                           upRen_tm_ty, upRen_ty_tm, up_ty_ty, upRen_ty_ty,
@@ -1509,16 +1509,15 @@ End Fext.
 
 Module Extra.
 
-Import
-Core.
+Import Core.
 
-Hint Opaque subst_tm: rewrite.
+#[export]Hint Opaque subst_tm: rewrite.
 
-Hint Opaque ren_tm: rewrite.
+#[export]Hint Opaque ren_tm: rewrite.
 
-Hint Opaque subst_ty: rewrite.
+#[export]Hint Opaque subst_ty: rewrite.
 
-Hint Opaque ren_ty: rewrite.
+#[export]Hint Opaque ren_ty: rewrite.
 
 End Extra.
 
