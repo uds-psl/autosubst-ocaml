@@ -390,7 +390,7 @@ let gen_allfv_ren_r sort =
 
 
 let gen_ren_lemmas sorts up_list = 
-  let* is_rec = isRecursive sorts in
+  let* is_rec = check_recursive sorts in
   let mk_fixpoint = fixpoint_ ~is_rec in
   (* ren *)
   let* up_allfv_ren_l = a_map gen_up_allfv_ren_l up_list in
@@ -401,7 +401,7 @@ let gen_ren_lemmas sorts up_list =
         @ up_allfv_ren_r @ [mk_fixpoint allfv_ren_r])
 
 let generate component up_list =
-  let* is_rec = isRecursive component in
+  let* is_rec = check_recursive component in
   let mk_fixpoint = fixpoint_ ~is_rec in
   (* Code for Allfv *)
   let* up_allfv = a_map gen_up_allfv up_list in

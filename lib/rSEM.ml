@@ -152,7 +152,7 @@ let get_component sort =
 (** Check if a component is recursive. 
     A component is recursive if the arguments a sort of a component and the component itself overlaps.
     We can only check the first element of the component because they all have the same substitution vector. *)
-let isRecursive component =
+let check_recursive component =
   if (list_empty component) then error "check_recursive called with empty component."
   else 
     let* args = get_arguments (List.hd component) in

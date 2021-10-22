@@ -2,7 +2,6 @@ open GallinaGen
 open CoqNames
 open ScopeTypes
 
-module CE = Constrexpr
 module L = Language
 module S = Settings
 

@@ -1088,7 +1088,7 @@ let gen_common component =
   pure AM.(add_units Core (inductive :: congruences))
 
 let gen_lemmas component up_list =
-  let* is_rec = isRecursive component in
+  let* is_rec = check_recursive component in
   let mk_fixpoint = fixpoint_ ~is_rec in
   (* GENERATE RENAMINGS *)
   let* upRen = a_map genUpRen up_list in
@@ -1169,7 +1169,7 @@ let gen_lemmas component up_list =
     ])
 
 let gen_lemmas_no_ren component up_list =
-  let* is_rec = isRecursive component in
+  let* is_rec = check_recursive component in
   let mk_fixpoint = fixpoint_ ~is_rec in
   (* GENERATE SUBSTITUTIONS *)
   let* substitutions = a_map genSubstitution component in
