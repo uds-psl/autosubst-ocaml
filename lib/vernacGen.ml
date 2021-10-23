@@ -6,27 +6,29 @@ open Vernacexpr
 module TG = TacGen
 module AL = AssocList
 
-type vernac_expr = Vernacexpr.vernac_expr
 
-type vernac_unit = Vernac of vernac_expr list
+type vernac_unit = Vernac of vernac_control list
                  | TacticLtac of string * TacGen.t
                  | TacticNotation of string list * TacGen.t
 
+let control_of_expr vexpr = CAst.make { control = []; attrs = []; expr=vexpr }
+let unit_of_vernacs vexprs = Vernac (List.map control_of_expr vexprs)
+
 (** I catch the VernacExactProof constructor because the way Coq normally prints it does not
  ** work well with proof general. So I explicitly add an `exact (...)` *)
-let pr_vernac_expr =
+let pr_vernac_control =
   let open Pp in
   function
-  | VernacExactProof cexpr ->
+  | CAst.{v = {control; attrs; expr=VernacExactProof cexpr}; _} ->
     str "Proof" ++ vernacend ++ pr_exact_expr cexpr
   | vexpr ->
-    Ppvernac.pr_vernac_expr vexpr ++ vernacend
+    Ppvernac.pr_vernac vexpr ++ newline
 
 let pr_vernac_unit = function
   | Vernac vs ->
-    Pp.seq ((List.map pr_vernac_expr vs) @ [ newline ])
-  | TacticLtac (name, tac) -> TacGen.pr_tactic_ltac name tac
-  | TacticNotation (names, tac) -> TacGen.pr_tactic_notation names tac
+    Pp.seq ((List.map pr_vernac_control vs) @ [ newline ])
+  | TacticLtac (name, tac) -> TG.pr_tactic_ltac name tac
+  | TacticNotation (names, tac) -> TG.pr_tactic_notation names tac
 
 let pr_vernac_units vunits = Pp.seq (List.map pr_vernac_unit vunits)
 
@@ -34,21 +36,21 @@ let pr_vernac_units vunits = Pp.seq (List.map pr_vernac_unit vunits)
 let definition_ dname dbinders ?rtype dbody =
   let dname = name_decl_ dname in
   let dexpr = definition_expr_ dbinders ?rtype dbody in
-  Vernac [ VernacDefinition ((NoDischarge, Decls.Definition), dname, dexpr) ]
+  unit_of_vernacs [ VernacDefinition ((NoDischarge, Decls.Definition), dname, dexpr) ]
 
 let lemma_ ?(opaque=true) lname lbinders ltype lbody =
   let pexpr = (ident_decl_ lname, (lbinders, ltype)) in
   let lbegin = VernacStartTheoremProof (Decls.Lemma, [pexpr]) in
   let lbody = VernacExactProof lbody in
   let lend = VernacEndProof (Proved ((if opaque then Opaque else Transparent), None)) in
-  Vernac [ lbegin; lbody; lend ]
+  unit_of_vernacs [ lbegin; lbody; lend ]
 
 let fixpoint_ ~is_rec fexprs =
   match fexprs with
   | [] -> failwith "fixpoint called without fixpoint bodies"
   | fexprs_nempty ->
     if is_rec
-    then Vernac [ VernacFixpoint (NoDischarge, fexprs) ]
+    then unit_of_vernacs [ VernacFixpoint (NoDischarge, fexprs) ]
     (* if the fixpoint is declared non-recursive we try to turn it into a definition *)
     else match fexprs_nempty with
       | [{ fname={ v=fname; _ }; binders; rtype; body_def=Some body; _}] ->
@@ -57,17 +59,14 @@ let fixpoint_ ~is_rec fexprs =
       | _ -> failwith "A non recursive fixpoint degenerates to a definition so it should only have one body"
 
 let inductive_ inductiveBodies =
-  Vernac [ VernacInductive (Inductive_kw, inductiveBodies) ]
+  unit_of_vernacs [ VernacInductive (Inductive_kw, inductiveBodies) ]
 
 let class_ name binders fields =
   let body = inductiveBody_ name binders fields in
   (* a.d. false argument to Class to make it inductive, not definitional *)
-  Vernac [ VernacInductive (Class false, [ body ]) ]
+  unit_of_vernacs [ VernacInductive (Class false, [ body ]) ]
 
-let instance_ inst_name cbinders class_type body =
-  definition_ inst_name cbinders ~rtype:class_type body
-
-let instance'_ inst_name cbinders class_type ?(interactive=false) body =
+let instance_ inst_name cbinders class_type ?(interactive=false) body =
   let vexprs = if interactive
     then
       [ VernacInstance (name_decl_ inst_name, cbinders, class_type, None, Typeclasses.{ hint_priority = None; hint_pattern = None })
@@ -75,23 +74,14 @@ let instance'_ inst_name cbinders class_type ?(interactive=false) body =
       ; VernacEndProof (Proved (Opaque, None)) ]
     else [ VernacInstance (name_decl_ inst_name, cbinders, class_type, Some (false, body), Typeclasses.{ hint_priority = None; hint_pattern = None }) ]
   in
-  Vernac vexprs
-
-(* a.d. don't call with multiple names for now b/c printing is wrong *)
-let ex_instances_ names =
-  Vernac [ VernacExistingInstance
-             (List.map (fun s ->
-                  (qualid_ s, Typeclasses.{ hint_priority = None; hint_pattern = None }))
-                 names) ]
-
-let ex_instance_ name = ex_instances_ [ name ]
+  unit_of_vernacs vexprs
 
 let notation_ notation modifiers ?scope body =
-  Vernac [ VernacNotation (body, (CAst.make notation, modifiers), scope) ]
+  unit_of_vernacs [ VernacNotation (body, (CAst.make notation, modifiers), scope) ]
 
 let clear_arguments_ name =
   let qname = CAst.make (Constrexpr.AN (qualid_ name)) in
-  Vernac [ VernacArguments (qname, [], [], [ `ClearImplicits ]) ]
+  unit_of_vernacs [ VernacArguments (qname, [], [], [ `ClearImplicits ]) ]
 
 let impl_arguments_ name args =
   let qname = CAst.make (Constrexpr.AN (qualid_ name)) in
@@ -102,40 +92,33 @@ let impl_arguments_ name args =
         notation_scope = None;
         implicit_status = Glob_term.MaxImplicit;
       }) args in
-  Vernac [ VernacArguments (qname, impl_args, [], []) ]
+  unit_of_vernacs [ VernacArguments (qname, impl_args, [], []) ]
 
 (* TODO somehow the imported module is printed on a new line. looks like automatic line break issue *)
 let import_ name =
-  Vernac [ VernacImport (false, [ (qualid_ name, ImportAll) ]) ]
+  unit_of_vernacs [ VernacImport (false, [ (qualid_ name, ImportAll) ]) ]
 let export_ name =
-  Vernac [ VernacImport (true, [ (qualid_ name, ImportAll) ]) ]
-
-let start_module_ name =
-  Vernac [ VernacDefineModule (None, lident_ name, [], Declaremods.Check [], []) ]
-
-let end_module_ name =
-  Vernac [ VernacEndSegment (lident_ name) ]
+  unit_of_vernacs [ VernacImport (true, [ (qualid_ name, ImportAll) ]) ]
 
 let module_ name contents =
-  [ start_module_ name ]
-  @ contents
-  @ [ end_module_ name ]
+  List.concat [
+    [ unit_of_vernacs [ VernacDefineModule (None, lident_ name, [], Declaremods.Check [], []) ] ];
+    contents;
+    [ unit_of_vernacs [ VernacEndSegment (lident_ name) ] ]
+  ]
 
 
-(* TODO add export flag so coq does not complain (see vernac/vernacexpr.ml::vernac_control)
- * TODO document why necessary. disable and kathrin's case study should fail *)
-(** the opaqueness hints for setoid rewriting are put into the "rewrite" db *)
+(** For the opaueness hints we have to add an attribute. 
+    We use the export flag so that the hints are only enables upon module import.
+    TODO document why necessary. disable and kathrin's case study should fail *)
 let setoid_opaque_hint name =
-  Vernac [ VernacHints (["rewrite"], HintsTransparency (Hints.HintsReferences [qualid_ name], false)) ]
+  Vernac [ CAst.make { 
+      control=[];
+      attrs=[("export", Attributes.VernacFlagEmpty)];
+      expr=VernacHints (["rewrite"], HintsTransparency (Hints.HintsReferences [qualid_ name], false));
+    } ]
 
 
-(** Module for the organization of an output file.
- ** Autosubst generates a single file with several modules.
- **
- ** ren_subst_units: the common code (inductive types, renamings, substitutions, lemmas)
- ** allfv_units: allfv lemma
- ** fext_units: lemmas involving functional extensionality
- ** interface_units: the module that exports the other modules. This is what an end-user imports in their code *)
 module AutosubstModules = struct
   type module_tag = Core | Fext | Allfv | Extra
   type t = (module_tag * vernac_unit list) list
@@ -144,7 +127,7 @@ module AutosubstModules = struct
   let concat ms = List.concat ms
   let empty = []
 
-  let tags = [Core; Fext; Allfv; Extra]
+  let all_tags = [Core; Fext; Allfv; Extra]
   let string_of_tag = function
     | Core -> "Core"
     | Fext -> "Fext"
@@ -166,20 +149,25 @@ module AutosubstModules = struct
       (Allfv, [import_ (string_of_tag Core)]);
       (Extra, [import_ (string_of_tag Core)]);
     ]
-  
+
   (** Narrow a module collection to the given tag list. *)
   let filter_tags tags m =
     from_list (List.(filter (fun (tag, _) -> mem tag tags) m))
 
+  let remove_tags tags m =
+    filter_tags (list_diff all_tags tags) m
+
   let pr_modules preamble m =
-    let present_tags = List.filter (fun tag -> List.mem_assq tag m) tags in
     (* we throw away any empty tags *)
+    let present_tags = List.filter (fun tag -> List.mem_assq tag m) all_tags in
     let m_with_imports = filter_tags present_tags (append imports m) in
+    (* generate the actual modules *)
     let module_of_tag tag =
       let units = list_collect tag m_with_imports in
       module_ (string_of_tag tag) units
     in
     let modules = List.map module_of_tag present_tags in
+    (* print the modules *)
     let pp_modules = List.map pr_vernac_units modules in
     let interface_units = List.map (fun tag -> export_ (string_of_tag tag)) present_tags in
     let interface_module = module_ "interface" (interface_units) in
@@ -244,17 +232,6 @@ module [@warning "-32"] GenTests = struct
    * let texpr = TacML (CAst.make ({ mltac_name={ mltac_plugin="cc_plugin"; mltac_tactic="cc"; }; mltac_index=0; }, [])) in
    * Ltac_plugin.Pptactic.pr_raw_tactic env sigma texpr *)
   (* Ltac_plugin.Pptactic.pr_glob_tactic env texpr *)
-
-end
-
-module [@warning "-32"] GenTestsClass = struct
-  let my_instance =
-    let inst = instance_ "fooI" [] (ref_ "foo") (ref_ "bar") in
-    (pr_vernac_unit inst)
-
-
-  let my_ex_instances =
-    (pr_vernac_unit (ex_instances_ [ "fooI"; "barI" ]))
 
 end
 

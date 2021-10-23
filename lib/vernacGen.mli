@@ -1,14 +1,12 @@
 open GallinaGen
 open AutomationGen
 
-type vernac_expr = Vernacexpr.vernac_expr
-
-type vernac_unit = Vernac of vernac_expr list
+type vernac_unit = Vernac of Vernacexpr.vernac_control list
                  | TacticLtac of string * TacGen.t
                  | TacticNotation of string list * TacGen.t
 
 
-val pr_vernac_expr : vernac_expr -> Pp.t
+val pr_vernac_control : Vernacexpr.vernac_control -> Pp.t
 val pr_vernac_unit : vernac_unit -> Pp.t
 val pr_vernac_units : vernac_unit list -> Pp.t
 
@@ -25,10 +23,13 @@ module AutosubstModules : sig
   (** [string_of_tag tag] return the name of the module. *)
 
   val add_units : module_tag -> vernac_unit list -> t
-  (** [add_units tag units] creates a singular module collection with module [tag] containing [units] *)
+  (** [add_units tag units] creates a singular module collection with module [tag] containing [units]. *)
 
   val from_list : (module_tag * vernac_unit list) list -> t
   (** [from_list l] turns a list into a collection of modules. Currently an identity function. *)
+
+  val remove_tags : module_tag list -> t -> t
+  (** [filter_tags tags m] returns a module collection without any tag in in [tags]. *)
 
   val pr_modules : Pp.t -> t -> Pp.t
   (** [pr_modules preamble m] uses Coq's pretty-printer to generate code out of the given modules.
@@ -55,10 +56,7 @@ val definition_ : identifier -> binder_expr list -> ?rtype:constr_expr -> constr
 val lemma_ : ?opaque:bool -> identifier -> binder_expr list -> constr_expr -> constr_expr -> vernac_unit
 
 val class_ : string -> binder_expr list -> constructor_expr list -> vernac_unit
-val instance_ : string -> binder_expr list -> constr_expr -> constr_expr -> vernac_unit
-val instance'_ : string -> binder_expr list -> constr_expr -> ?interactive:bool -> constr_expr -> vernac_unit
-val ex_instances_ : string list -> vernac_unit
-val ex_instance_ : string -> vernac_unit
+val instance_ : string -> binder_expr list -> constr_expr -> ?interactive:bool -> constr_expr -> vernac_unit
 
 val notation_ : string -> Vernacexpr.syntax_modifier list -> ?scope:Vernacexpr.scope_name -> constr_expr -> vernac_unit
 
@@ -75,11 +73,6 @@ val setoid_opaque_hint : string -> vernac_unit
  **  Arguments foo {bar} {baz}. *)
 val clear_arguments_ : string -> vernac_unit
 val impl_arguments_ : string -> string list -> vernac_unit
-
-module GenTestsClass : sig
-  val my_instance : Pp.t
-  val my_ex_instances : Pp.t
-end
 
 
 module GenTestsTac : sig

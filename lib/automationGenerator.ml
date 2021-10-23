@@ -189,7 +189,7 @@ let gen_proper_instances () =
                           ; app_ref ext_sort (fs @ gs @ eqs @ [ ref_ s ])
                           ; ref_ t
                           ; ref_ eq_st ]) in
-    pure @@ instance'_ iname scopeBinders itype ~interactive:true proof
+    pure @@ instance_ iname scopeBinders itype ~interactive:true proof
   in
   a_map gen_instance proper_instances
 
@@ -207,7 +207,7 @@ let gen_instances () =
     let fname = function_name sort inst_type in
     let cbinders = guard (Settings.is_wellscoped ()) [ binder_ ~implicit:true ~btype:(ref_ "nat") params ] in
     let args = guard (Settings.is_wellscoped ()) (List.map ref_ params) in
-    instance'_ iname cbinders (app_ref cname (class_args inst_type)) (app_ref ~expl:true fname args)
+    instance_ iname cbinders (app_ref cname (class_args inst_type)) (app_ref ~expl:true fname args)
   in
   (* TODO better way to chain actions? *)
   let* _ = sequence (List.map register_instance_unfolds instances) in

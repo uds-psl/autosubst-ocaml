@@ -84,6 +84,19 @@ let genCode () =
   let* as_modules = a_map (fun (component, ups) -> CodeGenerator.generate component ups) ups_by_component in
   pure (AM.concat as_modules)
 
+(** We can filter the generated code based on flags.
+    At the moment we only remove fext code if necessary. *)
+let filter_code code =
+  let open RSEM.Syntax in
+  let open RSEM in
+  let tags_to_remove = [] in
+  (* Check the flags if we have to remove Fext lemmas *)
+  let* is_gen_fext = ask_gen_fext in
+  let tags_to_remove = if not is_gen_fext 
+    then AM.Fext :: tags_to_remove
+    else tags_to_remove in
+  let code_filtered = AM.remove_tags tags_to_remove code in
+  pure code_filtered
 
 (** Generate the Coq file. Here we convert the Coq AST to pretty print expressions and then to strings. *)
 let genFile () =
@@ -92,7 +105,8 @@ let genFile () =
   let* preamble = get_preamble () in
   let* code = genCode () in
   let* automation = AutomationGenerator.generate () in
-  let pp = AM.(pr_modules (Pp.str preamble) (append code automation)) in
+  let* gen_filtered = filter_code (AM.append code automation) in
+  let pp = AM.pr_modules (Pp.str preamble) gen_filtered in
   pure (Pp.string_of_ppcmds pp)
 
 
