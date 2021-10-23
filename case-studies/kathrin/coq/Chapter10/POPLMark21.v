@@ -1,5 +1,6 @@
 Require Export Coq.Lists.List.
 Require Import Coq.Program.Equality.
+Require Import Setoid Morphisms.
 Require Import core fintype.
 Import ScopedNotations.
 From Chapter10 Require Export sysf_pat.
@@ -358,7 +359,6 @@ exists HT1.
 apply (f _ Delta _ _ HT1).
 Defined.
 
-Require Import Setoid Morphisms.
 Instance sub_morphism {n}:
   Proper (pointwise_relation _ eq ==> eq ==> eq ==> Basics.impl) (@sub n).
 Proof.

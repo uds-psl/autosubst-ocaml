@@ -1,13 +1,15 @@
 (** ** Substitutivity proofs of reduction. *)
 
 (** *** Substitutivity for the Lambda Calculus with Pairs *)
+Require core fintype.
+From Chapter6 Require sysf_cbv.
+From Chapter6 Require utlc_pairs.
 
 Module polyadic.
 Section polyadic.
-  Require Import core fintype.
+  Import core fintype.  
   Import ScopedNotations.
-  From Chapter6 Require Export utlc_pairs.
-  
+  Export Chapter6.utlc_pairs.
 
   Inductive step {m} : tm m -> tm m -> Prop :=
   | beta s t t' : t' = (s[t..]) -> step (app (lam s) t) t'
@@ -29,9 +31,10 @@ End polyadic.
 
 Module sysf_cbv.
 Section sysf_cbv.
-  Require Import core fintype.
+  Import core fintype.
   Import ScopedNotations.
-  From Chapter6 Require Export sysf_cbv.
+  Export Chapter6.sysf_cbv.
+  
 
   Inductive step {m n} : tm m n -> tm m n -> Prop :=
   | beta A s v t : t = (s[ids;v..]) -> step (app (vt (lam A s)) (vt v)) t
