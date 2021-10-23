@@ -424,14 +424,20 @@ Qed.
 Variable pat_ty : forall {m} (p: nat), pat m -> ty m ->  (fin p -> (ty m)) -> Prop.
 Variable pat_eval : forall {m n} p, pat m -> tm m n -> (fin p -> (tm m n)) -> Prop.
 Variable pat_ty_subst: forall {m n} (sigma: fin m -> ty n) p pt A Gamma, pat_ty m p pt A Gamma -> pat_ty n p (pt[sigma]) (A[sigma]) (Gamma >>  subst_ty sigma).
+Axiom pat_ty_ext : forall {m p} (pt: pat m) (T: ty m) (sigma sigma': fin p -> ty m),
+      (forall x, sigma x = sigma' x) ->        
+      pat_ty m p pt T sigma <-> pat_ty m p pt T sigma'.
 
-(* a.d. we need the following setoid morphism
-  But we cannot prove it because pat_ty is an assumption anyways.
-*)
+(* a.d. we need the following morphism.
+ * To prove it we have to assume pat_ty_ext above
+ *)
 Instance pat_ty_morphism {m p} :
   Proper (eq ==> eq ==> pointwise_relation _ eq ==> Basics.impl) (@pat_ty m p).
 Proof.
-Admitted.
+  intros ? pt -> ? T -> sigma sigma' Hsigma Hpat.
+  apply (pat_ty_ext pt T sigma sigma' Hsigma).
+  apply Hpat.
+Qed.
 
 
 Inductive value {m n}: tm m n -> Prop :=
@@ -461,10 +467,6 @@ Inductive has_ty {m n} (Delta : ctx m) (Gamma : dctx  n m) : tm m n -> ty m -> P
     TY Delta;Gamma |- s : B
 where "'TY' Delta ; Gamma |- s : A" := (has_ty Delta Gamma s A).
 
-(* Instance has_ty_morphism {m n} :
-  Proper (pointwise_relation _ eq ==> pointwise_relation _ eq ==> eq ==> eq ==> Basics.impl) (@has_ty m n).
-Proof.
-Admitted. *)
 
 Lemma T_Var' {m n} (Delta : ctx m) (Gamma : dctx n m) x :
   forall A, A = Gamma x -> TY Delta;Gamma |- var_tm x : A.
@@ -491,10 +493,6 @@ Inductive eval {m n} : tm m n -> tm m n -> Prop :=
 | E_Rec l ts t t' : EV t => t' -> In (l,t) ts -> EV (rectm ts) => rectm (update ts l t')                  | E_LetL p pt s s' t : EV s => s' -> EV (letpat p pt s t) => (letpat p pt s'  t)
 where "'EV' s => t" := (eval s t).
 
-(* Instance eval_morphism {m n}:
-  Proper (eq ==> eq ==> Basics.impl) (@eval m n).
-Proof.
-Admitted. *)
 
 (** Assumptions of progress and typing on patterns. *)
 Variable pat_progress : forall p pt s A Gamma, TY empty; empty |- s : A -> pat_ty _ p pt A Gamma -> exists sigma, pat_eval _ _ p pt s sigma.

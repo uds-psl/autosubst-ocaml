@@ -81,8 +81,13 @@ jobs:
           opam repo add coq-released https://coq.inria.fr/opam/released
           opam pin add coq ${{ matrix.coq-version }}
       - name: Compile generated files
+        # Attributes changed during the last few versions of Coq so we remove them
         run: |
           cd ./case-studies/examples
+          if [[ '${{ matrix.coq-version }}' == '8.10.2' ]] || [[ '${{ matrix.coq-version }}' == '8.11.2' ]]; then
+              sed -i -E -e 's/#\[ export \]//' ./unscoped.v
+              sed -i -E -e 's/#\[ export \]//' ./fintype.v
+          fi
           opam exec -- make clean
           opam exec -- make
   runkathrin:

@@ -418,6 +418,21 @@ Qed.
 Variable pat_ty : forall {m} (p: nat), pat m -> ty m ->  (fin p -> (ty m)) -> Prop.
 Variable pat_eval : forall {m n} p, pat m -> tm m n -> (fin p -> (tm m n)) -> Prop.
 Variable pat_ty_subst: forall {m n} (sigma: fin m -> ty n) p pt A Gamma, pat_ty m p pt A Gamma -> pat_ty n p (pt[sigma]) (A[sigma]) (Gamma >>  subst_ty sigma).
+Axiom pat_ty_ext : forall {m p} (pt: pat m) (T: ty m) (sigma sigma': fin p -> ty m),
+      (forall x, sigma x = sigma' x) ->      
+      pat_ty m p pt T sigma <-> pat_ty m p pt T sigma'.
+
+(* a.d. we need the following morphism.
+ * To prove it we have to assume pat_ty_ext above
+ *)
+Instance pat_ty_morphism {m p} :
+  Proper (eq ==> eq ==> pointwise_relation _ eq ==> Basics.impl) (@pat_ty m p).
+Proof.
+  intros ? pt -> ? T -> sigma sigma' Hsigma Hpat.
+  apply (pat_ty_ext pt T sigma sigma' Hsigma).
+  apply Hpat.
+Qed.
+
 
 Inductive value {m n}: tm m n -> Prop :=
 | Value_abs A s : value(abs A s)
@@ -545,15 +560,6 @@ Qed.
 
 
 (** Preservation *)
-
-(* a.d. we need the following setoid morphism
-  But we cannot prove it because pat_ty is an assumption anyways.
-*)
-Instance pat_ty_morphism {m p:nat} :
-  Proper (eq ==> eq ==> pointwise_relation _ eq ==> Basics.flip Basics.impl) (pat_ty m p).
-Proof.
-  intros pat0 pat1 -> T0 T1 -> f f' Hf H.
-Admitted.
 
 Lemma context_renaming_lemma m m' n n' (Delta: ctx m') (Gamma: dctx n' m')                                                   (s: tm m n) A (xi : fin m -> fin m') (zeta: fin n -> fin n') Delta' (Gamma' : dctx n m):
   (forall x, (Delta' x)⟨xi⟩ = Delta (xi x)) ->
