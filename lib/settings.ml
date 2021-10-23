@@ -16,7 +16,7 @@ let is_wellscoped () =
   | Unscoped -> false
   | Wellscoped -> true
 
-type coq_version = LT810 | GE810
+type coq_version = LT813 | GE813
 
 type args = {
   infile : string;

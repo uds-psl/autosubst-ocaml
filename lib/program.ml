@@ -38,10 +38,10 @@ let parse_args args =
     let [@warning "-8"] set_scope = function
       | "coq" -> scope_r := S.Wellscoped
       | "ucoq" -> scope_r := S.Unscoped in
-    let version_r = ref S.GE810 in
+    let version_r = ref S.GE813 in
     let [@warning "-8"] set_version = function
-      | "lt810" -> version_r := S.LT810
-      | "ge810" -> version_r := S.GE810 in
+      | "lt813" -> version_r := S.LT813
+      | "ge813" -> version_r := S.GE813 in
     let gen_static_files_r = ref true in
     let force_overwrite_r = ref false in
     let gen_allfv_r = ref false in
@@ -49,7 +49,7 @@ let parse_args args =
     let arg_spec = Arg.[
         ("-o", String set_outfile, "File to save output to.");
         ("-s", Symbol (["coq"; "ucoq"], set_scope), "Generate scoped or unscoped code.");
-        ("-v", Symbol (["lt810"; "ge810"], set_version), "Which coq version to target. Either < 8.10 or >= 8.10.");
+        ("-v", Symbol (["lt813"; "ge813"], set_version), "Which coq version to target. Either < 8.12 or >= 8.12.");
         ("-f", Set force_overwrite_r, "Force overwrite files in the output directory.");
         ("-no-static", Clear gen_static_files_r, "Don't put the static files like core.v, unscoped.v, etc. into the output directory.");
         ("-allfv", Set gen_allfv_r, "Generate allfv lemmas.");
@@ -134,11 +134,7 @@ let gen_static_files force_overwrite dir scope version =
       copy_static_file "unscoped.v"
   in
   let () = copy_static_file "core_axioms.v" in
-  let () = match version with
-    | GE810 ->
-      copy_static_file "core.v"
-    | LT810 ->
-      copy_static_file ~out_name:"core.v" "core_809.v" in
+  let () = copy_static_file "core.v" in
   ()
 
 

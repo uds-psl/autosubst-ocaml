@@ -81,12 +81,14 @@ jobs:
           opam repo add coq-released https://coq.inria.fr/opam/released
           opam pin add coq ${{ matrix.coq-version }}
       - name: Compile generated files
-        # Attributes changed during the last few versions of Coq so we remove them
+        # Attributes changed during the last few versions of Coq so we generate two different outputs
         run: |
-          cd ./case-studies/examples
-          if [[ '${{ matrix.coq-version }}' == '8.10.2' ]] || [[ '${{ matrix.coq-version }}' == '8.11.2' ]]; then
-              sed -i -E -e 's/#\[ export \]//' ./unscoped.v
-              sed -i -E -e 's/#\[ export \]//' ./fintype.v
+          if [[ ${{ matrix.coq-version }} == '8.13.1' ]]; then
+              echo "newer Coq version"
+              cd ./case-studies/examples
+          else
+              echo "older Coq version"
+              cd ./case-studies/examples-lt813
           fi
           opam exec -- make clean
           opam exec -- make

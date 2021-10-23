@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+remove_export() {
+    sed -i -E -e 's/#\[ export \]//' $1
+}
+
 ### EXAMPLES
 # generate code for the example signatures
 for n in utlc stlc fcbv variadic pi num fol; do
@@ -13,6 +17,21 @@ for n in utlc stlc fcbv pi num; do
     echo dune exec -- bin/main.exe signatures/${n}.sig -fext -allfv -f -s ucoq -o case-studies/examples/${n}_unscoped.v
     dune exec -- bin/main.exe signatures/${n}.sig -fext -allfv -f -s ucoq -o case-studies/examples/${n}_unscoped.v
 done
+
+### EXAMPLES < Coq 8.12
+for n in utlc stlc fcbv variadic pi num fol; do
+    echo dune exec -- bin/main.exe signatures/${n}.sig -fext -f -s coq -o case-studies/examples-lt813/${n}_wellscoped.v -v lt813
+    dune exec -- bin/main.exe signatures/${n}.sig -fext -f -s coq -o case-studies/examples-lt813/${n}_wellscoped.v -v lt813
+done
+
+for n in utlc stlc fcbv pi num; do
+    echo dune exec -- bin/main.exe signatures/${n}.sig -fext -allfv -f -s ucoq -o case-studies/examples-lt813/${n}_unscoped.v -v lt813
+    dune exec -- bin/main.exe signatures/${n}.sig -fext -allfv -f -s ucoq -o case-studies/examples-lt813/${n}_unscoped.v -v lt813
+done
+
+echo "altering static files for examples in Coq < 8.12"
+remove_export "case-studies/examples-lt813/unscoped.v"
+remove_export "case-studies/examples-lt813/fintype.v"
 
 
 ### TAPL
@@ -28,18 +47,18 @@ DATA_DIR="./share/autosubst"
 generate_file() {
     file=$1
     scope=$2
-    echo dune exec -- bin/main.exe ${KAT}${file}.sig -o ${KAT}${file}.v -s ${scope} -no-static -fext -f -v lt810
-    dune exec -- bin/main.exe ${KAT}${file}.sig -o ${KAT}${file}.v -s ${scope} -no-static -fext -f -v lt810
+    echo dune exec -- bin/main.exe ${KAT}${file}.sig -o ${KAT}${file}.v -s ${scope} -no-static -fext -f -v lt813
+    dune exec -- bin/main.exe ${KAT}${file}.sig -o ${KAT}${file}.v -s ${scope} -no-static -fext -f -v lt813
 }
 
 echo cp ${DATA_DIR}/core.v ${DATA_DIR}/core_axioms.v ${DATA_DIR}/fintype.v ${DATA_DIR}/fintype_axioms.v ${DATA_DIR}/unscoped.v ${DATA_DIR}/unscoped_axioms.v ${KAT}
 cp ${DATA_DIR}/core_axioms.v ${DATA_DIR}/fintype.v ${DATA_DIR}/fintype_axioms.v ${DATA_DIR}/unscoped.v ${DATA_DIR}/unscoped_axioms.v ${KAT}
 cp ${DATA_DIR}/core.v ${KAT}core.v
 
-echo altering static files for Coq 8.9
+echo "altering static files for Coq 8.9"
 sed -i -E -e 's/Declare Scope fscope./(* not supported in Coq 8.9 *)/' -e 's/Declare Scope subst_scope./(* not supported in Coq 8.9 *)/' ${KAT}core.v
-sed -i -E -e 's/#\[ export \]//' ${KAT}unscoped.v
-sed -i -E -e 's/#\[ export \]//' ${KAT}fintype.v
+remove_export "${KAT}unscoped.v"
+remove_export "${KAT}fintype.v"
 
 
 # the case study only contains one instance of unscoped code

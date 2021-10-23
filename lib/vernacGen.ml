@@ -114,8 +114,8 @@ let module_ name contents =
     TODO document why necessary. disable and kathrin's case study should fail *)
 let setoid_opaque_hint version name =
   let attrs = match version with
-    | S.LT810 -> []
-    | S.GE810 -> [("export", Attributes.VernacFlagEmpty)] 
+    | S.LT813 -> []
+    | S.GE813 -> [("export", Attributes.VernacFlagEmpty)] 
   in
   Vernac [ CAst.make { 
       control=[];
