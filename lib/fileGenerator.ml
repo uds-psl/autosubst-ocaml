@@ -111,4 +111,4 @@ let genFile () =
 
 
 (** Run the computation constructed by genFile *)
-let run_gen_code hsig fl_allfv fl_fext = RSEM.rse_run (genFile ()) (hsig, { fl_allfv; fl_fext }) AG.initial
+let run_gen_code hsig flags = RSEM.rse_run (genFile ()) (hsig, flags) AG.initial

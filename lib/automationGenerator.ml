@@ -149,7 +149,8 @@ let gen_arguments () =
 
 let gen_opaques () =
   let* ops = gets asimpl_cbn_functions in
-  pure (List.map setoid_opaque_hint ops)
+  let* version = ask_coq_version in
+  pure (List.map (setoid_opaque_hint version) ops)
 
 let gen_classes () =
   let* classes = gets classes in

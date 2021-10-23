@@ -65,7 +65,7 @@ val import_ : string -> vernac_unit
 val export_ : string -> vernac_unit
 
 (** hints for setoid rewriting to treat certain functions as opaque *)
-val setoid_opaque_hint : string -> vernac_unit
+val setoid_opaque_hint : Settings.coq_version -> string -> vernac_unit
 
 (** create command to set implicit arguments
  ** e.g.

@@ -30,4 +30,5 @@ type args = {
 }
 
 type flags = { fl_allfv : bool 
-             ; fl_fext : bool }
+             ; fl_fext : bool
+             ; fl_version : coq_version }

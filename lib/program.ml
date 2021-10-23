@@ -176,7 +176,11 @@ let main argv =
   let* signature = SigAnalyzer.build_signature spec in
   (* let () = print_endline (Language.show_signature signature) in *)
   (* generate code *)
-  let* code, _ = FileGenerator.run_gen_code signature args.gen_allfv args.gen_fext in
+  let* code, _ = FileGenerator.run_gen_code signature {
+    fl_allfv=args.gen_allfv;
+    fl_fext=args.gen_fext;
+    fl_version=args.version
+  } in
   (* write file *)
   let () = write_file args.force_overwrite args.outfile code in
   pure "done"

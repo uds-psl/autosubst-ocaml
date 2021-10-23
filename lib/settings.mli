@@ -33,5 +33,6 @@ type args = {
 (** Command line arguments. *)
 
 type flags = { fl_allfv : bool 
-             ; fl_fext : bool }
+             ; fl_fext : bool
+             ; fl_version : coq_version }
 (** Flags that can be read during code generation. *)

@@ -19,12 +19,12 @@ include RSE
 
 
 (** Redefine all the monad functions using functions from the nested monads. *)
-
 let error s = ErrorM.error s |> SE.elevate |> elevate
 let ask = peek >>= fun (s, _) -> pure s (* [ask] returns the signature by default *)
 let asks f = f <$> ask
 let ask_gen_allfv = peek >>= fun (_, { fl_allfv; _ }) -> pure fl_allfv
 let ask_gen_fext = peek >>= fun (_, { fl_fext; _}) -> pure fl_fext
+let ask_coq_version = peek >>= fun (_, { fl_version; _ }) -> pure fl_version
 let put x = SE.put x |> elevate
 let get = SE.get |> elevate
 let gets f = f <$> get
