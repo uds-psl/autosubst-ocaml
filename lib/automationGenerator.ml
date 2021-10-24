@@ -31,7 +31,7 @@ let gen_asimpl_fext' () =
   let asimpl_rewrite_base = info.asimpl_rewrite_base in
   let asimpl_cbn_functions = info.asimpl_cbn_functions in
   let asimpl_unfold_functions = info.asimpl_unfold_functions in
-  let rewrites = List.map (fun t -> progress_ (setoid_rewrite_ t)) (asimpl_rewrite_base @ asimpl_rewrite_fext) in
+  let rewrites = List.map (fun t -> progress_ (rewrite_ t)) (asimpl_rewrite_base @ asimpl_rewrite_fext) in
   let tac = repeat_ (first_ (rewrites @
                              [ progress_ (unfold_ asimpl_unfold_functions)
                              ; progress_ (cbn_ asimpl_cbn_functions)

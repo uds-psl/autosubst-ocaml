@@ -5,8 +5,8 @@
 module S = Settings
 
 
-let usage_message = "
-dune exec -- bin/main.exe [OPTION]... signature-file
+let usage_message_fmt = format_of_string "
+%s [OPTION]... signature-file
 
 signature-file:
   Path to a .sig file containing the signature of your language.
@@ -55,6 +55,11 @@ let parse_args args =
         ("-allfv", Set gen_allfv_r, "Generate allfv lemmas.");
         ("-fext", Set gen_fext_r, "Generate lemmas & tactics that use the functional extensionality axiom.")
       ] in
+    (* The usage message should use the current program's name *)
+    let program_name = match Sys.argv.(0) with
+      | "bin/main.exe" -> "dune exec -- bin/main.exe"
+      | s -> s in
+    let usage_message = Printf.sprintf usage_message_fmt program_name in
     (* have to pass in a fresh reference (or set the one from the module) to be able to call this multiple times in repl *)
     let () = Arg.parse_argv ~current:(ref 0) args arg_spec anon_fun usage_message in
     let infile = if !infile_r = "" then raise (Arg.Bad "Input signature file is required.") else !infile_r in
@@ -101,14 +106,14 @@ let copy_file force_overwrite src dst =
 (* both in the repo and then installed by opam the file structure of the project is the following
 
     base-dir
-    - bin/
+   - bin/
       + autosubst
-    - share/autosubst/
+   - share/autosubst/
       + core.v
       + ...
 
-  Here we construct the path to shared/autosubst based on the path to the executable.
-  HACK: Docs for [Sys.executable_name] say that it might not be an absolute path. 
+   Here we construct the path to shared/autosubst based on the path to the executable.
+   HACK: Docs for [Sys.executable_name] say that it might not be an absolute path. 
         But it is on Linux, so it works.
         What is the best way to access the files in the share directory? *)
 let data_dir = 
@@ -118,7 +123,7 @@ let data_dir =
   data_dir
 
 (** Generate the static files by copying them into the output directory. *)
-let gen_static_files force_overwrite dir scope version =
+let gen_static_files force_overwrite dir scope gen_fext =
   let open Filename in
   let copy_static_file ?out_name name =
     let out_name = Option.default name out_name in (* output name is the same as input name by default *)
@@ -126,16 +131,18 @@ let gen_static_files force_overwrite dir scope version =
   in
   let open Settings in
   let () = match scope with
-    | Wellscoped ->
-      let () = copy_static_file "fintype_axioms.v" in
-      copy_static_file "fintype.v"
-    | Unscoped ->
-      let () = copy_static_file "unscoped_axioms.v" in
-      copy_static_file "unscoped.v"
+    | Wellscoped -> copy_static_file "fintype.v"
+    | Unscoped -> copy_static_file "unscoped.v"
   in
-  let () = copy_static_file "core_axioms.v" in
   let () = copy_static_file "core.v" in
-  ()
+  if gen_fext 
+  then 
+    let () = match scope with
+      | Wellscoped -> copy_static_file "fintype_axioms.v"
+      | Unscoped -> copy_static_file "unscoped_axioms.v"
+    in 
+    copy_static_file "core_axioms.v"
+  else ()
 
 
 (** Create the directory dir.
@@ -157,26 +164,26 @@ let main argv =
   (* parse program arguments *)
   let* args = parse_args argv in
   let () = Settings.scope_type := args.scope in
-  (* setup static files *)
-  let () =
-    let dir = Filename.dirname args.outfile in
-    let () = create_dir dir in
-    if args.gen_static_files
-    then gen_static_files args.force_overwrite dir args.scope args.version
-    else () in
   (* parse input HOAS *)
   let* (_, functors, _, var_name_assoc) as spec = read_file args.infile |> SigParser.parse_signature in
   let () = S.var_name_assoc := var_name_assoc in
   (* check if we use the "cod" functor because then we need fext also in the normal code *)
   let args = if List.mem "cod" functors then {args with gen_fext = true} else args in
+  (* setup static files *)
+  let () =
+    let dir = Filename.dirname args.outfile in
+    let () = create_dir dir in
+    if args.gen_static_files
+    then gen_static_files args.force_overwrite dir args.scope args.gen_fext
+    else () in
   let* signature = SigAnalyzer.build_signature spec in
   (* let () = print_endline (Language.show_signature signature) in *)
   (* generate code *)
   let* code, _ = FileGenerator.run_gen_code signature {
-    fl_allfv=args.gen_allfv;
-    fl_fext=args.gen_fext;
-    fl_version=args.version
-  } in
+      fl_allfv=args.gen_allfv;
+      fl_fext=args.gen_fext;
+      fl_version=args.version
+    } in
   (* write file *)
   let () = write_file args.force_overwrite args.outfile code in
   pure "done"
