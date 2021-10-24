@@ -1,76 +1,122 @@
 #+TITLE: Autosubst OCaml
 
-This is an OCaml implementation of parts of the Autosusbt 2 compiler by Kathrin Stark. It supports well-scoped & unscoped syntax as well as variadic & polyadic syntax & functors (except the combination of variadic + unscoped syntax which the original did not support either).
-Being implemented in OCaml it uses Coq as a library to directly construct the AST of lemmas/definitions etc. and also print out the AST to a file.
+This is an OCaml reimplementation of the Autosusbt 2 code generator by Kathrin Stark. 
+Like Autosubst 2, it supports well-scoped & unscoped syntax as well as variadic & polyadic syntax & functors.
+It does not support Autosubst 2's modular syntax.
 
-* Setup
+Being implemented in OCaml, it uses Coq as a library to construct and pretty print the code it generates.
+
+* Install
+** Opam 
+First, install opam following the [[https://opam.ocaml.org/doc/Install.html][directions for your operating system]].
+
 ** Switch
+It is best practice to create a new opam switch to not cause conflicts with any of your other installed packages.
+We will also need to add the Coq repository.
 #+BEGIN_SRC bash
-opam switch create autosubst-ocaml ocaml-base-compiler.4.11.1
+opam switch create autosubst-ocaml ocaml-base-compiler.4.07.1
 opam repo add coq-released https://coq.inria.fr/opam/released
 #+END_SRC
 
-** Build Dependencies
+** Setup
+You can install the dependencies with
 #+BEGIN_SRC bash
-opam install dune coq.8.12.1 angstrom ocamlgraph ppx_deriving
+opam install --deps-only .
 #+END_SRC
-As a dependency I also use the monad library from here https://github.com/Denommus/monadic which is not on opam yet so I included the sources.
+As a dependency we also use the monad library from here https://github.com/Denommus/monadic which is not on opam, so we include the sources in the repo.
+You can install the program itself with (this also installs missing dependencies)
+#+BEGIN_SRC bash
+opam install .
+#+END_SRC
+The binary will be paced as `autosubst` on your path.
 
-** Dev Dependencies
+* Run 
+To display a list of all program inputs.
 #+BEGIN_SRC bash
-opam install merlin utop ocp-indent ocamlformat
+autosubst --help
 #+END_SRC
 
-* Build & Run
-Create the switch and install the dev dependencies and then:
+En example invocation that shows how to generate code for the untyped lambda calculus.
 #+BEGIN_SRC bash
-dune build
-dune exec -- bin/main.exe <signature file> <output file> [coq|ucoq]
-# e.g. dune exec -- bin/main.exe signatures/fol.sig case-studies/examples/fol/fol_wellscoped.v coq
+autosubst signatures/utlc.sig -o output/utlc.v -s ucoq
 #+END_SRC
-* Signatures
-You write signatures in extended HOAS. The following example contains all possible rules.
+
+** Signatures
+You specify the input language using a special syntax. 
+The syntax is described in my thesis at https://www.ps.uni-saarland.de/~dapprich/bachelor.php
 Look in the signaturs/ directory for more examples.
-All things not in double quotes are identifiers and the same parsing rules apply as for Coq identifiers (except they need to be ascii as per a limitation of the parsing library I used).
+
+The following example contains all possible rules.
 #+begin_src
 -- comments are like in Haskell
 tm : Type -- sort declarations
+nat : Type -- preexisting sort declaration, it must not have any constructors
 
-list : Functor -- functor declarations
+list : Functor -- functor declarations, only "list", "prod", and "cod" are allowed
 
--- declaring some constructors
+-- declaring some constructors for ty
 arr : ty -> ty -> ty
-all : (ty -> ty) -> ty -- the negative position here indicates a binder for a ty
+all : (bind ty in ty) -> ty -- this declares "all" as constructor with a binder that binds a new "ty" variable in a "ty" argument and results in a "ty"
 
-app : tm -> "list" (tm) -> tm        -- application of the list functor to the sort `tm`
-lam (p: nat) : (<p, tm> -> tm) -> tm -- a constructor with a parameter `p` which is then used in a variadic binder (i.e. it binds p values of `tm`)
+-- declaring some constructos for tm
+app : tm -> list (tm) -> tm               -- application of the list functor to the sort "tm"
+lam (p: nat) : (bind <p, tm> in tm) -> tm -- this declares "lam" as a constructor with parameter "p" which is then used in a variadic binder (i.e. it binds p-many values of "tm")
+const : nat -> tm                         
 #+end_src
+
+* Development
+** Dev Dependencies
+Some dependencies for developing in emacs.
+#+BEGIN_SRC bash
+opam install merlin utop ocp-indent ocamlformat
+opam user-setup install
+#+END_SRC
+
+** Build
+Create the switch, install the dependencies, and then:
+#+BEGIN_SRC bash
+dune build
+dune exec -- bin/main.exe --help
+# e.g. to generate code for the untyped lambda calculus
+dune exec -- bin/main.exe signatures/utlc.sig -o output/utlc.v -s ucoq
+#+END_SRC
+
+
 * Repo
 You can find the code at https://gitlab.com/addapp/autosubst-ocaml
+
 * Demo
 The demos are generated by the generate.sh. They can be found in case-studies/
 
 ** examples/
-contains just the generated sources for a couple of different signatures. You can issue `make` in this directory to have Coq compile all the files. The lemmas/definitions/fixpoints are equivalent to those generated by Autosubst2. The classes/instances/tactics are not generated.
-** cs-kathrin/
-contains the case studies by Kathrin Stark from https://www.ps.uni-saarland.de/~kstark/thesis/ where a couple of metatheoretic theorems are proved about different languages. The case study was originally for Coq 8.9 and due to different handling of implicit arguments it does not work directly with Coq 8.12.1, so to run this we install Coq 8.9 on a different switch.
+contains the generated sources for a couple of different signatures.
+You can issue `make` in this directory to have Coq compile all the files. 
+
+** examples-lt813/
+contains the generated sources for a couple of different signatures for Coq versions below 8.13 (tested down to 8.10)
+You can issue `make` in this directory to have Coq compile all the files. 
+
+** kathrin/coq/
+contains the case studies by Kathrin Stark from https://www.ps.uni-saarland.de/~kstark/thesis/ where a couple of metatheoretic theorems are proved about different languages. 
+The case study was originally for Coq 8.9 and due to different handling of implicit arguments it does not work directly with Coq 8.13, so to run this we install Coq 8.9 on a different switch.
 
 #+BEGIN_SRC src
-opam switch create autosubst-ocaml-cs ocaml-base-compiler.4.09.1
+opam switch create autosubst-ocaml-89 ocaml-base-compiler.4.07.1
 opam repo add coq-released https://coq.inria.fr/opam/released
-opam install coq.8.9.1 coq-equations.1.2.1+8.9
+opam install coq.8.9.1
 #+END_SRC
 
-You can also issue `make` there to have Coq compile all the files.
+You can also issue `make` in this directory to have Coq compile all the files.
 Of particular interest are the files
  | Chapter3    | Chapter6     | Chapter9 | Chapter10 |
  |-------------+--------------+----------+-----------|
  | utlc_scoped | utlc_pairs   | stlc     | sysf      |
  | utlc_pure   | sysf_cbv     |          | sysf_pat  |
  |             | variadic_fin |          |           |
-which are all generated by generate.sh and then used in other files to prove metatheorems like the POPLMark challenge.
+which are all generated by generate.sh and then used in other files to prove metatheorems like from the POPLMark challenge.
 
-*** Some Problems
-I was not able to compile the original case study found at https://www.ps.uni-saarland.de/~kstark/thesis/download/code.tar.xz with Coq 8.9.1 from opam either. Kathrin probably used a version from source and there was slightly different reduction behaviour. Mostly when using the renamify tactic I had to manually insert a change. You can find the places where I changed stuff by grepping for "adrian".
-
-Furthermore, I noticed that I parse nested functor applications incorrectly. The relevant file is in case-studies/kathrin/coq/Chapter10/sysf_rec.sig. At the moment I cannot compile it but I would argue that the way strings are used in the signature easily leads to errors and when I implement nested functor application I would use a different syntax.
+*** Notes
+I was not able to compile the original case study found at https://www.ps.uni-saarland.de/~kstark/thesis/download/code.tar.xz with Coq 8.9.1 from opam either. 
+Kathrin probably used a version from source and there was slightly different reduction behaviour. 
+Mostly when using the renamify tactic I had to manually insert a change. 
+You can find the places where I changed stuff by grepping for "a.d.".
