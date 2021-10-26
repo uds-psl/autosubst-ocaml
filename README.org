@@ -20,7 +20,7 @@ opam repo add coq-released https://coq.inria.fr/opam/released
 #+END_SRC
 
 ** Setup
-You can install the dependencies with
+You can install the dependencies with (this reads the dependencies from the autosubst.opam file)
 #+BEGIN_SRC bash
 opam install --deps-only .
 #+END_SRC
@@ -29,7 +29,7 @@ You can install the program itself with (this also installs missing dependencies
 #+BEGIN_SRC bash
 opam install .
 #+END_SRC
-The binary will be paced as `autosubst` on your path.
+The binary will be placed as `autosubst` on your path.
 
 * Run 
 To display a list of all program inputs.
@@ -102,6 +102,8 @@ But Coq 8.13 will complain about missing attributes!
 contains the case study I implemented for the exercise from TAPL
 You can issue `make` in this directory to have Coq compile all the files.
 
+I explicitly use asimpl_fext in of the the goals so the `Print Assumptions` at the end lists the funext axiom.
+
 ** kathrin/coq/
 contains a subset of the case studies by Kathrin Stark from https://www.ps.uni-saarland.de/~kstark/thesis/
 Several metatheorems are proved, mostly about the simply typed lambda calculus and variations of System F.
@@ -123,6 +125,10 @@ Only Chapter6/variadic_fin.v uses functional extensionality because the language
  |             | variadic_fin |          |           |
 
 You can issue `make` in this directory to have Coq compile all the case studies.
+
+In Chapter10/POPLMark{1,21,22}.v we print assumptions in the end to show that they do not rely on funext anymore.
+But with the caveat that in POPLMark{21,22}.v we assume another axiom to prove a morphism for the pat_ty predicate.
+The predicate is defined as a Variable, so there seems to be no other way since we have no extra knowledge about pat_ty.
 
 *** Notes
 I was not able to compile the original case study found at https://www.ps.uni-saarland.de/~kstark/thesis/download/code.tar.xz with Coq 8.9.1 from opam either. 
