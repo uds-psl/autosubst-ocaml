@@ -1196,6 +1196,16 @@ exact (fun f_ty g_ty Eq_ty f_tm g_tm Eq_tm s t Eq_st =>
          (ext_tm f_ty f_tm g_ty g_tm Eq_ty Eq_tm s) t Eq_st).
 Qed.
 
+Instance subst_tm_morphism2 :
+ (Proper
+    (respectful (pointwise_relation _ eq)
+       (respectful (pointwise_relation _ eq) (pointwise_relation _ eq)))
+    (@subst_tm)).
+Proof.
+exact (fun f_ty g_ty Eq_ty f_tm g_tm Eq_tm s =>
+       ext_tm f_ty f_tm g_ty g_tm Eq_ty Eq_tm s).
+Qed.
+
 Instance ren_tm_morphism :
  (Proper
     (respectful (pointwise_relation _ eq)
@@ -1204,6 +1214,16 @@ Proof.
 exact (fun f_ty g_ty Eq_ty f_tm g_tm Eq_tm s t Eq_st =>
        eq_ind s (fun t' => ren_tm f_ty f_tm s = ren_tm g_ty g_tm t')
          (extRen_tm f_ty f_tm g_ty g_tm Eq_ty Eq_tm s) t Eq_st).
+Qed.
+
+Instance ren_tm_morphism2 :
+ (Proper
+    (respectful (pointwise_relation _ eq)
+       (respectful (pointwise_relation _ eq) (pointwise_relation _ eq)))
+    (@ren_tm)).
+Proof.
+exact (fun f_ty g_ty Eq_ty f_tm g_tm Eq_tm s =>
+       extRen_tm f_ty f_tm g_ty g_tm Eq_ty Eq_tm s).
 Qed.
 
 Instance subst_ty_morphism :
@@ -1215,12 +1235,26 @@ exact (fun f_ty g_ty Eq_ty s t Eq_st =>
          (ext_ty f_ty g_ty Eq_ty s) t Eq_st).
 Qed.
 
+Instance subst_ty_morphism2 :
+ (Proper (respectful (pointwise_relation _ eq) (pointwise_relation _ eq))
+    (@subst_ty)).
+Proof.
+exact (fun f_ty g_ty Eq_ty s => ext_ty f_ty g_ty Eq_ty s).
+Qed.
+
 Instance ren_ty_morphism :
  (Proper (respectful (pointwise_relation _ eq) (respectful eq eq)) (@ren_ty)).
 Proof.
 exact (fun f_ty g_ty Eq_ty s t Eq_st =>
        eq_ind s (fun t' => ren_ty f_ty s = ren_ty g_ty t')
          (extRen_ty f_ty g_ty Eq_ty s) t Eq_st).
+Qed.
+
+Instance ren_ty_morphism2 :
+ (Proper (respectful (pointwise_relation _ eq) (pointwise_relation _ eq))
+    (@ren_ty)).
+Proof.
+exact (fun f_ty g_ty Eq_ty s => extRen_ty f_ty g_ty Eq_ty s).
 Qed.
 
 Ltac auto_unfold := repeat

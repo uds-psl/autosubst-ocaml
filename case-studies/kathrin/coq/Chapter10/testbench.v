@@ -5,22 +5,30 @@ Import ScopedNotations.
 Check scons_comp'.
 Check scons_p_comp'.
 
-Inductive AsimplWrapper {A} := AW : A -> AsimplWrapper.
 
-
+(* TODO this is a substitution lemma not solved by asimpl. *)
 Goal forall m n k l (s: tm l n) (sigma: fin m -> tm l n) (f: fin n -> tm l k) (x: fin (S m)),
     subst_tm var_ty f ((s .: sigma) x) = (subst_tm var_ty f s .: sigma >> subst_tm var_ty f) x.
 Proof.
   intros *.
+  (* asimpl_fext can solve it immediately. *)
+  (* now asimpl_fext. *)
+  (* I have to manually fold the function composition. Then asimpl can solve the goal.
+     This is a disadvantage of the setoid asimpl 
+     It relies too much on a syntactic funcomp. *)
+  change (subst_tm var_ty f ((s .: sigma) x)) with ((funcomp (subst_tm var_ty f) (s .: sigma)) x).
+  revert x. apply pointwise_forall.
+  now asimpl. 
   (* TODO here I get the same problem as with scons_p
    * so the problem seems to be that we don't need any morphism.
    * the top is eq and scons follows directly after.
    * In other situations where the rewrite would first have to use a morphisms to traverse e.g a subst_tm, it works correctly.
-   * So could be introduce a bogus morphism? *)
-  rewrite scons_comp'.
-Abort.
+   * So could we introduce a bogus morphism? *)
+Qed.
 
 Require Setoid Morphisms.
+Inductive AsimplWrapper {A} := AW : A -> AsimplWrapper.
+
 
 Goal forall m n k l (s: tm l n) (sigma: fin m -> tm l n) (f: fin n -> tm l k) (x: fin (S m)),
     AW (subst_tm var_ty f ((s .: sigma) x)) = AW ((subst_tm var_ty f s .: sigma >> subst_tm var_ty f) x).

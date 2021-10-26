@@ -1,6 +1,6 @@
 (** This module provides names for definitions/lemmas etc.
  ** The values here are mainly passed to the smart constructors in Coqgen
- ** by the generator functions in Generator *)
+ ** by the generator functions in CodeGenerator *)
 
 open Util
 
@@ -86,7 +86,7 @@ let idSubst_ x = sepd ["idSubst"; x]
 let subst_ x = sepd ["subst"; x]
 
 
-(** Allfv Names *)
+(** New Names for allfv lemmas. *)
 let up_allfv_name = upNameGen "upAllfv"
 let allfv_name x = sepd ["allfv"; x]
 let congr_allfv_name c = sepd ["congrP"; c]

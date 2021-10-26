@@ -54,7 +54,6 @@ Proof.
     specialize (IHC _ _ H1).
     destruct (IHC) as (v'&?&?).
     exists v'; split; eauto.
-    (* DONE a.d. I had to unfold funcomp here to setoid rewrite with rinstInst' *)
     revert H2.
     substify. eauto.
   - destruct (IHC1 _ _  H) as (v1&?&?).

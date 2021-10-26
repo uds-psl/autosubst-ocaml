@@ -418,32 +418,3 @@ Ltac fsimpl :=
          | [|- context[scons_p _ _ _ (shift_p _ _)]] => setoid_rewrite scons_p_tail'
          | _ => first [progress minimize | progress cbn [shift scons scons_p] ]
          end.
-
-(** Generic fsimpl tactic: simplifies the above primitives in the context *)
-(* Ltac fsimplc := *)
-(*   repeat match goal with *)
-(*          | [H: context[id >> ?f] |- _] => change (id >> f) with f in H(* AsimplCompIdL *) *)
-(*          | [H: context[?f >> id]|- _] => change (f >> id) with f in H(* AsimplCompIdR *) *)
-(*          | [H: context [id ?s]|- _] => change (id s) with s in H *)
-(*          (* | [H: context[comp ?f ?g]|- _] => change (comp f g) with (g >> f) in H (* AsimplCompIdL *) *) *)
-(*          | [H: context[(?f >> ?g) >> ?h]|- _] => *)
-(*            change ((f >> g) >> h) with (f >> (g >> h)) in H (* AsimplComp *) *)
-(*          | [H: context[(?s.:?sigma) var_zero]|- _] => change ((s.:sigma) var_zero) with s in H *)
-(*          | [H: context[(?s.:?sigma) var_zero]|- _] => change ((s.:sigma) var_zero) with s in H *)
-(*          | [H: context[(?s.:?sigma) (shift ?m)]|- _] => change ((s.:sigma) (shift m)) with (sigma m) in H *)
-(*                                                                                       |[H : context[ _ =  ?h (?f ?s)]|- _] => change (h (f s)) with ((f >> h) s) in H *)
-(*          (* |[H: context[?h (?f ?s) = _]|- _] => change (h (f s)) with ((f >> h) s) in H *) *)
-(*          | [H: context[idren >> ?f]|- _] => change (idren >> f) with f in H *)
-(*          | [H: context[?f >> idren]|- _] => change (f >> idren) with f in H *)
-(*          | [H: context[?f >> (?x .: ?g)]|- _] => *)
-(*            change (f >> (x .: g)) with g in H *)
-(*          (* | [H: context[?x2 .: shift >> ?f]|- _] => *) *)
-(*          (*   change x2 with (f var_zero) in H; rewrite (@scons_eta _ _ f) in H *) *)
-(*          (* | [H: context[?f var_zero .: ?g]|- _] => *) *)
-(*            (* change g with (shift >> f) in H; rewrite scons_eta in H *) *)
-(*          (* | _ => first [progress (rewrite scons_comp in * ) | progress (rewrite scons_eta_id in * ) | progress (autorewrite with FunctorInstances in * )] *) *)
-(*          end. *)
-
-(** Simplification in both the goal and the context *)
-(* Tactic Notation "fsimpl" "in" "*" := *)
-(*   fsimpl; fsimplc. *)

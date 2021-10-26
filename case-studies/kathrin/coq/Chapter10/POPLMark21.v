@@ -212,8 +212,6 @@ Proof.
   - eapply IHsub2; try reflexivity.
     auto_case; eauto.
     unfold funcomp. rewrite <- H1. now asimpl.
-    (* TODO same here as in Popl1. auto_case should call asimpl which direclty solves the goal, so why isn't it solved *)
-    (* now asimpl. *)
   - intros l T' HH. rewrite in_map_iff in HH. destruct HH as ([]&HH&?).
     inv HH. destruct (H _ _ H3) as (?&?&?&?).
     exists (x⟨xi⟩). split; eauto. apply in_map; eauto.
@@ -282,13 +280,13 @@ Corollary sub_trans n (Delta  : ctx n) A B C:
 Proof. eauto using sub_trans'. Qed.
 
 (** Generated with Marcel's induction generation program. 
-    Unfortunately there were two problems when generating the induction scheme:
-    1. we were not able to run the program with the wellscoped syntax directly.
-       Instead, we had to generate the scheme for an unscoped variant and manually convert to wellscoped syntax.
-    2. It did not generate the most general recursion scheme.
+    Unfortunately there was a problem when generating the induction scheme:
+       It did not generate the most general recursion scheme.
        In the recty case, SUB occurs under an exists and we also need an induction hypothesis for that occurrence.
        I think I should be able to use `MetaCoq Run Derive Container for _`
          but that did not work with `ex`.
+    
+    Marcel confirmed that the program from his thesis has problems with ex. Might be supported in the future
  *)
 Definition sub_induct : forall
     (p : forall (n:nat) (Delta : fin n -> ty n) (H H0 : ty n),
@@ -592,17 +590,14 @@ Proof.
        eauto.
     + asimpl. eapply IHty2; eauto.
       * intros z.
-        (* a.d.: had to add the following line to make it compile.*)
+        (* a.d.: had to add the following line to make it compile with coq 8.9 .*)
         unfold dctx in Gamma, Gamma0. unfold upRen_p.
-        (* https://coq.zulipchat.com/#narrow/stream/237656-Coq-devs.20.26.20plugin.20devs/topic/Change.20of.20case.20representation/near/220411671 *)
-        (* TODO why does setoid_rewrite H' fail even though it works when I just apply the morphism *)
-        (*      why does setoid_rewrite scons_p_head' fail? but it works when I apply the morphism *)
-        asimpl.
-        setoid_rewrite (scons_p_comp' _ _ _ z).
-        (* can we apply pointwise_forall in asimpl?
-           the problem seems to be that scons_p_comp' does not want to rewrite if the goal is in the forall-form. 
-           So either we turn it into pointwise-form or we do the above and rewrite with the argument (I think one of the rewrites in Kathrin's fsimpl also does this so she might have had a similar problem) *)
-        apply pointwise_forall.
+        (* a.d. 
+           the problem seems to be that the goal is not in the pointwise_relation form.
+           We must revert z and then turn the forall into pointwise_relation. Then asimpl
+           works as expected.
+        *)
+        revert z. apply pointwise_forall.
         asimpl.
         unfold funcomp.
         now setoid_rewrite H'.
@@ -784,4 +779,5 @@ Qed.
 
 End Pattern.
 
+(* a.d. now the only assumptions are the one for pat_ty and UIP (because of depind) *)
 Print Assumptions preservation.

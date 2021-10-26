@@ -28,14 +28,6 @@ Require Import Setoid Morphisms.
 
 Require Import core_axioms.
 
-(* TODO need to generate this morphism *)
-Instance subst_tm_morphism2  {m_tm : nat} {n_tm : nat}:
- Proper (pointwise_relation _ eq ==> pointwise_relation _ eq) (@subst_tm m_tm n_tm).
-Proof.
-  intros f g H x.
-  exact (subst_tm_morphism f g H x x eq_refl).
-Qed.
-
 Lemma step_inst {m n} (f : fin m -> tm n) (s t : tm m) :
   step s t -> step (subst_tm f s) (subst_tm f t).
 Proof.

@@ -20,7 +20,7 @@ let unit_of_vernacs vexprs = Vernac (List.map control_of_expr vexprs)
 let pr_vernac_control =
   let open Pp in
   function
-  | CAst.{v = {control; attrs; expr=VernacExactProof cexpr}; _} ->
+  | CAst.{v = {expr = VernacExactProof cexpr; _}; _} ->
     str "Proof" ++ vernacend ++ pr_exact_expr cexpr
   | vexpr ->
     Ppvernac.pr_vernac vexpr ++ newline

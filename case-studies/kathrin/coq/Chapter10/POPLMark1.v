@@ -203,7 +203,6 @@ Proof.
     intros [|]; cbn. rewrite HDelta. 1, 2: reflexivity.
     intros x. unfold funcomp. rewrite HGamma. reflexivity.
   - econstructor. apply IHhas_ty; assumption.
-    (* TODO here we actually need th eother morphism *)
     setoid_rewrite <- HDelta. assumption.
     assumption.
   - econstructor. 2: setoid_rewrite <- HDelta; apply H0.

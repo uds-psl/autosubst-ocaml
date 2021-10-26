@@ -153,13 +153,13 @@ Hint Constructors sub.
 
 
 (** Generated with Marcel's induction generation program. 
-    Unfortunately there were two problems when generating the induction scheme:
-    1. we were not able to run the program with the wellscoped syntax directly.
-       Instead, we had to generate the scheme for an unscoped variant and manually convert to wellscoped syntax.
-    2. It did not generate the most general recursion scheme.
+    Unfortunately there was a problem when generating the induction scheme:
+       It did not generate the most general recursion scheme.
        In the recty case, SUB occurs under an exists and we also need an induction hypothesis for that occurrence.
        I think I should be able to use `MetaCoq Run Derive Container for _`
          but that did not work with `ex`.
+    
+    Marcel confirmed that the program from his thesis has problems with ex. Might be supported in the future
  *)
  Definition sub_induct : forall
  (p : forall (n:nat) (Delta : fin n -> ty n) (H H0 : ty n),
@@ -326,8 +326,6 @@ Proof.
   - eapply IHsub2; try reflexivity.
     auto_case; eauto.
     unfold funcomp. rewrite <- H1. now asimpl.
-    (* TODO auto_case problems *)
-    (* now asimpl. *)
   - intros l T' HH. rewrite in_map_iff in HH. destruct HH as ([]&HH&?).
     inv HH. destruct (H _ _ H3) as (?&?&?&?).
     exists (x⟨xi⟩). split; eauto. apply in_map; eauto.
@@ -382,9 +380,6 @@ Proof with asimpl;eauto.
     + asimpl. eapply sub_narrow; try eapply H0.
       * auto_case.
         eapply sub_weak with (xi := ↑); try reflexivity; eauto.
-        (* adrian: as of 7b3472c the goal is already solved by eauto
-         TODO find out why *)
-        (* now asimpl. *)
       * intros [x|]; try cbn; eauto. right. apply transitivity_ren. apply transitivity_ren. eauto.
     + asimpl in H1_0. auto.
   - depind H0... depind H3...
@@ -594,18 +589,16 @@ Proof.
       eapply H3; eassumption.
   - cbn. econstructor; eauto. now apply in_map.
   - cbn. asimpl. apply letpat_ty  with (A0 := A⟨xi⟩) (Gamma'0 := Gamma' >> ⟨xi⟩); eauto.
-    + (* unfold funcomp. *)
-      (* TODO the unfold funcomp should not be necessary anymore when I use Yannicks appraoch *)
-      substify.
+    + substify.
       eauto.
     + asimpl.
-      (* Hint Opaque scons_p : rewrite. *)
-      (* Hint Opaque subst_ty : rewrite. *)
       eapply IHty2. eauto.
       * intros z.
         unfold dctx in Gamma, Gamma0. unfold upRen_p.
         asimpl.
-        (* TODO same as in popl21 *)
+        (* a.d. DONE same as in popl21. We have to convert the goal into the pointwise_relation form.
+              It's a bit uncomfortable to use asimpl this way, but amnageable.
+        *)
         apply pointwise_forall.
         asimpl.
         unfold funcomp.
@@ -660,19 +653,11 @@ Proof.
         destruct (destruct_fin x) as [[x' ->] |[x' ->]]; asimpl; eauto.
         -- eapply T_Var'. now asimpl.
         -- eapply context_renaming_lemma'; try eapply eq2.
-           (* TODO try out why exactly only the scons_p_* lemmas have issues with evars *)
            Unshelve.
            5: exact id.
            5: exact (shift_p p).
            5: exact x'.
            all: now asimpl.
-           (* try now asimpl. *)
-           (* intros z. *)
-           (* now asimpl. *)
-           (* (* TODO setoid-asimpl does not work with scons_p yet *) *)
-           (* intros x. *)
-           (* now asimpl. *)
-           (* (* now asimpl_fext. *) *)
      } 
   - econstructor.
     + eapply IHty; eauto.
@@ -784,9 +769,8 @@ Proof.
       eapply context_morphism_lemma; try now apply H_ty2.
       * intros. asimpl. constructor. now apply sub_refl.
       * intros. destruct (destruct_fin x) as [[]|[]]; subst.
-        (* TODO why did I have to do `exact Gamma'` here twice? *)
-        -- asimpl. eapply pat_ty_eval; eauto. (* exact Gamma'. *)
-        -- asimpl. constructor. (* exact Gamma'. *)
+        -- asimpl. eapply pat_ty_eval; eauto.
+        -- asimpl. constructor.
     + eapply T_Sub; eauto.
   - depind H_ty; [|eapply T_Sub; eauto].
     econstructor; eauto.
@@ -796,5 +780,5 @@ Qed.
 
 End Pattern.
 
-(* TODO prove morphisms with Marcel's project. Also why does the UIP axiom appear here? *)
+(* a.d. now the only assumptions are the one for pat_ty and UIP (because of depind) *)
 Print Assumptions preservation.

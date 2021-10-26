@@ -164,16 +164,26 @@ let gen_classes () =
 
 let gen_proper_instances () =
   let* proper_instances = gets proper_instances in
-  let gen_instance (sort, fun_sort, ext_sort) =
+  (** We generate two morphisms for each instantiation.
+      subst_tm_morphism : pointwise_relation _ eq ==> eq ==> eq
+      subst_tm_morphism2 : pointwise_relation _ eq ==> pointwise_relation _ eq
+  *)
+  let gen_instances (sort, fun_sort, ext_sort) =
     let* v = Variables.genVariables sort [ `MS; `NS ] in
     let [@warning "-8"] [], [ ms; ns ], [], scopeBinders = v in
     let* substSorts = get_substv sort in
     let iname = sep (fun_sort) "morphism" in
+    let iname2 = sep (fun_sort) "morphism2" in
     let signature = List.fold_right (fun _ signature ->
         app_ref "respectful" [ app_ref "pointwise_relation" [ underscore_; ref_ "eq" ]
                              ; signature ])
         substSorts (app_ref "respectful" [ ref_ "eq"; ref_ "eq" ]) in
+    let signature2 = List.fold_right (fun _ signature ->
+        app_ref "respectful" [ app_ref "pointwise_relation" [ underscore_; ref_ "eq" ]
+                              ; signature ])
+        substSorts (app_ref "pointwise_relation" [ underscore_; ref_ "eq" ]) in
     let itype = app_ref "Proper" [ signature; app_fix ~expl:true (fun_sort) ~sscopes:[ ms; ns ] [] ] in
+    let itype2 = app_ref "Proper" [ signature2; app_fix ~expl:true (fun_sort) ~sscopes:[ ms; ns ] [] ] in
     (* a.d. TODO right now this is the easiest way to generate all the names. all the other functions like genRen are too generalized and we can't use the binders they return. So we generate them again fresh *)
     let fs = mk_refs @@ List.map (sep "f") substSorts in
     let gs = mk_refs @@ List.map (sep "g") substSorts in
@@ -184,15 +194,23 @@ let gen_proper_instances () =
     let proof_binders = binder_ (List.fold_right (fun substSort binders ->
         [ sep "f" substSort; sep "g" substSort; sep "Eq" substSort ] @ binders)
         substSorts [ s; t; eq_st ]) in
+    let proof_binders2 = binder_ (List.fold_right (fun substSort binders ->
+        [ sep "f" substSort; sep "g" substSort; sep "Eq" substSort ] @ binders)
+        substSorts [ s ]) in
     let proof = lambda_ [ proof_binders ]
         (app_ref "eq_ind" [ ref_ s
                           ; abs_ref "t'" (eq_ (app_ref fun_sort (fs @ [ ref_ s])) (app_ref fun_sort (gs @ [ ref_ "t'" ])))
                           ; app_ref ext_sort (fs @ gs @ eqs @ [ ref_ s ])
                           ; ref_ t
                           ; ref_ eq_st ]) in
-    pure @@ instance_ iname scopeBinders itype ~interactive:true proof
+    let proof2 = lambda_ [ proof_binders2 ]
+        (app_ref ext_sort (fs @ gs @ eqs @ [ ref_ s ])) in
+    pure @@ [
+      instance_ iname scopeBinders itype ~interactive:true proof;
+      instance_ iname2 scopeBinders itype2 ~interactive:true proof2
+    ]
   in
-  a_map gen_instance proper_instances
+  a_concat_map gen_instances proper_instances
 
 let gen_instances () =
   let* instances = gets instances in
