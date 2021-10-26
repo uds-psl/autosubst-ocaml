@@ -50,6 +50,8 @@ where "'SUB' Delta |- A <: B" := (sub Delta A B).
 Hint Constructors sub.
 
 Require Import Setoid Morphisms.
+
+(* a.d. we prove this morphism for asimpl *)
 Instance sub_morphism {n}:
   Proper (pointwise_relation _ eq ==> eq ==> eq ==> Basics.impl) (@sub n).
 Proof.
@@ -188,6 +190,7 @@ where "'TY' Delta ; Gamma |- s : A" := (has_ty Delta Gamma s A).
 
 Hint Constructors has_ty.
 
+(* a.d. we prove this morphism for asimpl *)
 Instance has_ty_morphism {m n} :
   Proper (pointwise_relation _ eq ==> pointwise_relation _ eq ==> eq ==> eq ==> Basics.impl) (@has_ty m n).
 Proof.
@@ -225,6 +228,7 @@ Inductive eval {m n} : tm m n -> tm m n -> Prop :=
      EV tapp s A => tapp s' A
 where "'EV' s => t" := (eval s t).
 
+(* a.d. we prove this morphism for asimpl *)
 Instance eval_morphism {m n}:
   Proper (eq ==> eq ==> Basics.impl) (@eval m n).
 Proof.
@@ -403,3 +407,5 @@ Proof.
            auto_case; asimpl.
            constructor. apply sub_refl.
 Qed.
+
+Print Assumptions preservation.
