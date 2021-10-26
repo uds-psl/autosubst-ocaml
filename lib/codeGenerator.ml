@@ -22,22 +22,34 @@ open AutomationGen
 open RSEM.Syntax
 open RSEM
 
+(** We define modules that contain our code generator functions. *)
 
+(** UP_GENERATOR generates the lifting code for a whole up_list. *)
 module type UP_GENERATOR = sig
   val gen : (L.binder * L.tId) list -> AM.t RSEM.t
 end
+
+(** COMPONENT_GENERATOR generates code for a whole component. *)
 module type COMPONENT_GENERATOR = sig
   val gen : L.tId list -> AM.t RSEM.t
 end
+
+(** INDUCTIVE_GENERATOR also generates code for a whole component. *)
 module type INDUCTIVE_GENERATOR = COMPONENT_GENERATOR
+
+(** A LIFTING_GENERATOR generates lemmas for a single lifting combination. *)
 module type LIFTING_GENERATOR = sig
   val gen : (L.binder * L.tId) -> AM.t RSEM.t
 end
+
+(** A FIXPOINT_BODY_GENERATOR generates one body of a fixpoint. *)
 module type FIXPOINT_BODY_GENERATOR = sig
   (* when a component is a non-empty list we can return the tag from gen, but for now we just specify it in the module itself. *)
   val tag : AM.module_tag
   val gen : L.tId -> fixpoint_expr RSEM.t
 end
+
+(** A LEMMA_GENERATOR generates lemmas for a single sort. *)
 module type LEMMA_GENERATOR = sig
   val gen : L.tId -> AM.t RSEM.t
 end
@@ -164,7 +176,6 @@ let traversal
   let* is_open = check_open sort in
   (* Only create the variable branch if the sort is open *)
   let* var_pattern = m_guard is_open (
-      (** TODO make scope state work correctly *)
       let s0 = "s0" in
       let* var_body = var_case_body (ref_ s0) in
       pure [ branch_ (var_ sort) (underscore_pattern @ [s0]) var_body ]
@@ -184,11 +195,12 @@ let traversal
                      (List.(concat (map sty_terms args))
                       @ extra_arg_list extra_arg))
         else
-          (* In the case there are no args we have to take extra care. TODO better documentation. need this because of recursion in the FunApp case. Otherwise we would have nothing to apply the no_args function to *)
+          (* In the case there are no args we check our extra_args to see what we pass to the no_args function.
+           * This results in more normalized terms. If we always create an abstraction, we sometimes end up with terms like this (fun x, id x)
+           *)
           pure (match extra_arg with
               | None -> abs_ref "x" (no_args (ref_ "x"))
               | Some s -> no_args s)
-      (* TODO really ignore static args here? *)
       | FunApp (fname, _, args) ->
         let* res = a_map (arg_map bs None) args in
         pure (funsem fname (res @ extra_arg_list extra_arg)) in
@@ -293,12 +305,12 @@ module UpSubsts : UP_GENERATOR = LiftGen(struct
       in
       (* register up for unfolding *)
       let* () = tell_unfold_function (up_ sort binder) in
-      (* TODO what does upSubstT do here? *)
-      let* sigma = upSubstT binder sort ns sigma in
+      (* compute the lifted sigma  *)
+      let* sigma_up = upSubstT binder sort ns sigma in
       let (_, bpms) = blist_args ~implicit:false binder in
       let m' = succ_ m sort binder in
       let* ns' = upSubstScope sort [binder] ns in
-      pure @@ AM.(add_units Core [lemma_ ~opaque:false (up_ sort binder) (bpms @ scopeBinders) (substT m' ns' sort) sigma])
+      pure @@ AM.(add_units Core [lemma_ ~opaque:false (up_ sort binder) (bpms @ scopeBinders) (substT m' ns' sort) sigma_up])
   end)
 
 module Substitutions : COMPONENT_GENERATOR = FixGen(struct
@@ -514,8 +526,6 @@ module UpRenSubsts : UP_GENERATOR = LiftGen(struct
       let [@warning "-8"] [ k; l; xi; tau; theta ], [ ms ], [], scopeBinders = v in
       let (eq, beq) = genEq "Eq" (xi >>> tau) theta in
       let n = varName "n" in
-      (* TODO is this really not used? *)
-      (* let* ms = upSubstScope sort [binder] ms in *)
       let (pms, bpms) = blist_args binder in
       let ret = equiv_
           (app_ref (upRen_ sort binder) (pms @ [xi])
@@ -576,7 +586,9 @@ module UpSubstRens : UP_GENERATOR = LiftGen(struct
            >>> app_ref (ren_ sort) (sty_terms zetas'))
           (app_ref (up_ sort binder) (pms @ [theta])) in
       let* shift = patternSId sort binder in
-      (* TODO refactor these a bit *)
+      (* TODO refactor these. But I don't see how. 
+       * We have huge terms like this in UpSubstRens, UpRenSubsts, etc. but they are too different from each 
+       * other that I can easily refactor them. *)
       let t n = eqTrans_
           (app_ref (compRenRen_ sort) (pat @ sty_terms zetas'
                                        @ List.map2 (>>>) (sty_terms zetas) pat
@@ -646,7 +658,6 @@ module UpSubstSubsts : UP_GENERATOR = LiftGen(struct
       let [@warning "-8"] [ k; sigma; theta ], [ ls; ms ], [ taus ], scopeBinders = v in
       let (eq, beq) = genEq "Eq" (sigma >>> app_ref (subst_ sort) (sty_terms taus)) theta in
       let n = varName "n" in
-      (* let* ms = upSubstScope sort [binder] ms in *)
       let* ls' = upSubstScope sort [binder] ls in
       let* taus' = upSubst sort [binder] taus in
       let* pat = patternSId sort binder in
@@ -1236,8 +1247,7 @@ module LemmaCompSubstSubsts : COMPONENT_GENERATOR = LemGen(struct
   end)
 
 (** For a given component generate the inductive type and congruence lemmas.
- ** These will always be generated, no matter if the component has renamings/substitutions.
- ** TODO they will not be generated if the component contains no definable sorts which to my current knowledge only happens if the component consists of e.g. "nat" so we can already only pass def_sorts to gen_code *)
+ ** These will always be generated, no matter if the component has renamings/substitutions. *)
 let gen_common component =
   let* def_sorts = a_filter check_definable component in
   let* inductive = Inductives.gen def_sorts in
@@ -1252,7 +1262,6 @@ let gen_lemmas component up_list =
       Renamings.gen component;
       UpSubsts.gen up_list;
       Substitutions.gen component;
-      (* TODO *)
       UpIds.gen up_list;
       IdLemmas.gen component;
       (* EXTENSIONALITY LEMMAS *)
@@ -1269,12 +1278,11 @@ let gen_lemmas component up_list =
       CompSubstRens.gen component;
       UpSubstSubsts.gen up_list;
       CompSubstSubsts.gen component;
-      (* TODO *)
       LemmaCompRenRens.gen component;
       LemmaCompRenSubsts.gen component;
       LemmaCompSubstRens.gen component;
       LemmaCompSubstSubsts.gen component;
-      (* TODO *)
+      (* Relation of renamings and substitutions *)
       UpRinstInsts.gen up_list;
       RinstInsts.gen component;
       LemmaRinstInsts.gen component;
@@ -1291,7 +1299,6 @@ let gen_lemmas_no_ren component up_list =
       (* INSTANTIATION *)
       Substitutions.gen component;
       UpSubsts.gen up_list;
-      (* TODO *)
       UpIds.gen up_list;
       IdLemmas.gen component;
       (* EXTENSIONALITY LEMMAS *)
@@ -1300,9 +1307,7 @@ let gen_lemmas_no_ren component up_list =
       (* COMPOSITIONALITY LEMMAS *)
       CompSubstSubsts.gen component;
       UpSubstSubstNoRens.gen up_list;
-      (* TODO *)
       LemmaCompSubstSubsts.gen component;
-      (* TODO *)
       LemmaInstIds.gen component;
       LemmaVarLs.gen var_sorts;
     ] in

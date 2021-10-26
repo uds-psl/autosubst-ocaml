@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# We try to support older Coq versions.
+# The simplest solution for the static files I have found is to just use sed
 remove_export() {
     sed -i -E -e 's/#\[ export \]//' $1
 }
@@ -18,6 +20,8 @@ for n in utlc stlc fcbv pi num; do
     dune exec -- bin/main.exe signatures/${n}.sig -fext -allfv -f -s ucoq -o case-studies/examples/${n}_unscoped.v
 done
 
+# We generate the same examples again but for an older Coq version.
+# At the moment, this only removes '#[ export ]' attributes of hints.
 ### EXAMPLES < Coq 8.12
 for n in utlc stlc fcbv variadic pi num fol; do
     echo dune exec -- bin/main.exe signatures/${n}.sig -fext -f -s coq -o case-studies/examples-lt813/${n}_wellscoped.v -v lt813
@@ -47,13 +51,12 @@ DATA_DIR="./share/autosubst"
 generate_file() {
     file=$1
     scope=$2
-    echo dune exec -- bin/main.exe ${KAT}${file}.sig -o ${KAT}${file}.v -s ${scope} -no-static -fext -f -v lt813
-    dune exec -- bin/main.exe ${KAT}${file}.sig -o ${KAT}${file}.v -s ${scope} -no-static -fext -f -v lt813
+    echo dune exec -- bin/main.exe ${KAT}${file}.sig -o ${KAT}${file}.v -s ${scope} -no-static -f -v lt813
+    dune exec -- bin/main.exe ${KAT}${file}.sig -o ${KAT}${file}.v -s ${scope} -no-static -f -v lt813
 }
 
 echo cp ${DATA_DIR}/core.v ${DATA_DIR}/core_axioms.v ${DATA_DIR}/fintype.v ${DATA_DIR}/fintype_axioms.v ${DATA_DIR}/unscoped.v ${DATA_DIR}/unscoped_axioms.v ${KAT}
-cp ${DATA_DIR}/core_axioms.v ${DATA_DIR}/fintype.v ${DATA_DIR}/fintype_axioms.v ${DATA_DIR}/unscoped.v ${DATA_DIR}/unscoped_axioms.v ${KAT}
-cp ${DATA_DIR}/core.v ${KAT}core.v
+cp ${DATA_DIR}/core.v ${DATA_DIR}/core_axioms.v ${DATA_DIR}/fintype.v ${DATA_DIR}/fintype_axioms.v ${DATA_DIR}/unscoped.v ${DATA_DIR}/unscoped_axioms.v ${KAT}
 
 echo "altering static files for Coq 8.9"
 sed -i -E -e 's/Declare Scope fscope./(* not supported in Coq 8.9 *)/' -e 's/Declare Scope subst_scope./(* not supported in Coq 8.9 *)/' ${KAT}core.v
