@@ -104,7 +104,7 @@ You can issue `make` in this directory to have Coq compile all the files.
 The only difference in the generated code here is that the Hint command in versions below 8.13 does not accept certain attributes that we generate normally.
 
 ### `case-studies/tapl-exercise/`
-This directory contains the case study I implemented for exercise 23.6.3 of TAPL.
+This directory contains the case study we implemented for exercise 23.6.3 of TAPL.
 You can issue `make` in this directory to have Coq compile all the files.
 
 ### `case-studies/kathrin/coq/`
@@ -131,8 +131,13 @@ The generated files are the following
 
 You can issue `make` in this directory to have Coq compile all the case studies.
 
+In Chapter10/POPLMark{1,21,22}.v we print assumptions in the end to show that they do not rely on funext anymore.
+But with the caveat that in POPLMark{21,22}.v we assume another axiom to prove a morphism for the pat_ty predicate.
+The predicate is defined as a Variable, so there seems to be no other way since we have no extra knowledge about pat_ty.
+
+
 ### Notes
-I was not able to compile the original case study found at https://www.ps.uni-saarland.de/~kstark/thesis/download/code.tar.xz with Coq 8.9.1 from opam either.
+We were not able to compile the original case study found at https://www.ps.uni-saarland.de/~kstark/thesis/download/code.tar.xz with Coq 8.9.1 from opam either.
 Kathrin probably used a version from source and there was slightly different reduction behaviour. 
-Mostly when using the renamify tactic I had to manually insert a `change ... with ...`. 
-You can find the places where I changed stuff by grepping for "a.d.".
+Mostly when using the renamify tactic we had to manually insert a `change ... with ...`. 
+You can find the places where we changed the proofs by grepping for "a.d.".
