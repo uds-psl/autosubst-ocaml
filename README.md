@@ -1,8 +1,8 @@
 # Autosubst OCaml
 
-This is an OCaml reimplementation of the [Autosubst 2 code generator](https://github.com/uds-psl/autosubst2) by Kathrin Stark, which itself is based on previous work on [Autosubst](https://github.com/coq-community/autosubst) by Schäfer, Tebbi and Smolka.
+This is an OCaml reimplementation of the [Autosubst 2 code generator](https://github.com/uds-psl/autosubst2) by Stark, Schäfer and Kaiser. Autosubst 2 in turn is based on previous work on [Autosubst](https://github.com/coq-community/autosubst) by Schäfer, Tebbi and Smolka.
 
-Like Autosubst 2, it supports well-scoped & unscoped syntax as well as variadic & polyadic syntax & functors.
+Like Autosubst 2, the OCaml reimplementation supports well-scoped & unscoped syntax as well as variadic & polyadic syntax & functors.
 It does not support Autosubst 2's modular syntax.
 
 Being implemented in OCaml, it uses Coq as a library to construct and pretty print the code it generates.
