@@ -1,6 +1,6 @@
 # Autosubst OCaml
 
-This is an OCaml reimplementation of the [Autosubst 2 code generator](https://github.com/uds-psl/autosubst2) by Stark, Schäfer and Kaiser, which was the main foxus of Stark's [doctoral dissertation](https://www.ps.uni-saarland.de/~kstark/thesis/). Autosubst 2 in turn is based on previous work on [Autosubst](https://github.com/coq-community/autosubst) by Schäfer, Tebbi and Smolka.
+This is an OCaml reimplementation of the [Autosubst 2 code generator](https://github.com/uds-psl/autosubst2) by Stark, Schäfer and Kaiser, which was the main focus of Stark's [doctoral dissertation](https://www.ps.uni-saarland.de/~kstark/thesis/). Autosubst 2 in turn is based on previous work on [Autosubst](https://github.com/coq-community/autosubst) by Schäfer, Tebbi and Smolka.
 
 It is part of Adrian's [bachelor thesis](https://www.ps.uni-saarland.de/~dapprich/bachelor.php) at the Programming Systems chair at Saarland University. There is also a [reimplementation of Autosubst 2 in the form of a MetaCoq plugin](https://github.com/uds-psl/autosubst-metacoq) but this was not completed and is in general harder to use than this program.
 
@@ -96,14 +96,14 @@ $ opam repo add coq-released https://coq.inria.fr/opam/released
 ```
 
 ### Dependencies
-You can install the dependencies with using the provided package.opam file while inside the project directory.
+You can install the dependencies with using the provided autosubst.opam file while inside the project directory.
 ```bash
 $ opam install --deps-only .
 ```
 An implicit dependency is the (monad library by Denommus)[https://github.com/Denommus/monadic] which is not on opam, so we include the sources in the repo.
 
 ### Install
-Optionally, you can install the `autosubst` binary to your $PATH with the provided package.opam file while inside the project directory.
+Optionally, you can install the `autosubst` binary to your $PATH with the provided autosubst.opam file while inside the project directory.
 ```bash
 $ opam install .
 ```
