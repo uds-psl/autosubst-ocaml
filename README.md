@@ -1,11 +1,87 @@
 # Autosubst OCaml
 
-This is an OCaml reimplementation of the [Autosubst 2 code generator](https://github.com/uds-psl/autosubst2) by Stark, Schäfer and Kaiser. Autosubst 2 in turn is based on previous work on [Autosubst](https://github.com/coq-community/autosubst) by Schäfer, Tebbi and Smolka.
+This is an OCaml reimplementation of the [Autosubst 2 code generator](https://github.com/uds-psl/autosubst2) by Stark, Schäfer and Kaiser, which was the main foxus of Stark's [doctoral dissertation](https://www.ps.uni-saarland.de/~kstark/thesis/). Autosubst 2 in turn is based on previous work on [Autosubst](https://github.com/coq-community/autosubst) by Schäfer, Tebbi and Smolka.
+
+It is part of Adrian's [bachelor thesis](https://www.ps.uni-saarland.de/~dapprich/bachelor.php) at the Programming Systems chair at Saarland University. There is also a [reimplementation of Autosubst 2 in the form of a MetaCoq plugin](https://github.com/uds-psl/autosubst-metacoq) but this was not completed and is in general harder to use than this program.
+
+If you ever were in the situation of looking at metatheorems of languages modelled in Coq (e.g. progress and preservation of lambda calculi) and were bothered by the tediousness of formalizing substitution of de Bruijn indices again, this tool might be for you.
+Autosubst is a tool that allows you to quickly generate boilerplate code to handle substitutions in languages with binders.
+
+The output is Coq source code that contains 
+1. an implementation of the language via (mutual) inductive types and de Bruijn indices for variables,
+2. definitions for capture avoiding substitution and renaming on de Bruijn indices,
+3. lemmas about the behavior and interaction of renaming and substitution,
+4. and a tactic to solve assumption-free substitution equations.
 
 Like Autosubst 2, the OCaml reimplementation supports well-scoped & unscoped syntax as well as variadic & polyadic syntax & functors.
 It does not support Autosubst 2's modular syntax.
 
-Being implemented in OCaml, it uses Coq as a library to construct and pretty print the code it generates.
+Being implemented in OCaml, it uses Coq as a library to construct and pretty-print the code it generates.
+
+## Example
+For a language like System F which we represent with a signature like the following
+```
+ty : Type
+tm : Type
+vl : Type
+
+arr : ty -> ty -> ty
+all : (bind ty in ty) -> ty
+
+app  : tm -> tm -> tm
+tapp : tm -> ty -> tm
+vt   : vl -> tm
+
+lam  : ty -> (bind vl in tm) -> vl
+tlam : (bind ty in tm) -> vl
+```
+
+Autosubst Ocaml can generate inductive types without scopes to represent the language.
+```
+Inductive ty : Type :=
+  | var_ty : nat -> ty
+  | arr : ty -> ty -> ty
+  | all : ty -> ty.
+
+Inductive tm : Type :=
+  | app : tm -> tm -> tm
+  | tapp : tm -> ty -> tm
+  | vt : vl -> tm
+with vl : Type :=
+  | var_vl : nat -> vl
+  | lam : ty -> tm -> vl
+  | tlam : tm -> vl.
+```
+
+and also with scopes, which designate the upper bound of free variables in a term. Note the increased scope level in a `lam` or `tlam` constructor.
+```
+Inductive ty (n_ty : nat) : Type :=
+  | var_ty : fin n_ty -> ty n_ty
+  | arr : ty n_ty -> ty n_ty -> ty n_ty
+  | all : ty (S n_ty) -> ty n_ty.
+
+Inductive tm (n_ty n_vl : nat) : Type :=
+  | app : tm n_ty n_vl -> tm n_ty n_vl -> tm n_ty n_vl
+  | tapp : tm n_ty n_vl -> ty n_ty -> tm n_ty n_vl
+  | vt : vl n_ty n_vl -> tm n_ty n_vl
+with vl (n_ty n_vl : nat) : Type :=
+  | var_vl : fin n_vl -> vl n_ty n_vl
+  | lam : ty n_ty -> tm n_ty (S n_vl) -> vl n_ty n_vl
+  | tlam : tm (S n_ty) n_vl -> vl n_ty n_vl.
+```
+Additionally, it generates a number of lemmas describing the behavior of substitutions of free variables and the composition of substitutions, e.g. that instantiation with extensionally equal substitutions yields the same term.
+
+```
+Fixpoint ext_ty (sigma_ty : nat -> ty) (tau_ty : nat -> ty) (Eq_ty : forall x, sigma_ty x = tau_ty x) (s : ty) :
+    subst_ty sigma_ty s = subst_ty tau_ty s
+```
+
+Finally, it generates a tactic `asimpl` that uses these lemmas as a rewriting system to simplify and solve assumption free equations between terms containing substitutions, which often appear during proofs of metatheorems.
+For example the following says that we can first substitute a term `t` for variable 0 and then substitute with `σ`, or do it the other way around (where we must also substitute `σ` in `t`).
+```
+s[t · id][σ] = s[⇑ σ][t[σ] · id]
+```
+For more examples and an extended explanation as well as an explanation of the notation we refer to Adrian's bachelor thesis or Stark's doctoral dissertation linked above.
 
 ## Setup
 ### Opam 
