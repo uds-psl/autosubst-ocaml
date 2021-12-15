@@ -88,25 +88,16 @@ For more examples and an extended explanation as well as an explanation of the n
 First, install opam following the [directions for your operating system](https://opam.ocaml.org/doc/Install.html).
 
 It is best practice to create a new opam switch to not cause conflicts with any of your other installed packages.
-We will also need to add the Coq repository.
+We will also need to add the Coq repository and then we can install the `coq-autosubst-ocaml` package.
 ```bash
 $ opam switch create autosubst-ocaml ocaml-base-compiler.4.09.1
 $ eval $(opam env)
 $ opam repo add coq-released https://coq.inria.fr/opam/released
+$ opam install coq-autosubst-ocaml
 ```
 
-### Dependencies
-You can install the dependencies with using the provided autosubst.opam file while inside the project directory.
-```bash
-$ opam install --deps-only .
-```
-An implicit dependency is the (monad library by Denommus)[https://github.com/Denommus/monadic] which is not on opam, so we include the sources in the repo.
-
-### Install
-Optionally, you can install the `autosubst` binary to your $PATH with the provided autosubst.opam file while inside the project directory.
-```bash
-$ opam install .
-```
+This installs the package along with all dependencies.
+An implicit dependency is the [monad library by Denommus](https://github.com/Denommus/monadic) which is not on opam, so we include the sources in the repo.
 
 ## Run
 If you have installed the program, you can use `autosubst` in the following. Otherwise you can also follow the drections in the "Build & Run" section below.
