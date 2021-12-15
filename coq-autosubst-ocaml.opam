@@ -15,11 +15,12 @@ authors: [ "Adrian Dapprich s8addapp@stud.uni-saarland.de" ]
 license: "MIT"
 
 depends: [
-    "ocaml" { >= "4.09" }
-    "coq" { = "8.13.1" }
-    "angstrom" { >= "0.15.0" }
-    "dune" { >= "2.0" }
-    "ocamlgraph" { >= "2.0.0" }
-    "ppx_deriving" { >= "5.2.1" }
+  "ocaml" { >= "4.09" & < "4.12" }
+  "coq" { >= "8.13.1" & < "8.14" }
+  "angstrom" { >= "0.15.0" }
+  "dune" { >= "2.5" }
+  "ocamlgraph" { >= "2.0.0" }
+  "ppx_deriving" { >= "5.2.1" }
 ]
+
 build: [ "dune" "build" "-p" name "-j" jobs ]
