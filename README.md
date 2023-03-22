@@ -123,7 +123,7 @@ The following example contains all possible rules.
 tm : Type -- sort declarations
 nat : Type -- preexisting sort declaration, it must not have any constructors
 
-list : Functor -- functor declarations, only "list", "prod", and "cod" are allowed
+list : Functor -- functor declarations, only "list", "prod", "cod" and "option" are allowed
 
 -- declaring some constructors for ty
 arr : ty -> ty -> ty
