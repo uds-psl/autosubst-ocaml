@@ -1114,24 +1114,25 @@ Class Up_tm X Y :=
 Class Up_ty X Y :=
     up_ty : X -> Y.
 
-Instance Subst_tm : (Subst2 _ _ _ _) := @subst_tm.
+#[export]Instance Subst_tm : (Subst2 _ _ _ _) := @subst_tm.
 
-Instance Up_tm_tm : (Up_tm _ _) := @up_tm_tm.
+#[export]Instance Up_tm_tm : (Up_tm _ _) := @up_tm_tm.
 
-Instance Up_tm_ty : (Up_ty _ _) := @up_tm_ty.
+#[export]Instance Up_tm_ty : (Up_ty _ _) := @up_tm_ty.
 
-Instance Up_ty_tm : (Up_tm _ _) := @up_ty_tm.
+#[export]Instance Up_ty_tm : (Up_tm _ _) := @up_ty_tm.
 
-Instance Ren_tm : (Ren2 _ _ _ _) := @ren_tm.
+#[export]Instance Ren_tm : (Ren2 _ _ _ _) := @ren_tm.
 
-Instance VarInstance_tm : (Var _ _) := @var_tm.
+#[export]Instance VarInstance_tm : (Var _ _) := @var_tm.
 
-Instance Subst_ty : (Subst1 _ _ _) := @subst_ty.
+#[export]Instance Subst_ty : (Subst1 _ _ _) := @subst_ty.
 
-Instance Up_ty_ty : (Up_ty _ _) := @up_ty_ty.
+#[export]Instance Up_ty_ty : (Up_ty _ _) := @up_ty_ty.
 
-Instance Ren_ty : (Ren1 _ _ _) := @ren_ty.
+#[export]Instance Ren_ty : (Ren1 _ _ _) := @ren_ty.
 
+#[export]
 Instance VarInstance_ty : (Var _ _) := @var_ty.
 
 Notation "[ sigma_ty ; sigma_tm ]" := (subst_tm sigma_ty sigma_tm)

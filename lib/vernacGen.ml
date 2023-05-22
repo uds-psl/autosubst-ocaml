@@ -70,9 +70,13 @@ let class_ name binders fields =
 let instance_ inst_name cbinders class_type ?(interactive=false) body =
    if interactive
     then
-      unit_of_vernacs [ VernacInstance (name_decl_ inst_name, cbinders, class_type, None, Typeclasses.{ hint_priority = None; hint_pattern = None })
-      ; VernacExactProof body
-      ; VernacEndProof (Proved (Opaque, None)) ]
+      Vernac [ CAst.make { 
+        control=[];
+        attrs=[("export", Attributes.VernacFlagEmpty)] ;
+        expr=VernacInstance (name_decl_ inst_name, cbinders, class_type, None, Typeclasses.{ hint_priority = None; hint_pattern = None });
+      }
+      ; control_of_expr (VernacExactProof body)
+      ; control_of_expr (VernacEndProof (Proved (Opaque, None))) ]
     else 
       Vernac [CAst.make { 
         control=[];
