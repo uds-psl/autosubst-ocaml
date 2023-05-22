@@ -68,14 +68,17 @@ let class_ name binders fields =
   unit_of_vernacs [ VernacInductive (Class false, [ body ]) ]
 
 let instance_ inst_name cbinders class_type ?(interactive=false) body =
-  let vexprs = if interactive
+   if interactive
     then
-      [ VernacInstance (name_decl_ inst_name, cbinders, class_type, None, Typeclasses.{ hint_priority = None; hint_pattern = None })
+      unit_of_vernacs [ VernacInstance (name_decl_ inst_name, cbinders, class_type, None, Typeclasses.{ hint_priority = None; hint_pattern = None })
       ; VernacExactProof body
       ; VernacEndProof (Proved (Opaque, None)) ]
-    else [ VernacInstance (name_decl_ inst_name, cbinders, class_type, Some (false, body), Typeclasses.{ hint_priority = None; hint_pattern = None }) ]
-  in
-  unit_of_vernacs vexprs
+    else 
+      Vernac [CAst.make { 
+        control=[];
+        attrs=[("export", Attributes.VernacFlagEmpty)] ;
+        expr=VernacInstance (name_decl_ inst_name, cbinders, class_type, Some (false, body), Typeclasses.{ hint_priority = None; hint_pattern = None });
+      } ]
 
 let notation_ notation modifiers ?scope body =
   unit_of_vernacs [ VernacNotation (body, (CAst.make notation, modifiers), scope) ]
