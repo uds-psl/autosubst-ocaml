@@ -72,7 +72,7 @@ let instance_ inst_name cbinders class_type ?(interactive=false) body =
     then
       Vernac [ CAst.make { 
         control=[];
-        attrs=[("export", Attributes.VernacFlagEmpty)] ;
+        attrs=[("local", Attributes.VernacFlagEmpty)] ;
         expr=VernacInstance (name_decl_ inst_name, cbinders, class_type, None, Typeclasses.{ hint_priority = None; hint_pattern = None });
       }
       ; control_of_expr (VernacExactProof body)
@@ -80,7 +80,7 @@ let instance_ inst_name cbinders class_type ?(interactive=false) body =
     else 
       Vernac [CAst.make { 
         control=[];
-        attrs=[("export", Attributes.VernacFlagEmpty)] ;
+        attrs=[("local", Attributes.VernacFlagEmpty)] ;
         expr=VernacInstance (name_decl_ inst_name, cbinders, class_type, Some (false, body), Typeclasses.{ hint_priority = None; hint_pattern = None });
       } ]
 
@@ -122,7 +122,7 @@ let module_ name contents =
 let setoid_opaque_hint version name =
   let attrs = match version with
     | S.LT813 -> []
-    | S.GE813 -> [("export", Attributes.VernacFlagEmpty)] 
+    | S.GE813 -> [("local", Attributes.VernacFlagEmpty)] 
   in
   Vernac [ CAst.make { 
       control=[];
