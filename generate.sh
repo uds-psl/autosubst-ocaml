@@ -9,7 +9,7 @@ remove_export() {
 
 ### EXAMPLES
 # generate code for the example signatures
-for n in utlc stlc fcbv variadic pi num fol; do
+for n in utlc stlc fcbv variadic pi num fol logrel_coq; do
     echo dune exec -- bin/main.exe signatures/${n}.sig -fext -f -s coq -o case-studies/examples/${n}_wellscoped.v
     dune exec -- bin/main.exe signatures/${n}.sig -fext -f -s coq -o case-studies/examples/${n}_wellscoped.v
 done
@@ -46,7 +46,7 @@ dune exec -- bin/main.exe case-studies/tapl-exercise/sysf.sig -o case-studies/ta
 ### KATRIN
 # generate the code for Kathrin's case study.
 KAT="case-studies/kathrin/coq/"
-DATA_DIR="./share/autosubst"
+DATA_DIR="./share/coq-autosubst-ocaml"
 
 generate_file() {
     file=$1
