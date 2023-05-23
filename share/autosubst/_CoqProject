@@ -1,8 +1,0 @@
--Q . ""
-
-core.v
-core_axioms.v
-unscoped.v
-unscoped_axioms.v
-fintype.v
-fintype_axioms.v
