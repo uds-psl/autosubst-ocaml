@@ -2,13 +2,13 @@
 
 Require Export ARS Program.Equality.
 Require Import core fintype.
-Import ScopedNotations.
 From Chapter6 Require Export variadic_fin.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
 Ltac inv H := dependent destruction H.
 Hint Constructors star.
+Import ScopedNotations.
 
 (** *** Single-step reduction *)
 Inductive step {n} : tm n -> tm n -> Prop :=
@@ -74,7 +74,7 @@ Definition ltc {k k'} (Gamma: ctx k) (Delta: ctx k') rho := forall x, Delta (rho
 Lemma typing_ren n k (Gamma: ctx n) (Delta: ctx k) (rho: fin n -> fin k) (M: tm n) T :
   ltc Gamma Delta rho  -> Gamma |- M : T ->  Delta |- (M⟨rho⟩) : T.
 Proof.
-  intros C H. revert k Delta rho C. induction H; intros; asimpl; eauto using has_type.
+  intros C H. revert k Delta rho C. induction H; intros; asimpl; eauto.
   - unfold ltc in C. rewrite <- C. constructor.
   - constructor. apply IHhas_type. intros x.
     destruct (destruct_fin x) as [(?&->)|(?&->)]; eauto; asimpl; unfold upRen_p; asimpl; eauto.
@@ -85,8 +85,7 @@ Lemma typing_inst n k (Gamma: ctx n) (Delta: ctx k) (sigma: fin n -> tm k) (M: t
   (forall x, Delta |- sigma x : Gamma x) -> Gamma |- M : T ->  Delta |- (M[sigma]) : T.
 Proof.
 Proof.
-  intros C H. revert k Delta sigma C. induction H; intros; asimpl; eauto using has_type.
-  - unfold ltc in C. apply C.
+  intros C H. revert k Delta sigma C. induction H; intros; asimpl; eauto.
   - constructor. apply IHhas_type. intros x.
     destruct (destruct_fin x) as [(?&->)|(?&->)]; asimpl.
     + apply ty_var'. now asimpl.

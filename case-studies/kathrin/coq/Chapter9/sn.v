@@ -1,6 +1,6 @@
 Require Import core fintype.
-Import ScopedNotations.
 From Chapter9 Require Export wn.
+Import ScopedNotations.
 
 (** ** Schäfer's Expression Relation *)
 

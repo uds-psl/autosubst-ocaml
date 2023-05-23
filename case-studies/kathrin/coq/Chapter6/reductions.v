@@ -8,13 +8,12 @@ From Chapter6 Require utlc_pairs.
 Module polyadic.
 Section polyadic.
   Import core fintype.  
-  Import ScopedNotations.
   Export Chapter6.utlc_pairs.
+  Import ScopedNotations.
 
   Inductive step {m} : tm m -> tm m -> Prop :=
   | beta s t t' : t' = (s[t..]) -> step (app (lam s) t) t'
   | beta_match s1 s2 t t' : t' = (t[s1 .: s2..]) -> step (matchpair (pair s1 s2) t) t'.
-
 
   Lemma step_substitutive m m' (s: tm m) t (sigma: fin m -> tm m')  :
     step s t -> step (s[sigma]) (t[sigma]).
@@ -32,9 +31,8 @@ End polyadic.
 Module sysf_cbv.
 Section sysf_cbv.
   Import core fintype.
-  Import ScopedNotations.
   Export Chapter6.sysf_cbv.
-  
+  Import ScopedNotations.
 
   Inductive step {m n} : tm m n -> tm m n -> Prop :=
   | beta A s v t : t = (s[ids;v..]) -> step (app (vt (lam A s)) (vt v)) t

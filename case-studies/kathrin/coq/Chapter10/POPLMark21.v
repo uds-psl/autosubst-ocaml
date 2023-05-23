@@ -2,9 +2,9 @@ Require Export Coq.Lists.List.
 Require Import Coq.Program.Equality.
 Require Import Setoid Morphisms.
 Require Import core fintype.
-Import ScopedNotations.
 From Chapter10 Require Export sysf_pat.
 Require Import Coq.Program.Tactics.
+Import ScopedNotations.
 
 Ltac inv H := inversion H; try clear H; try subst.
 
@@ -415,10 +415,10 @@ Qed.
 
 Variable pat_ty : forall {m} (p: nat), pat m -> ty m ->  (fin p -> (ty m)) -> Prop.
 Variable pat_eval : forall {m n} p, pat m -> tm m n -> (fin p -> (tm m n)) -> Prop.
-Variable pat_ty_subst: forall {m n} (sigma: fin m -> ty n) p pt A Gamma, pat_ty m p pt A Gamma -> pat_ty n p (pt[sigma]) (A[sigma]) (Gamma >>  subst_ty sigma).
+Variable pat_ty_subst: forall {m n} (sigma: fin m -> ty n) p pt A Gamma, pat_ty p pt A Gamma -> pat_ty p (pt[sigma]) (A[sigma]) (Gamma >>  subst_ty sigma).
 Axiom pat_ty_ext : forall {m p} (pt: pat m) (T: ty m) (sigma sigma': fin p -> ty m),
       (forall x, sigma x = sigma' x) ->      
-      pat_ty m p pt T sigma <-> pat_ty m p pt T sigma'.
+      pat_ty p pt T sigma <-> pat_ty p pt T sigma'.
 
 (* a.d. we need the following morphism.
  * To prove it we have to assume pat_ty_ext above
@@ -453,7 +453,7 @@ Inductive has_ty {m n} (Delta : ctx m) (Gamma : dctx  n m) : tm m n -> ty m -> P
 | T_Rcd xs As : unique xs -> unique As -> label_equiv xs As
                 -> (forall i A s, In (i, s) xs -> In (i, A) As -> TY Delta; Gamma |- s : A) -> TY Delta;Gamma |- rectm xs : recty As
 | T_Proj xs j A As: TY Delta; Gamma |- xs : recty As -> In (j, A) As -> TY Delta; Gamma |- proj xs j : A
-| letpat_ty p (pt: pat m) (s : tm m n) (t: tm m (p + n)) A (B : ty m) (Gamma': fin p -> ty m): has_ty Delta Gamma s A -> pat_ty _ p pt A Gamma' -> @has_ty m (p + n) Delta (scons_p p Gamma' Gamma) t B ->  has_ty Delta Gamma (letpat  p pt s t) B
+| letpat_ty p (pt: pat m) (s : tm m n) (t: tm m (p + n)) A (B : ty m) (Gamma': fin p -> ty m): has_ty Delta Gamma s A -> pat_ty p pt A Gamma' -> @has_ty m (p + n) Delta (scons_p p Gamma' Gamma) t B ->  has_ty Delta Gamma (letpat  p pt s t) B
 | T_Sub A B s :
     TY Delta;Gamma |- s : A  -> SUB Delta |- A <: B   ->
     TY Delta;Gamma |- s : B
@@ -470,7 +470,7 @@ Inductive eval {m n} : tm m n -> tm m n -> Prop :=
 | E_appabs A s t : EV app (abs A s) t => s[ids; t..]
 | E_Tapptabs A s B : EV tapp (tabs A s) B => s[B..; ids]
 | E_RecProj  xs j s : In (j, s) xs -> EV (proj (rectm  xs) j) => s
-| letpat_eval p (pt : pat m) (s : tm m n) (t : tm m (p + n)) (sigma: fin p -> tm m n) :  pat_eval _ _ p pt s sigma -> eval (letpat  p pt s t) (subst_tm (@var_ty m) (scons_p _ sigma (@var_tm _ _)) t)
+| letpat_eval p (pt : pat m) (s : tm m n) (t : tm m (p + n)) (sigma: fin p -> tm m n) :  pat_eval p pt s sigma -> eval (letpat  p pt s t) (subst_tm (@var_ty m) (scons_p _ sigma (@var_tm _ _)) t)
 | E_appFun s s' t :
      EV s => s' ->
      EV app s t => app s' t
@@ -485,7 +485,7 @@ Inductive eval {m n} : tm m n -> tm m n -> Prop :=
 where "'EV' s => t" := (eval s t).
 
 (** Assumptions of progress and typing on patterns. *)
-Variable pat_progress : forall p pt s A Gamma, TY empty; empty |- s : A -> pat_ty _ p pt A Gamma -> exists sigma, pat_eval _ _ p pt s sigma.
+Variable pat_progress : forall p pt s A Gamma, TY empty; empty |- s : A -> pat_ty p pt A Gamma -> exists sigma, pat_eval p pt s sigma.
 
 
 (** Progress *)
@@ -551,7 +551,7 @@ Proof.
       * eexists. constructor. eauto.
       * inversion H; eauto.
     + eexists. constructor. eassumption.
-  - edestruct (IHhas_ty1 pat_ty_subst pat_progress s0 A0) as [|[? ?]]; eauto.
+  - edestruct (IHhas_ty1 (@pat_ty_subst) pat_progress s0 A0) as [|[? ?]]; eauto.
     + right. edestruct (pat_progress _ _ _ _ _ H H0). eexists. econstructor. eauto.
     + right. eexists. apply E_LetL; eauto.
 Qed.
@@ -670,7 +670,7 @@ Lemma ty_inv_abs m n Delta Gamma A A' B C (s: tm m (S n)):
 Proof.
   intros H. depind H; intros.
    - inv H0. split; eauto.
-   - edestruct (IHhas_ty pat_ty_subst pat_progress  _ _ _ _ (eq_refl _) (sub_trans _ _ _ _ _ H0 H1)) as (?&?&?&?).
+   - edestruct (IHhas_ty (@pat_ty_subst) pat_progress  _ _ _ _ (eq_refl _) (sub_trans _ _ _ _ _ H0 H1)) as (?&?&?&?).
      split.
      + assumption.
      + eauto.
@@ -720,8 +720,7 @@ Proof.
   - eauto using sub_trans.
 Qed.
 
-Variable pat_ty_eval : forall m n p pt s A (Gamma: fin n -> ty m) Gamma' Delta sigma, pat_ty m p pt A Gamma' -> TY Delta; Gamma |- s : A -> pat_eval m n p pt s sigma -> forall (x: fin p), TY Delta; Gamma |- sigma x : Gamma' x.
-
+Variable pat_ty_eval : forall m n p pt s A (Gamma: fin n -> ty m) Gamma' Delta sigma, pat_ty p pt A Gamma' -> TY Delta; Gamma |- s : A -> pat_eval p pt s sigma -> forall (x: fin p), TY Delta; Gamma |- sigma x : Gamma' x.
 
 Theorem preservation m n Delta Gamma (s: tm m n) t A :
   TY Delta;Gamma |- s : A -> EV s => t ->
