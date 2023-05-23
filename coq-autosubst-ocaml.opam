@@ -1,6 +1,6 @@
 opam-version: "2.0"
 name: "autosubst"
-version: "0.1"
+version: "0.2"
 synopsis: "OCaml implementation of Autosubst for Coq"
 description: """
     Autosubst can be used to generate substitution boilerplate code for syntax with binders.
@@ -10,7 +10,7 @@ description: """
 """
 homepage: "https://github.com/uds-psl/autosubst-ocaml"
 bug-reports: "https://github.com/uds-psl/autosubst-ocaml/issues"
-maintainer: "Adrian Dapprich s8addapp@stud.uni-saarland.de"
+maintainer: "Yannick Forster yannick.forster@inria.fr"
 authors: [ "Adrian Dapprich s8addapp@stud.uni-saarland.de" ]
 license: "MIT"
 
