@@ -1114,25 +1114,25 @@ Class Up_tm X Y :=
 Class Up_ty X Y :=
     up_ty : X -> Y.
 
-#[export]Instance Subst_tm : (Subst2 _ _ _ _) := @subst_tm.
+#[global]Instance Subst_tm : (Subst2 _ _ _ _) := @subst_tm.
 
-#[export]Instance Up_tm_tm : (Up_tm _ _) := @up_tm_tm.
+#[global]Instance Up_tm_tm : (Up_tm _ _) := @up_tm_tm.
 
-#[export]Instance Up_tm_ty : (Up_ty _ _) := @up_tm_ty.
+#[global]Instance Up_tm_ty : (Up_ty _ _) := @up_tm_ty.
 
-#[export]Instance Up_ty_tm : (Up_tm _ _) := @up_ty_tm.
+#[global]Instance Up_ty_tm : (Up_tm _ _) := @up_ty_tm.
 
-#[export]Instance Ren_tm : (Ren2 _ _ _ _) := @ren_tm.
+#[global]Instance Ren_tm : (Ren2 _ _ _ _) := @ren_tm.
 
-#[export]Instance VarInstance_tm : (Var _ _) := @var_tm.
+#[global]Instance VarInstance_tm : (Var _ _) := @var_tm.
 
-#[export]Instance Subst_ty : (Subst1 _ _ _) := @subst_ty.
+#[global]Instance Subst_ty : (Subst1 _ _ _) := @subst_ty.
 
-#[export]Instance Up_ty_ty : (Up_ty _ _) := @up_ty_ty.
+#[global]Instance Up_ty_ty : (Up_ty _ _) := @up_ty_ty.
 
-#[export]Instance Ren_ty : (Ren1 _ _ _) := @ren_ty.
+#[global]Instance Ren_ty : (Ren1 _ _ _) := @ren_ty.
 
-#[export]
+#[global]
 Instance VarInstance_ty : (Var _ _) := @var_ty.
 
 Notation "[ sigma_ty ; sigma_tm ]" := (subst_tm sigma_ty sigma_tm)
@@ -1187,6 +1187,7 @@ Notation "x '__ty'" := (@ids _ _ VarInstance_ty x)
 Notation "x '__ty'" := (var_ty x) ( at level 5, format "x __ty") :
   subst_scope.
 
+#[global]
 Instance subst_tm_morphism :
  (Proper
     (respectful (pointwise_relation _ eq)
@@ -1197,6 +1198,7 @@ exact (fun f_ty g_ty Eq_ty f_tm g_tm Eq_tm s t Eq_st =>
          (ext_tm f_ty f_tm g_ty g_tm Eq_ty Eq_tm s) t Eq_st).
 Qed.
 
+#[global]
 Instance subst_tm_morphism2 :
  (Proper
     (respectful (pointwise_relation _ eq)
@@ -1207,6 +1209,7 @@ exact (fun f_ty g_ty Eq_ty f_tm g_tm Eq_tm s =>
        ext_tm f_ty f_tm g_ty g_tm Eq_ty Eq_tm s).
 Qed.
 
+#[global]
 Instance ren_tm_morphism :
  (Proper
     (respectful (pointwise_relation _ eq)
@@ -1217,6 +1220,7 @@ exact (fun f_ty g_ty Eq_ty f_tm g_tm Eq_tm s t Eq_st =>
          (extRen_tm f_ty f_tm g_ty g_tm Eq_ty Eq_tm s) t Eq_st).
 Qed.
 
+#[global]
 Instance ren_tm_morphism2 :
  (Proper
     (respectful (pointwise_relation _ eq)
@@ -1227,6 +1231,7 @@ exact (fun f_ty g_ty Eq_ty f_tm g_tm Eq_tm s =>
        extRen_tm f_ty f_tm g_ty g_tm Eq_ty Eq_tm s).
 Qed.
 
+#[global]
 Instance subst_ty_morphism :
  (Proper (respectful (pointwise_relation _ eq) (respectful eq eq))
     (@subst_ty)).
@@ -1236,6 +1241,7 @@ exact (fun f_ty g_ty Eq_ty s t Eq_st =>
          (ext_ty f_ty g_ty Eq_ty s) t Eq_st).
 Qed.
 
+#[global]
 Instance subst_ty_morphism2 :
  (Proper (respectful (pointwise_relation _ eq) (pointwise_relation _ eq))
     (@subst_ty)).
@@ -1243,6 +1249,7 @@ Proof.
 exact (fun f_ty g_ty Eq_ty s => ext_ty f_ty g_ty Eq_ty s).
 Qed.
 
+#[global]
 Instance ren_ty_morphism :
  (Proper (respectful (pointwise_relation _ eq) (respectful eq eq)) (@ren_ty)).
 Proof.
@@ -1251,6 +1258,7 @@ exact (fun f_ty g_ty Eq_ty s t Eq_st =>
          (extRen_ty f_ty g_ty Eq_ty s) t Eq_st).
 Qed.
 
+#[global]
 Instance ren_ty_morphism2 :
  (Proper (respectful (pointwise_relation _ eq) (pointwise_relation _ eq))
     (@ren_ty)).
@@ -1546,13 +1554,13 @@ Module Extra.
 
 Import Core.
 
-#[export]Hint Opaque subst_tm: rewrite.
+#[global]Hint Opaque subst_tm: rewrite.
 
-#[export]Hint Opaque ren_tm: rewrite.
+#[global]Hint Opaque ren_tm: rewrite.
 
-#[export]Hint Opaque subst_ty: rewrite.
+#[global]Hint Opaque subst_ty: rewrite.
 
-#[export]Hint Opaque ren_ty: rewrite.
+#[global]Hint Opaque ren_ty: rewrite.
 
 End Extra.
 
