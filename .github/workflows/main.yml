@@ -44,6 +44,7 @@ jobs:
         with:
           name: case-studies
           path: case-studies
+
   runcoq:
     # only run after build has been successfully completed
     needs: build
@@ -146,3 +147,24 @@ jobs:
           cd ./case-studies/tapl-exercise/
           opam exec -- make clean
           opam exec -- make
+
+  opam:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Use OCaml 4.11.1
+        uses: avsm/setup-ocaml@v2
+        with:
+          ocaml-compiler: 4.11.1
+      - name: Install dependencies
+        run: |
+          opam repo add coq-released https://coq.inria.fr/opam/released
+          opam pin add coq 8.13.1
+          opam install .
+      - name: Generate source files
+        run: opam exec -- ./generate-opam.sh
