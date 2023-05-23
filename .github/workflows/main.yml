@@ -56,17 +56,17 @@ jobs:
           - 8.13.1
         include:
           - coq-version: 8.13.1
-            ocaml-version: 4.11.1
+            ocaml-compiler: 4.11.1
     steps:
       - name: Download case-studies artifact
         uses: actions/download-artifact@v2
         with:
           name: case-studies
           path: ./case-studies
-      - name: Use OCaml ${{ matrix.ocaml-version }}
+      - name: Use OCaml ${{ matrix.ocaml-compiler }}
         uses: avsm/setup-ocaml@v2
         with:
-          ocaml-version: ${{ matrix.ocaml-version }}
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
       - name: Install dependencies
         run: |
           opam repo add coq-released https://coq.inria.fr/opam/released
@@ -95,17 +95,17 @@ jobs:
           - 8.9.1
         include:
           - coq-version: 8.9.1
-            ocaml-version: 4.07.1
+            ocaml-compiler: 4.07.1
     steps:
       - name: Download case-studies artifact
         uses: actions/download-artifact@v2
         with:
           name: case-studies
           path: ./case-studies
-      - name: Use OCaml ${{ matrix.ocaml-version }}
+      - name: Use OCaml ${{ matrix.ocaml-compiler }}
         uses: avsm/setup-ocaml@v2
         with:
-          ocaml-version: ${{ matrix.ocaml-version }}
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
       - name: Install dependencies
         run: |
           opam repo add coq-released https://coq.inria.fr/opam/released
@@ -126,17 +126,17 @@ jobs:
           - 8.13.1
         include:
           - coq-version: 8.13.1
-            ocaml-version: 4.11.1
+            ocaml-compiler: 4.11.1
     steps:
       - name: Download case-studies artifact
         uses: actions/download-artifact@v2
         with:
           name: case-studies
           path: ./case-studies
-      - name: Use OCaml ${{ matrix.ocaml-version }}
+      - name: Use OCaml ${{ matrix.ocaml-compiler }}
         uses: avsm/setup-ocaml@v2
         with:
-          ocaml-version: ${{ matrix.ocaml-version }}
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
       - name: Install dependencies
         run: |
           opam repo add coq-released https://coq.inria.fr/opam/released
