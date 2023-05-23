@@ -53,17 +53,8 @@ jobs:
 #       fail-fast: false
       matrix:
         coq-version:
-          - 8.10.2
-          - 8.11.2
-          - 8.12.2
           - 8.13.1
         include:
-          - coq-version: 8.10.2
-            ocaml-version: 4.07.1
-          - coq-version: 8.11.2
-            ocaml-version: 4.07.1
-          - coq-version: 8.12.2
-            ocaml-version: 4.07.1
           - coq-version: 8.13.1
             ocaml-version: 4.11.1
     steps:
@@ -73,7 +64,7 @@ jobs:
           name: case-studies
           path: ./case-studies
       - name: Use OCaml ${{ matrix.ocaml-version }}
-        uses: avsm/setup-ocaml@v1
+        uses: avsm/setup-ocaml@v2
         with:
           ocaml-version: ${{ matrix.ocaml-version }}
       - name: Install dependencies
@@ -112,7 +103,7 @@ jobs:
           name: case-studies
           path: ./case-studies
       - name: Use OCaml ${{ matrix.ocaml-version }}
-        uses: avsm/setup-ocaml@v1
+        uses: avsm/setup-ocaml@v2
         with:
           ocaml-version: ${{ matrix.ocaml-version }}
       - name: Install dependencies
@@ -143,7 +134,7 @@ jobs:
           name: case-studies
           path: ./case-studies
       - name: Use OCaml ${{ matrix.ocaml-version }}
-        uses: avsm/setup-ocaml@v1
+        uses: avsm/setup-ocaml@v2
         with:
           ocaml-version: ${{ matrix.ocaml-version }}
       - name: Install dependencies
