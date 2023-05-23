@@ -28,7 +28,7 @@ jobs:
       - name: Use OCaml 4.09.1
         uses: avsm/setup-ocaml@v2
         with:
-          ocaml-version: 4.09.1
+          ocaml-compiler: 4.09.1
       - name: Install dependencies
         run: |
           opam repo add coq-released https://coq.inria.fr/opam/released
