@@ -18,17 +18,17 @@ jobs:
   # This workflow contains a single job called "build"
   build:
     # The type of runner that the job will run on
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout repo
-        uses: actions/checkout@v2
-      - name: Use OCaml 4.09.1
-        uses: avsm/setup-ocaml@v1
+        uses: actions/checkout@v3
+      - name: Use OCaml 4.11.1
+        uses: avsm/setup-ocaml@v2
         with:
-          ocaml-version: 4.09.1
+          ocaml-compiler: 4.11.1
       - name: Install dependencies
         run: |
           opam repo add coq-released https://coq.inria.fr/opam/released
@@ -47,35 +47,26 @@ jobs:
   runcoq:
     # only run after build has been successfully completed
     needs: build
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
 
     strategy:
 #       fail-fast: false
       matrix:
         coq-version:
-          - 8.10.2
-          - 8.11.2
-          - 8.12.2
           - 8.13.1
         include:
-          - coq-version: 8.10.2
-            ocaml-version: 4.07.1
-          - coq-version: 8.11.2
-            ocaml-version: 4.07.1
-          - coq-version: 8.12.2
-            ocaml-version: 4.07.1
           - coq-version: 8.13.1
-            ocaml-version: 4.11.1
+            ocaml-compiler: 4.11.1
     steps:
       - name: Download case-studies artifact
         uses: actions/download-artifact@v2
         with:
           name: case-studies
           path: ./case-studies
-      - name: Use OCaml ${{ matrix.ocaml-version }}
-        uses: avsm/setup-ocaml@v1
+      - name: Use OCaml ${{ matrix.ocaml-compiler }}
+        uses: avsm/setup-ocaml@v2
         with:
-          ocaml-version: ${{ matrix.ocaml-version }}
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
       - name: Install dependencies
         run: |
           opam repo add coq-released https://coq.inria.fr/opam/released
@@ -95,26 +86,26 @@ jobs:
   runkathrin:
     # only run after build has been successfully completed
     needs: build
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
 
     strategy:
 #       fail-fast: false
       matrix:
         coq-version:
-          - 8.9.1
+          - 8.13.1
         include:
-          - coq-version: 8.9.1
-            ocaml-version: 4.07.1
+          - coq-version: 8.13.1
+            ocaml-compiler: 4.11.1
     steps:
       - name: Download case-studies artifact
         uses: actions/download-artifact@v2
         with:
           name: case-studies
           path: ./case-studies
-      - name: Use OCaml ${{ matrix.ocaml-version }}
-        uses: avsm/setup-ocaml@v1
+      - name: Use OCaml ${{ matrix.ocaml-compiler }}
+        uses: avsm/setup-ocaml@v2
         with:
-          ocaml-version: ${{ matrix.ocaml-version }}
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
       - name: Install dependencies
         run: |
           opam repo add coq-released https://coq.inria.fr/opam/released
@@ -127,7 +118,7 @@ jobs:
   runtapl:
     # only run after build has been successfully completed
     needs: build
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
 
     strategy:
       matrix:
@@ -135,17 +126,17 @@ jobs:
           - 8.13.1
         include:
           - coq-version: 8.13.1
-            ocaml-version: 4.11.1
+            ocaml-compiler: 4.11.1
     steps:
       - name: Download case-studies artifact
         uses: actions/download-artifact@v2
         with:
           name: case-studies
           path: ./case-studies
-      - name: Use OCaml ${{ matrix.ocaml-version }}
-        uses: avsm/setup-ocaml@v1
+      - name: Use OCaml ${{ matrix.ocaml-compiler }}
+        uses: avsm/setup-ocaml@v2
         with:
-          ocaml-version: ${{ matrix.ocaml-version }}
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
       - name: Install dependencies
         run: |
           opam repo add coq-released https://coq.inria.fr/opam/released

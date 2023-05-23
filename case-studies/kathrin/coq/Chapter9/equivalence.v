@@ -9,8 +9,8 @@ Logical Relations and a case study in equivalence checking (Karl Crary, 2005)
 
 Require Export List Omega.
 Require Import core unscoped.
-Import UnscopedNotations.
 From Chapter3 Require Export utlc_pure.
+Import UnscopedNotations.
 
 Ltac inv H := inversion H; subst.
 
@@ -95,7 +95,7 @@ Qed.
 
 Inductive algeq : ctx -> tm -> tm -> ty -> Prop :=
 | alg_base Gamma M N P Q:  mwhr M P -> mwhr N Q -> algeqNeu Gamma P Q Base -> algeq Gamma M N Base
-| alg_arr Gamma M N T S: algeq (T :: Gamma) (app (M⟨↑⟩) 0__tm) (app (N⟨↑⟩) 0__tm) S
+| alg_arr Gamma M N T S: algeq (T :: Gamma) (app (M⟨↑⟩) (var_tm 0)) (app (N⟨↑⟩) (var_tm 0)) S
                      -> algeq Gamma M N (arr T S)
 with algeqNeu : ctx -> tm -> tm -> ty ->  Prop :=
 | alg_var Gamma x : x < length Gamma -> forall s, s = (Gamma `_ x) ->  algeqNeu Gamma (var_tm x) (var_tm x) s
@@ -240,7 +240,7 @@ Qed.
 Inductive decleq  : forall (Gamma: ctx) A,  tm -> tm -> Prop :=
 | DecBeta Gamma A B M N M' N': decleq (A :: Gamma) B M M' -> decleq Gamma A N N' -> decleq Gamma B (app (lam M) N) (M'[N'..])
 | DecLam Gamma A B M N: decleq (A :: Gamma) B M N  -> decleq Gamma (arr A B) (lam M) (lam N)
-| DecExt Gamma A B M N : decleq (A :: Gamma) B (app (M⟨↑⟩) 0__tm) (app (N⟨↑⟩) 0__tm)  -> decleq Gamma (arr A B) M N
+| DecExt Gamma A B M N : decleq (A :: Gamma) B (app (M⟨↑⟩) (var_tm 0)) (app (N⟨↑⟩) (var_tm 0))  -> decleq Gamma (arr A B) M N
 | DecVar Gamma x: x < length Gamma -> decleq Gamma (get Gamma x) (var_tm x) (var_tm x)
 | DecApp Gamma A B M M' N N'  : decleq Gamma (arr A B) M M'  -> decleq Gamma A N N'  -> decleq Gamma B (app M N) (app M' N')
 | DecSym Gamma A M N : decleq Gamma A M N -> decleq Gamma A N M

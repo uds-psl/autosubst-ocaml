@@ -1,8 +1,8 @@
 (** ** Raamsdonk's Characterisation *)
 
 Require Import core fintype.
-Import ScopedNotations.
 From Chapter9 Require Export reduction.
+Import ScopedNotations.
 
 Lemma sn_mstep {n} (s t : tm n):
   star step s t -> sn step s -> sn step t.

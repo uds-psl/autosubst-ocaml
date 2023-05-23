@@ -68,14 +68,21 @@ let class_ name binders fields =
   unit_of_vernacs [ VernacInductive (Class false, [ body ]) ]
 
 let instance_ inst_name cbinders class_type ?(interactive=false) body =
-  let vexprs = if interactive
+   if interactive
     then
-      [ VernacInstance (name_decl_ inst_name, cbinders, class_type, None, Typeclasses.{ hint_priority = None; hint_pattern = None })
-      ; VernacExactProof body
-      ; VernacEndProof (Proved (Opaque, None)) ]
-    else [ VernacInstance (name_decl_ inst_name, cbinders, class_type, Some (false, body), Typeclasses.{ hint_priority = None; hint_pattern = None }) ]
-  in
-  unit_of_vernacs vexprs
+      Vernac [ CAst.make { 
+        control=[];
+        attrs=[("global", Attributes.VernacFlagEmpty)] ;
+        expr=VernacInstance (name_decl_ inst_name, cbinders, class_type, None, Typeclasses.{ hint_priority = None; hint_pattern = None });
+      }
+      ; control_of_expr (VernacExactProof body)
+      ; control_of_expr (VernacEndProof (Proved (Opaque, None))) ]
+    else 
+      Vernac [CAst.make { 
+        control=[];
+        attrs=[("global", Attributes.VernacFlagEmpty)] ;
+        expr=VernacInstance (name_decl_ inst_name, cbinders, class_type, Some (false, body), Typeclasses.{ hint_priority = None; hint_pattern = None });
+      } ]
 
 let notation_ notation modifiers ?scope body =
   unit_of_vernacs [ VernacNotation (body, (CAst.make notation, modifiers), scope) ]
@@ -115,7 +122,7 @@ let module_ name contents =
 let setoid_opaque_hint version name =
   let attrs = match version with
     | S.LT813 -> []
-    | S.GE813 -> [("export", Attributes.VernacFlagEmpty)] 
+    | S.GE813 -> [("global", Attributes.VernacFlagEmpty)] 
   in
   Vernac [ CAst.make { 
       control=[];

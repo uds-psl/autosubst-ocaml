@@ -2,9 +2,9 @@ Require Export Coq.Lists.List.
 Require Import Coq.Program.Equality.
 Require Import Setoid Morphisms.
 Require Import core (* core_axioms *) fintype (* fintype_axioms *).
-Import ScopedNotations.
 From Chapter10 Require Export sysf_pat.
 Require Import Coq.Program.Tactics.
+Import ScopedNotations.
 
 Open Scope fscope.
 
@@ -418,6 +418,8 @@ Qed.
 
 Variable pat_ty : forall {m} (p: nat), pat m -> ty m ->  (fin p -> (ty m)) -> Prop.
 Variable pat_eval : forall {m n} p, pat m -> tm m n -> (fin p -> (tm m n)) -> Prop.
+Arguments pat_ty {_} , _.
+Arguments pat_eval {_ _} , _ _.
 Variable pat_ty_subst: forall {m n} (sigma: fin m -> ty n) p pt A Gamma, pat_ty m p pt A Gamma -> pat_ty n p (pt[sigma]) (A[sigma]) (Gamma >>  subst_ty sigma).
 Axiom pat_ty_ext : forall {m p} (pt: pat m) (T: ty m) (sigma sigma': fin p -> ty m),
       (forall x, sigma x = sigma' x) ->        
@@ -556,7 +558,7 @@ Proof.
       * eexists. constructor. eauto.
       * inversion H; eauto.
     + eexists. constructor. eassumption.
-  - edestruct (IHhas_ty1 pat_ty_subst pat_progress s0 A0) as [|[? ?]]; eauto.
+  - edestruct (IHhas_ty1 (@pat_ty_subst) pat_progress s0 A0) as [|[? ?]]; eauto.
     + right. edestruct (pat_progress _ _ _ _ _ H H0). eexists. econstructor. eauto.
     + right. eexists. apply E_LetL; eauto.
 Qed.
@@ -671,7 +673,7 @@ Lemma ty_inv_abs m n Delta Gamma A A' B C (s: tm m (S n)):
 Proof.
   intros H. depind H; intros.
    - inv H0. split; eauto.
-   - edestruct (IHhas_ty pat_ty_subst pat_progress  _ _ _ _ (eq_refl _) (sub_trans _ _ _ _ _ H0 H1)) as (?&?&?&?).
+   - edestruct (IHhas_ty (@pat_ty_subst) pat_progress  _ _ _ _ (eq_refl _) (sub_trans _ _ _ _ _ H0 H1)) as (?&?&?&?).
      split.
      + assumption.
      + eauto.

@@ -5,9 +5,9 @@
 Require Export Coq.Lists.List.
 Require Import Coq.Program.Equality.
 Require Import core fintype.
-Import ScopedNotations.
 From Chapter10 Require Export sysf.
 Require Import Coq.Program.Tactics.
+Import ScopedNotations.
 
 Ltac inv H := inversion H; try clear H; try subst.
 

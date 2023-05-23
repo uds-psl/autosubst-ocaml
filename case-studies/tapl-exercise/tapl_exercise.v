@@ -197,7 +197,11 @@ Proof.
     (* this should be the substitution lemma we want to prove *)
     assert (ren_ty xi (subst_ty (scons T2 var_ty) T1) = subst_ty (scons (ren_ty xi T2) var_ty) (ren_ty (upRen_ty_ty xi) T1)) as ->.
     {
-      now asimpl. 
+      asimpl.
+      apply ext_ty.
+      intros [|x].
+      - cbn. reflexivity.
+      - cbn. reflexivity.
       (* instead of asimpl we can use the below script *)
       (* rewrite compRen_ty.
       rewrite renComp_ty.

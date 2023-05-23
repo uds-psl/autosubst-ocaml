@@ -2,13 +2,13 @@
 
 Require Export ARS Coq.Program.Equality.
 Require Import core fintype.
-Import ScopedNotations.
 From Chapter9 Require Export stlc.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
 Ltac inv H := dependent destruction H.
 Hint Constructors star.
+Import ScopedNotations.
 
 (** *** Single-step reduction *)
 Inductive step {n} : tm n -> tm n -> Prop :=

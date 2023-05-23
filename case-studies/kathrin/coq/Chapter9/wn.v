@@ -1,8 +1,8 @@
 (** ** Weak Head Normalisation *)
 
 Require Import core fintype.
-Import ScopedNotations.
 From Chapter9 Require Export preservation.
+Import ScopedNotations.
 
 Definition E_ {m} (L: tm m -> Prop)  (s : tm m) : Prop :=
   exists v, star step s v /\ L v.
