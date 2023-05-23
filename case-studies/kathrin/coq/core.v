@@ -110,8 +110,8 @@ Defined.
 Hint Rewrite in_map_iff : FunctorInstances.
 
 (* Declaring the scopes that all our notations will live in *)
-(* not supported in Coq 8.9 *)
-(* not supported in Coq 8.9 *)
+Declare Scope fscope.
+Declare Scope subst_scope.
 
 Ltac eta_reduce :=
   repeat match goal with
