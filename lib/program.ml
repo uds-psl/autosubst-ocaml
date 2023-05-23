@@ -33,6 +33,11 @@ let parse_args args =
       if !outfile_r = ""
       then outfile_r := s
       else raise (Arg.Bad ("only one -o flag expected.")) in
+    let prelude_r = ref "" in
+    let set_prelude s =
+      if !prelude_r = ""
+      then prelude_r := s
+      else raise (Arg.Bad ("only one -p flag expected.")) in
     let scope_r = ref S.Unscoped in
     (* can disable warnings here because the functions will only be called with these arguments by Arg.Symbol *)
     let [@warning "-8"] set_scope = function
@@ -53,7 +58,8 @@ let parse_args args =
         ("-f", Set force_overwrite_r, "Force overwrite files in the output directory.");
         ("-no-static", Clear gen_static_files_r, "Don't put the static files like core.v, unscoped.v, etc. into the output directory.");
         ("-allfv", Set gen_allfv_r, "Generate allfv lemmas.");
-        ("-fext", Set gen_fext_r, "Generate lemmas & tactics that use the functional extensionality axiom.")
+        ("-fext", Set gen_fext_r, "Generate lemmas & tactics that use the functional extensionality axiom.");
+        ("-p", String set_prelude, "Prepend the content of the given file front of the generated output.")
       ] in
     (* The usage message should use the current program's name *)
     let program_name = match Sys.argv.(0) with
@@ -64,7 +70,7 @@ let parse_args args =
     let () = Arg.parse_argv ~current:(ref 0) args arg_spec anon_fun usage_message in
     let infile = if !infile_r = "" then raise (Arg.Bad "Input signature file is required.") else !infile_r in
     let outfile = if !outfile_r = "" then raise (Arg.Bad "Output file is required.") else !outfile_r in
-    pure S.{ infile; outfile; scope = !scope_r; gen_allfv = !gen_allfv_r; gen_fext = !gen_fext_r; gen_static_files = !gen_static_files_r; force_overwrite = !force_overwrite_r; version = !version_r }
+    pure S.{ infile; outfile; scope = !scope_r; gen_allfv = !gen_allfv_r; gen_fext = !gen_fext_r; gen_static_files = !gen_static_files_r; force_overwrite = !force_overwrite_r; version = !version_r ; prelude = !prelude_r ; }
   with Arg.Bad e | Arg.Help e ->
     error e
 
@@ -164,6 +170,7 @@ let main argv =
   (* parse program arguments *)
   let* args = parse_args argv in
   let () = Settings.scope_type := args.scope in
+  let () = Settings.use_prelude := args.prelude <> "" in
   (* parse input HOAS *)
   let* (_, functors, _, var_name_assoc) as spec = read_file args.infile |> SigParser.parse_signature in
   let () = S.var_name_assoc := var_name_assoc in
@@ -184,6 +191,12 @@ let main argv =
       fl_fext=args.gen_fext;
       fl_version=args.version
     } in
+  (* prepend prelude *)
+  let code = (if !Settings.use_prelude
+               then
+                 let prelude = read_file args.prelude in
+                 prelude ^ code
+               else code) in
   (* write file *)
   let () = write_file args.force_overwrite args.outfile code in
   pure "done"
