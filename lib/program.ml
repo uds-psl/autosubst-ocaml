@@ -108,7 +108,7 @@ let copy_file force_overwrite src dst =
     base-dir
    - bin/
       + autosubst
-   - share/autosubst/
+   - share/coq-autosubst-ocaml/
       + core.v
       + ...
 
@@ -119,7 +119,7 @@ let copy_file force_overwrite src dst =
 let data_dir = 
   let open Filename in
   let base_dir = dirname (dirname (Sys.executable_name)) in
-  let data_dir = concat base_dir "share/autosubst" in
+  let data_dir = concat base_dir "share/coq-autosubst-ocaml" in
   data_dir
 
 (** Generate the static files by copying them into the output directory. *)
