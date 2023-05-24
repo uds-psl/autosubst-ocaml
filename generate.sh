@@ -1,12 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# We try to support older Coq versions.
-# The simplest solution for the static files I have found is to just use sed
-remove_export() {
-    sed -i -E -e 's/#\[ export \]//' $1
-}
-
 ### EXAMPLES
 # generate code for the example signatures
 for n in utlc stlc fcbv variadic pi num fol logrel_coq; do
@@ -19,6 +13,10 @@ for n in utlc stlc fcbv pi num logrel_coq; do
     echo dune exec -- bin/main.exe signatures/${n}.sig -fext -allfv -f -s ucoq -o case-studies/examples/${n}_unscoped.v
     dune exec -- bin/main.exe signatures/${n}.sig -fext -allfv -f -s ucoq -o case-studies/examples/${n}_unscoped.v
 done
+
+### Prelude test
+echo dune exec -- bin/main.exe signatures/prelude_import.sig -o case-studies/examples/prelude_import.v -f -s ucoq -fext -p case-studies/prelude/prelude.v
+dune exec -- bin/main.exe signatures/prelude_import.sig -o case-studies/examples/prelude_import.v -f -s ucoq -fext -p case-studies/prelude/prelude.v
 
 ### TAPL
 # generate code for the tapl exercise
