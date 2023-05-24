@@ -28,10 +28,9 @@ let get_preamble () =
    then ""
    else
      match !S.scope_type with
-     | S.Unscoped -> unscoped_preamble ^ (if is_gen_fext then unscoped_preamble_axioms else "")
-     | S.Wellscoped -> scoped_preamble ^ (if is_gen_fext then scoped_preamble_axioms else "")
-  in
-  pure (preamble ^ setoid_preamble)
+     | S.Unscoped -> unscoped_preamble ^ (if is_gen_fext then unscoped_preamble_axioms else "") ^ setoid_preamble
+     | S.Wellscoped -> scoped_preamble ^ (if is_gen_fext then scoped_preamble_axioms else "") ^ setoid_preamble
+  in pure preamble
 
 (** Generate all the liftings (= Up = fatarrow^y_x) for all pairs of sorts in the given substitution vector.
  ** So that we can later build the lifting functions "X_ty_ty", "X_ty_vl" etc. *)
