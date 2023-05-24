@@ -15,8 +15,8 @@ for n in utlc stlc fcbv pi num logrel_coq; do
 done
 
 ### Prelude test
-echo dune exec -- bin/main.exe signatures/prelude_import.sig -o case-studies/examples/prelude_import.v -f -s ucoq -fext -p case-studies/prelude/prelude.v
-dune exec -- bin/main.exe signatures/prelude_import.sig -o case-studies/examples/prelude_import.v -f -s ucoq -fext -p case-studies/prelude/prelude.v
+echo dune exec -- bin/main.exe signatures/prelude.sig -o case-studies/examples/prelude_import.v -f -s ucoq -fext -p case-studies/prelude/prelude.v
+dune exec -- bin/main.exe signatures/prelude.sig -o case-studies/examples/prelude_import.v -f -s ucoq -fext -p case-studies/prelude/prelude.v
 
 ### TAPL
 # generate code for the tapl exercise
