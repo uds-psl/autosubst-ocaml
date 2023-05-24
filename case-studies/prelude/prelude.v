@@ -1,4 +1,4 @@
 Require Import fintype unscoped.
-Require Import Setoid
+Require Import Setoid.
 
 Inductive test : Type := .
