@@ -21,8 +21,8 @@ for n in utlc stlc fcbv pi num logrel_coq; do
 done
 
 ### Prelude test
-echo autosubst signatures/prelude_import.sig -o case-studies/examples/prelude_import.v -f -s ucoq -fext -p case-studies/prelude/prelude.v
-autosubst signatures/prelude_import.sig -o case-studies/examples/prelude_import.v -f -s ucoq -fext -p case-studies/prelude/prelude.v
+echo autosubst signatures/prelude.sig -o case-studies/examples/prelude_import.v -f -s ucoq -fext -p case-studies/prelude/prelude.v
+autosubst signatures/prelude.sig -o case-studies/examples/prelude_import.v -f -s ucoq -fext -p case-studies/prelude/prelude.v
 
 ### TAPL
 # generate code for the tapl exercise
