@@ -27,3 +27,5 @@ num_unscoped.v
 num_wellscoped.v
 
 variadic_wellscoped.v
+
+prelude_import.v

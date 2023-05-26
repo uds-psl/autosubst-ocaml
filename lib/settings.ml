@@ -10,6 +10,7 @@ let equal_scopeType x y = match (x, y) with
   | _, _ -> false
 
 let scope_type = ref Unscoped
+let use_prelude = ref false
 
 let is_wellscoped () =
   match !scope_type with
@@ -27,6 +28,7 @@ type args = {
   gen_static_files : bool;
   force_overwrite : bool;
   version : coq_version;
+  prelude: string;
 }
 
 type flags = { fl_allfv : bool 

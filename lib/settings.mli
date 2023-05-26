@@ -16,6 +16,9 @@ val is_wellscoped : unit -> bool
 val scope_type : scope ref
 (** Globally readable flag. Set after parsing program arguments in [Program] *)
 
+val use_prelude : bool ref
+(** Globally readable flag. Set after parsing program arguments in [Program] *)
+
 type coq_version = LT813 | GE813
 (** For which Coq version we generate code. 
     Before version 8.12 there was "export" attribute so we don't generate it. *)
@@ -29,6 +32,7 @@ type args = {
   gen_static_files : bool;
   force_overwrite : bool;
   version : coq_version;
+  prelude : string;
 }
 (** Command line arguments. *)
 

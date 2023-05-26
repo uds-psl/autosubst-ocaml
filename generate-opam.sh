@@ -20,6 +20,10 @@ for n in utlc stlc fcbv pi num logrel_coq; do
     autosubst signatures/${n}.sig -fext -allfv -f -s ucoq -o case-studies/examples/${n}_unscoped.v
 done
 
+### Prelude test
+echo autosubst signatures/prelude.sig -o case-studies/examples/prelude_import.v -f -s ucoq -fext -p case-studies/prelude/prelude.v
+autosubst signatures/prelude.sig -o case-studies/examples/prelude_import.v -f -s ucoq -fext -p case-studies/prelude/prelude.v
+
 ### TAPL
 # generate code for the tapl exercise
 echo autosubst case-studies/tapl-exercise/sysf.sig -o case-studies/tapl-exercise/sysf.v -f -s ucoq -fext
