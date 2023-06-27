@@ -52,6 +52,7 @@ Definition scons {X : Type} {n : nat} (x : X) (f : fin n -> X) (m : fin (S n)) :
   end.
 
 
+#[ export ]
 Hint Opaque scons : rewrite.
 
 (** ** Type Class Instances for Notation *)
@@ -183,7 +184,10 @@ Proof. intros x. destruct x; reflexivity. Qed.
 (*   reflexivity. *)
 (* Qed. *)
 
-(* Morphism for Setoid Rewriting. The only morphism that can be defined statically. *)
+(* Morphism for Setoid Rewriting. The only morphism that can be defined
+statically. *)
+
+#[ export ]
 Instance scons_morphism {X: Type} {n:nat} :
   Proper (eq ==> pointwise_relation _ eq ==> pointwise_relation _ eq) (@scons X n).
 Proof.
@@ -193,6 +197,7 @@ Proof.
   reflexivity.
 Qed.
 
+#[ export ]
 Instance scons_morphism2 {X: Type} {n: nat} :
   Proper (eq ==> pointwise_relation _ eq ==> eq ==> eq) (@scons X n).
 Proof.
@@ -222,8 +227,10 @@ Proof.
 Defined.
 
 
-#[export] Hint Opaque scons_p : rewrite.
+#[ export ]
+Hint Opaque scons_p : rewrite.
 
+#[ export ]
 Instance scons_p_morphism {X: Type} {m n:nat} :
   Proper (pointwise_relation _ eq ==> pointwise_relation _ eq ==> pointwise_relation _ eq) (@scons_p X m n).
 Proof.
@@ -238,6 +245,7 @@ Proof.
     + cbn. apply Hsigma.
 Qed.
 
+#[ export ]
 Instance scons_p_morphism2 {X: Type} {m n:nat} :
   Proper (pointwise_relation _ eq ==> pointwise_relation _ eq ==> eq ==> eq) (@scons_p X m n).
 Proof.
@@ -386,7 +394,8 @@ Tactic Notation "auto_case" tactic(t) :=  (match goal with
                                            | [|- forall (i : fin (S _)), _] =>  intros [?|]; t
                                            end).
 
-#[export] Hint Rewrite @scons_p_head' @scons_p_tail' : FunctorInstances.
+#[ export ]
+Hint Rewrite @scons_p_head' @scons_p_tail' : FunctorInstances.
 
 (** Generic fsimpl tactic: simplifies the above primitives in a goal. *)
 Ltac fsimpl :=

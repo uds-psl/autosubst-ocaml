@@ -107,6 +107,7 @@ Defined.
 (* a.d. TODO hints outside of sections without explicit locality are deprecated. Is this even used in the first place?  *)
 (* but with 8.13.1 the attribute is forbidden. So what's the correct way to use this? *)
 (* #[ global ] *)
+#[ export ]
 Hint Rewrite in_map_iff : FunctorInstances.
 
 (* Declaring the scopes that all our notations will live in *)
@@ -140,6 +141,7 @@ Proof.
   trivial.
 Qed.
 
+#[ export ]
 Instance funcomp_morphism {X Y Z} :
   Proper (@pointwise_relation Y Z eq ==> @pointwise_relation X Y eq ==> @pointwise_relation X Z eq) funcomp.
 Proof.
@@ -149,6 +151,7 @@ Proof.
   reflexivity.
 Qed.
 
+#[ export ]
 Instance funcomp_morphism2 {X Y Z} :
   Proper (@pointwise_relation Y Z eq ==> @pointwise_relation X Y eq ==> eq ==> eq) funcomp.
 Proof.

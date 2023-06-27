@@ -30,7 +30,7 @@ Definition scons {X: Type} (x : X) (xi : nat -> X) :=
         | S n => xi n
         end.
 
-
+#[ export ]
 Hint Opaque scons : rewrite.
 
 (** ** Type Class Instances for Notation
@@ -97,6 +97,7 @@ End SubstNotations.
 Class Var X Y :=
   ids : X -> Y.
 
+#[ export ]
 Instance idsRen : Var nat nat := id.
 
 (** ** Proofs for the substitution primitives. *)
@@ -143,7 +144,9 @@ Lemma scons_comp' (T: Type) {U} (s: T) (sigma: nat -> T) (tau: T -> U) :
   pointwise_relation _ eq (funcomp tau (s .: sigma)) ((tau s) .: (funcomp tau sigma)).
 Proof. intros x. destruct x; reflexivity. Qed.
 
-(* Morphism for Setoid Rewriting. The only morphism that can be defined statically. *)
+(* Morphism for Setoid Rewriting. The only morphism that can be defined
+statically. *)
+#[ export ]
 Instance scons_morphism {X: Type} :
   Proper (eq ==> pointwise_relation _ eq ==> pointwise_relation _ eq) (@scons X).
 Proof.
@@ -153,6 +156,7 @@ Proof.
   apply H.
 Qed.
 
+#[ export ]
 Instance scons_morphism2 {X: Type} :
   Proper (eq ==> pointwise_relation _ eq ==> eq ==> eq) (@scons X).
 Proof.
