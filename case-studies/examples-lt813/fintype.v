@@ -222,7 +222,7 @@ Proof.
 Defined.
 
 
-Hint Opaque scons_p : rewrite.
+#[export] Hint Opaque scons_p : rewrite.
 
 Instance scons_p_morphism {X: Type} {m n:nat} :
   Proper (pointwise_relation _ eq ==> pointwise_relation _ eq ==> pointwise_relation _ eq) (@scons_p X m n).
@@ -386,7 +386,7 @@ Tactic Notation "auto_case" tactic(t) :=  (match goal with
                                            | [|- forall (i : fin (S _)), _] =>  intros [?|]; t
                                            end).
 
-Hint Rewrite @scons_p_head' @scons_p_tail' : FunctorInstances.
+#[export] Hint Rewrite @scons_p_head' @scons_p_tail' : FunctorInstances.
 
 (** Generic fsimpl tactic: simplifies the above primitives in a goal. *)
 Ltac fsimpl :=
