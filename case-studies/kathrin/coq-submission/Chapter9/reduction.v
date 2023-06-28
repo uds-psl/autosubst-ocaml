@@ -2,6 +2,8 @@
 
 Require Export ARS Coq.Program.Equality.
 From Chapter9 Require Export stlc.
+Import fintype. 
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 
@@ -10,15 +12,15 @@ Hint Constructors star.
 
 (** *** Single-step reduction *)
 Inductive step {n} : tm n -> tm n -> Prop :=
-| step_beta A b t : step (app (lam A b) t) (b[t..])
+| step_beta A b t : step (stlc.app (lam A b) t) (b[t..])
 | step_abs A b1 b2 : @step (S n) b1 b2 -> step (lam A b1) (lam A b2)
-| step_appL s1 s2 t : step s1 s2 -> step (app s1 t) (app s2 t)
-| step_appR s t1 t2 : step t1 t2 -> step (app s t1) (app s t2).
+| step_appL s1 s2 t : step s1 s2 -> step (stlc.app s1 t) (stlc.app s2 t)
+| step_appR s t1 t2 : step t1 t2 -> step (stlc.app s t1) (stlc.app s t2).
 
 Hint Constructors step.
 
 Lemma step_beta' n A b (t t': tm n):
-  t' = b[t..] -> step (app (lam A b) t) t'.
+  t' = b[t..] -> step (stlc.app (lam A b) t) t'.
 Proof. intros ->. now constructor. Qed.
 
 (** *** Multi-step reduction *)
@@ -28,7 +30,7 @@ Lemma mstep_lam n A (s t : tm (S n)) :
 Proof. induction 1; eauto. Qed.
 
 Lemma mstep_app n (s1 s2 : tm n) (t1 t2 : tm n) :
-  star step s1 s2 -> star step t1 t2 -> star step (app s1 t1) (app s2 t2).
+  star step s1 s2 -> star step t1 t2 -> star step (stlc.app s1 t1) (stlc.app s2 t2).
 Proof with eauto.
   intros ms. induction 1. induction ms... auto...
 Qed.

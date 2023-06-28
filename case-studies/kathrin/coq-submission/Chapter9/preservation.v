@@ -1,6 +1,8 @@
 (** ** Typing, Context Morphism Lemmas, and Preservation *)
 
 From Chapter9 Require Export reduction.
+Import fintype. 
+
 
 (** A context *)
 Definition ctx n := fin n -> ty.
@@ -15,7 +17,7 @@ Inductive has_type {n} (Gamma : ctx n) : tm n -> ty -> Prop :=
 | ty_app (T S : ty) (M N : tm n) :
     has_type Gamma M (Fun T S) ->
     has_type Gamma N T ->
-    has_type Gamma (app M N) S.
+    has_type Gamma (stlc.app M N) S.
 Notation "Gamma |- M : T" := (has_type Gamma M T) (at level 20, M at level 99).
 
 
@@ -26,7 +28,7 @@ Definition ltc {k k'} (Gamma: ctx k) (Delta: ctx k') rho := forall x, Delta (rho
 Lemma typing_ren n k (Gamma: ctx n) (Delta: ctx k) (rho: fin n -> fin k) (M: tm n) T :
   ltc Gamma Delta rho  -> Gamma |- M : T ->  Delta |- (M⟨rho⟩) : T.
 Proof.
-  intros C H. revert k Delta rho C. induction H; intros; cbn; eauto using has_type.
+  intros C H. revert k Delta rho C. induction H; intros; cbn; eauto.
   - unfold ltc in C. rewrite <- C. constructor.
   - constructor. apply IHhas_type. asimpl. unfold ltc. auto_case.
   - econstructor; eauto.
@@ -35,8 +37,7 @@ Qed.
 Lemma typing_inst n k (Gamma: ctx n) (Delta: ctx k) (sigma: fin n -> tm k) (M: tm n) T :
   (forall x, Delta |- sigma x : Gamma x) -> Gamma |- M : T ->  Delta |- (M[sigma]) : T.
 Proof.
-  intros C H. revert k Delta sigma C. induction H; intros; asimpl; eauto using has_type.
-  - apply C.
+  intros C H. revert k Delta sigma C. induction H; intros; asimpl; eauto.
   - constructor. apply IHhas_type. auto_case.
     + eapply typing_ren; eauto. intros. unfold ltc. now asimpl.
     + constructor.

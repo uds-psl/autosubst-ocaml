@@ -7,7 +7,7 @@ and
 Logical Relations and a case study in equivalence checking (Karl Crary, 2005)
 **)
 
-Require Export List Omega.
+Require Export List Psatz.
 Require Import core unscoped.
 From Chapter3 Require Export utlc_pure.
 Import UnscopedNotations.
@@ -81,14 +81,14 @@ Definition cont_ext Gamma xi Delta :=
 
 Lemma cont_ext_shift Gamma T :
   cont_ext Gamma ↑ (T :: Gamma).
-Proof. split. simpl. unfold shift. omega. now asimpl. Qed.
+Proof. split. simpl. unfold shift. lia. now asimpl. Qed.
 
 Lemma cont_ext_cons Gamma xi Delta A :
   cont_ext Gamma xi Delta -> cont_ext (A :: Gamma) (up_ren xi) (A :: Delta).
 Proof.
-  intros H. intros [|i] HH; split; eauto; simpl in *; try omega.
-  - asimpl. specialize (H i). unfold funcomp. omega.
-  - cbn. apply H. omega.
+  intros H. intros [|i] HH; split; eauto; simpl in *; try lia.
+  - asimpl. specialize (H i). unfold funcomp. lia.
+  - cbn. apply H. lia.
 Qed.
 
 (** *** Algorithmic Equivalence *)
@@ -228,7 +228,7 @@ Proof.
   induction T as [|T IHT S IHS]; split; simpl in *; intros; eauto.
   - econstructor; eauto.
   - econstructor. eapply IHS, H; eauto using cont_ext_shift.
-    + eapply IHT. constructor. simpl. omega. now asimpl.
+    + eapply IHT. constructor. simpl. lia. now asimpl.
   - eapply IHS. econstructor; eauto.
     + eapply algEq_monotone; eauto.
     +  eapply IHT. eauto.
@@ -265,19 +265,19 @@ Proof.
     2: {eright. constructor. instantiate (1:=M[N[gamma] .: gamma]). now asimpl. constructor. }
     eapply IHdecleq1.
     intros [|] HH; cbn; eauto.
-    + eapply H1. simpl in *. omega.
+    + eapply H1. simpl in *. lia.
   - cbn. intros. eapply logeq_backward_closure.
     2,3 : eright; now constructor.
     asimpl. eapply IHdecleq.
     intros [|x]; unfold get; simpl in *; intros; eauto.
     eapply logEq_monotone; eauto.
     all: try (substify; now reflexivity).
-    eapply H0. omega.
+    eapply H0. lia.
   - simpl. intros. asimpl in IHdecleq.
     specialize (IHdecleq Delta (t .: gamma >> ⟨xi⟩) (t' .: delta >> ⟨xi⟩)).
     eapply IHdecleq.
     intros [|i] HH; asimpl; eauto.
-    cbn. eapply logEq_monotone; unfold funcomp; eauto. eapply H0. simpl in *. omega.
+    cbn. eapply logEq_monotone; unfold funcomp; eauto. eapply H0. simpl in *. lia.
   - simpl. now eapply H0.
   - specialize (IHdecleq1 _ _ _ H1). (* asimpl in *. *)
     specialize (IHdecleq2 _ _ _ H1). cbn in *.

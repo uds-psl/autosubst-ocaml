@@ -1,8 +1,8 @@
 (** * Chapter 7 : Modular Syntax *)
 
-Require Import String List Omega.
+Require Import String List Psatz Arith.
 
-Require Import Equations.Equations.
+(* Require Import Equations.Equations. *)
 Set Implicit Arguments.
 Unset Strict Implicit.
 
@@ -18,9 +18,9 @@ Lemma size_ind (P : nat -> Prop) :
 Proof.
   intros H x. apply H.
   induction x.
-  - intros y. omega.
-  - intros y. intros [] % le_lt_or_eq.
-    + apply IHx; omega.
+  - intros y. lia.
+  - intros y. intros [] % Lt.le_lt_or_eq.
+    + apply IHx; lia.
     + apply H. injection H0. now intros ->.
 Qed.
 
