@@ -1,6 +1,8 @@
 (** ** Raamsdonk's Characterisation *)
 
 From Chapter9 Require Export reduction.
+Import fintype. 
+
 
 Lemma sn_mstep {n} (s t : tm n):
   star step s t -> sn step s -> sn step t.
@@ -14,10 +16,10 @@ Inductive SN : forall {n}, tm n -> Prop :=
 | SRed n (M M': tm n): SNRed M M' -> SN M' -> SN M
 with SNe : forall {n}, tm n -> Prop :=
 | SVar n (x: fin n) : SNe (ids x)
-| SApp n (R: tm n) M : SNe R -> SN M -> SNe (app R M)
+| SApp n (R: tm n) M : SNe R -> SN M -> SNe (stlc.app R M)
 with SNRed : forall {n}, tm n -> tm n -> Prop :=
-| SBeta n A (M : tm (S n)) N M': SN N -> M' = M[N..] -> SNRed (app (lam A M) N) M'
-| SAppl n (R R': tm n) M : SNRed R R' -> SNRed (app R M) (app R' M).
+| SBeta n A (M : tm (S n)) N M': SN N -> M' = M[N..] -> SNRed (stlc.app (lam A M) N) M'
+| SAppl n (R R': tm n) M : SNRed R R' -> SNRed (stlc.app R M) (stlc.app R' M).
 
 Scheme SN_ind_2 := Minimality for SN Sort Prop
                    with SNe_ind_2  := Minimality for SNe Sort Prop
@@ -26,8 +28,8 @@ Combined Scheme SN_multind from SN_ind_2, SNe_ind_2, redSN_ind_2.
 
 
 Lemma sn_appL {n} (s : tm n) (t : tm n) :
-  sn step (app s t) -> sn step s.
-Proof. apply (@sn_morphism _ _ _ _ (fun s => app s t)); eauto using @step. Qed.
+  sn step (stlc.app s t) -> sn step s.
+Proof. apply (@sn_morphism _ _ _ _ (fun s => stlc.app s t)); eauto using @step. Qed.
 
 Lemma sn_subst_tm {m n} (f : fin m -> tm n) (s : tm m) :
   sn step (subst_tm f s) -> sn step s.
@@ -40,7 +42,7 @@ Proof.
 Qed.
 
 Lemma closed_appR n (M: tm n) (N: tm n)  :
-  sn step (app M N) -> sn step N.
+  sn step (stlc.app M N) -> sn step N.
 Proof. eapply sn_morphism. eauto. Qed.
 
 Set Implicit Arguments.
@@ -48,11 +50,11 @@ Unset Strict Implicit.
 
 (** Weak Head Reduction *)
 Inductive redsn : forall n,  tm n -> tm n -> Prop :=
- | redsn_beta n A (M: tm (S n)) (N: tm n) : sn step N -> redsn (app (lam A M) N) (subst_tm (N.:ids) M)
- | redsn_app n (R R' : tm n) (M : tm n) : redsn R R' -> redsn (app R M) (app R' M).
+ | redsn_beta n A (M: tm (S n)) (N: tm n) : sn step N -> redsn (stlc.app (lam A M) N) (subst_tm (N.:ids) M)
+ | redsn_app n (R R' : tm n) (M : tm n) : redsn R R' -> redsn (stlc.app R M) (stlc.app R' M).
 
 Lemma fundamental_backwards n (M: tm (S n)) (N: tm n) A:
-   sn step N -> sn step (subst_tm (N.: ids) M) -> sn step (app (lam A M) N).
+   sn step N -> sn step (subst_tm (N.: ids) M) -> sn step (stlc.app (lam A M) N).
 Proof.
   intros sn_N sn_M'.
   assert (H: sn step M) by (now apply sn_subst_tm in sn_M').
@@ -69,7 +71,7 @@ Qed.
 Fixpoint neutral n (M: tm n) :=
   match M with
   | var_tm  x => True
-  | app  s t => neutral s
+  | stlc.app  s t => neutral s
   | _ => False
   end.
 
@@ -116,7 +118,7 @@ Proof.
 Qed.
 
 Lemma sn_app_neutral n (N : tm n) :
-   sn step N -> forall (M: tm n), neutral M -> sn step M -> sn step (app M N).
+   sn step N -> forall (M: tm n), neutral M -> sn step M -> sn step (stlc.app M N).
 Proof.
   induction 1 as [N sn_N IH_N].
   induction 2 as [M sn_M IH_M].
@@ -166,9 +168,18 @@ Proof.
     eapply SRed; eauto.
   - destruct M'; simpl in *; try congruence.
     inv H; now constructor.
-  - exists (M'0_1 [M'0_2..]).
-    split. now asimpl. constructor; eauto.
-  - destruct (H0 _ _ _ (eq_refl (ren_tm R0 M'1))) as (N'&->&A2).
+  - destruct M'; try inversion H3.  
+    (* destruct (H0 _ _ _ (eq_refl _)) as (M''&->&?).
+    eapply H0. exists.  *)
+    (* exists (M'1 [M'2..]). *)
+    (* split. now asimpl.  *)
+    constructor; eauto.
+  - destruct M'0; try inversion H2. 
+    exists (M'0_1 [M'0_2..]). 
+    destruct H2.
+    Print SNRed. 
+
+     (* as (N'&->&A2). *)
     exists (app N' M'2). split; [reflexivity| now constructor].
 Qed.
 

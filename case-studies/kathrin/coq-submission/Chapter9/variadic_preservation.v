@@ -2,6 +2,7 @@
 
 Require Export ARS Program.Equality.
 From Chapter6 Require Export variadic_fin.
+Import fintype. 
 Set Implicit Arguments.
 Unset Strict Implicit.
 
@@ -10,14 +11,14 @@ Hint Constructors star.
 
 (** *** Single-step reduction *)
 Inductive step {n} : tm n -> tm n -> Prop :=
-| step_beta p b (t: fin p -> tm n) : step (app _ (lam p b) t) (b[scons_p p t ids])
+| step_beta p b (t: fin p -> tm n) : step (variadic_fin.app _ (lam p b) t) (b[scons_p p t ids])
 | step_abs  p b1 b2 : @step (p + n) b1 b2 -> step (lam p b1) (lam p b2)
-| step_appL p s1 s2 t : step s1 s2 -> step (app p s1 t) (app _ s2 t).
+| step_appL p s1 s2 t : step s1 s2 -> step (variadic_fin.app p s1 t) (variadic_fin.app _ s2 t).
 
 Hint Constructors step.
 
 Lemma step_beta' n p b (t: fin p -> tm n) t':
-  t' = b[scons_p p t ids] -> step (app _ (lam p b) t) t'.
+  t' = b[scons_p p t ids] -> step (variadic_fin.app _ (lam p b) t) t'.
 Proof. intros ->. now constructor. Qed.
 
 (** *** Substitutivity *)
@@ -52,7 +53,7 @@ Inductive has_type {n} (Gamma : ctx n) : tm n -> ty -> Prop :=
 | ty_app p (T : fin p -> ty) ( S : ty) (M  : tm n) N :
     has_type Gamma M (arr T S) ->
     (forall x, has_type Gamma (N x) (T x)) ->
-    has_type Gamma (app p M N) S.
+    has_type Gamma (variadic_fin.app p M N) S.
 Notation "Gamma |- M : T" := (has_type Gamma M T) (at level 20, M at level 99).
 
 Lemma ty_var' n  (x : fin n) A Gamma:
@@ -64,7 +65,7 @@ Definition ltc {k k'} (Gamma: ctx k) (Delta: ctx k') rho := forall x, Delta (rho
 Lemma typing_ren n k (Gamma: ctx n) (Delta: ctx k) (rho: fin n -> fin k) (M: tm n) T :
   ltc Gamma Delta rho  -> Gamma |- M : T ->  Delta |- (M⟨rho⟩) : T.
 Proof.
-  intros C H. revert k Delta rho C. induction H; intros; asimpl; eauto using has_type.
+  intros C H. revert k Delta rho C. induction H; intros; asimpl; eauto.
   - unfold ltc in C. rewrite <- C. constructor.
   - constructor. apply IHhas_type. intros x.
     destruct (destruct_fin x) as [(?&->)|(?&->)]; eauto; asimpl; unfold upRen_p; asimpl. cbn. eauto.
@@ -76,13 +77,12 @@ Lemma typing_inst n k (Gamma: ctx n) (Delta: ctx k) (sigma: fin n -> tm k) (M: t
   (forall x, Delta |- sigma x : Gamma x) -> Gamma |- M : T ->  Delta |- (M[sigma]) : T.
 Proof.
 Proof.
-  intros C H. revert k Delta sigma C. induction H; intros; asimpl; eauto using has_type.
-  - unfold ltc in C. apply C.
+  intros C H. revert k Delta sigma C. induction H; intros; asimpl; eauto.
   - constructor. apply IHhas_type. intros x.
-    destruct (destruct_fin x) as [(?&->)|(?&->)]; asimpl.
+  destruct (destruct_fin x) as [(?&->)|(?&->)]; asimpl.
     + apply ty_var'. now asimpl.
-    + eapply typing_ren; eauto. intros x. now asimpl.
- - econstructor; eauto.
+  + eapply typing_ren; eauto. intros x. now asimpl.
+  - econstructor; eauto.
 Qed.
 
 (** *** Preservation *)

@@ -1,6 +1,9 @@
 (** ** Weak Head Normalisation *)
 
 From Chapter9 Require Export preservation.
+Require Export fintype. 
+ 
+
 
 Definition E_ {m} (L: tm m -> Prop)  (s : tm m) : Prop :=
   exists v, star step s v /\ L v.
@@ -59,7 +62,7 @@ Proof.
     cbn in H1.
     destruct (H1 _ id _ H3) as (v&?&?).
     exists v; split; eauto. asimpl.
-    enough (star step (app  (lam t v1) v2) v).
+    enough (star step (stlc.app  (lam t v1) v2) v).
     + eapply star_trans.
       eapply mstep_app; eauto. assumption.
     + eapply star_trans.

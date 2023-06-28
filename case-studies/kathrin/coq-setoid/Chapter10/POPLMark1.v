@@ -30,7 +30,7 @@ Reserved Notation "'SUB' Delta |- A <: B"
          (at level 68, A at level 99, no associativity).
 
 (** *** Properties of Subtyping *)
-Open Scope fscope.
+Local Open Scope fscope2.
 
 Inductive sub {n} (Delta : ctx n) : ty n -> ty n -> Prop :=
 | SA_top A :
@@ -283,7 +283,7 @@ Lemma context_renaming_lemma m m' n n' (Delta: ctx m') (Gamma: dctx n' m')      
 Proof.
   intros H H' ty. autorevert ty.
   induction ty; asimpl; intros; subst; try now (econstructor; eauto).
-  - rewrite H0. constructor.
+  - rewrite H'. constructor.
   - constructor. apply IHty; eauto. auto_case.
   - econstructor. apply IHty; eauto.
     + auto_case; try now asimpl. rewrite <- H. now asimpl.

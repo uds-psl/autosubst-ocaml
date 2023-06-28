@@ -72,19 +72,19 @@ Class Ren5 (X1 X2 X3 X4 X5 : Type) (Y Z : Type) :=
   ren5 : X1 -> X2 -> X3 -> X4 -> X5 -> Y -> Z.
 
 Module RenNotations.
-  Notation "s ⟨ xi1 ⟩" := (ren1  xi1 s) (at level 7, left associativity, format "s  ⟨ xi1 ⟩") : subst_scope.
+  Notation "s ⟨ xi1 ⟩" := (ren1  xi1 s) (at level 7, left associativity, format "s  ⟨ xi1 ⟩") : subst_scope2.
 
-  Notation "s ⟨ xi1 ; xi2 ⟩" := (ren2 xi1 xi2 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ⟩") : subst_scope.
+  Notation "s ⟨ xi1 ; xi2 ⟩" := (ren2 xi1 xi2 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ⟩") : subst_scope2.
 
-  Notation "s ⟨ xi1 ; xi2 ; xi3 ⟩" := (ren3 xi1 xi2 xi3 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ; xi3 ⟩") : subst_scope.
+  Notation "s ⟨ xi1 ; xi2 ; xi3 ⟩" := (ren3 xi1 xi2 xi3 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ; xi3 ⟩") : subst_scope2.
 
-  Notation "s ⟨ xi1 ; xi2 ; xi3 ; xi4 ⟩" := (ren4  xi1 xi2 xi3 xi4 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ; xi3 ; xi4 ⟩") : subst_scope.
+  Notation "s ⟨ xi1 ; xi2 ; xi3 ; xi4 ⟩" := (ren4  xi1 xi2 xi3 xi4 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ; xi3 ; xi4 ⟩") : subst_scope2.
 
-  Notation "s ⟨ xi1 ; xi2 ; xi3 ; xi4 ; xi5 ⟩" := (ren5  xi1 xi2 xi3 xi4 xi5 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ; xi3 ; xi4 ; xi5 ⟩") : subst_scope.
+  Notation "s ⟨ xi1 ; xi2 ; xi3 ; xi4 ; xi5 ⟩" := (ren5  xi1 xi2 xi3 xi4 xi5 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ; xi3 ; xi4 ; xi5 ⟩") : subst_scope2.
 
-  Notation "⟨ xi ⟩" := (ren1 xi) (at level 1, left associativity, format "⟨ xi ⟩") : fscope.
+  Notation "⟨ xi ⟩" := (ren1 xi) (at level 1, left associativity, format "⟨ xi ⟩") : fscope2.
 
-  Notation "⟨ xi1 ; xi2 ⟩" := (ren2 xi1 xi2) (at level 1, left associativity, format "⟨ xi1 ; xi2 ⟩") : fscope.
+  Notation "⟨ xi1 ; xi2 ⟩" := (ren2 xi1 xi2) (at level 1, left associativity, format "⟨ xi1 ; xi2 ⟩") : fscope2.
 End RenNotations.
 
 (** *** Type Classes for Substiution *)
@@ -105,9 +105,9 @@ Class Subst5 (X1 X2 X3 X4 X5 : Type) (Y Z: Type) :=
   subst5 : X1 -> X2 -> X3 -> X4 -> X5  -> Y  -> Z.
 
 Module SubstNotations.
-  Notation "s [ sigma ]" := (subst1 sigma s) (at level 7, left associativity, format "s '/' [ sigma ]") : subst_scope.
+  Notation "s [ sigma ]" := (subst1 sigma s) (at level 7, left associativity, format "s '/' [ sigma ]") : subst_scope2.
 
-  Notation "s [ sigma ; tau ]" := (subst2 sigma tau s) (at level 7, left associativity, format "s '/' [ sigma ; '/'  tau ]") : subst_scope.
+  Notation "s [ sigma ; tau ]" := (subst2 sigma tau s) (at level 7, left associativity, format "s '/' [ sigma ; '/'  tau ]") : subst_scope2.
 End SubstNotations.
 
 (** ** Type Class for Variables *)
@@ -121,17 +121,17 @@ Class Var X Y :=
     Substitutions represented as functions are ubiquitious in this development and we often have to compose them, without talking about their pointwise behaviour.
     That is, we are interested in the forward compostion of functions, _f o g_, for which we introduce a convenient notation, "f >> g". The direction of the arrow serves as a reminder of the _forward_ nature of this composition, that is first apply _f_, then _g_. *)
 
-Arguments funcomp {X Y Z} (g)%fscope (f)%fscope.
+Arguments funcomp {X Y Z} (g)%fscope2 (f)%fscope2.
 
 Module CombineNotations.
-  Notation "f >> g" := (funcomp g f) (at level 50) : fscope.
+  Notation "f >> g" := (funcomp g f) (at level 50) : fscope2.
 
-  Notation "s .: sigma" := (scons s sigma) (at level 55, sigma at next level, right associativity) : subst_scope.
+  Notation "s .: sigma" := (scons s sigma) (at level 55, sigma at next level, right associativity) : subst_scope2.
 
   #[ global ]
-  Open Scope fscope.
+  Open Scope fscope2.
   #[ global ]
-  Open Scope subst_scope.
+  Open Scope subst_scope2.
 End CombineNotations.
 
 Import CombineNotations.
@@ -298,14 +298,14 @@ Module ScopedNotations.
 
 (* Notation "s , sigma" := (scons s sigma) (at level 60, format "s ,  sigma", right associativity) : subst_scope. *)
 
-  Notation "s '..'" := (scons s ids) (at level 1, format "s ..") : subst_scope.
+  Notation "s '..'" := (scons s ids) (at level 1, format "s ..") : subst_scope2.
 
-  Notation "↑" := (shift) : subst_scope.
+  Notation "↑" := (shift) : subst_scope2.
 
   #[ global ]
-  Open Scope fscope.
+  Open Scope fscope2.
   #[ global ]
-  Open Scope subst_scope.
+  Open Scope subst_scope2.
 End ScopedNotations.
 
 Ltac unfold_funcomp := match goal with

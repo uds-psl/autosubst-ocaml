@@ -55,19 +55,19 @@ Class Ren4 (X1 X2 X3 X4 : Type) (Y Z : Type) :=
 Class Ren5 (X1 X2 X3 X4 X5 : Type) (Y Z : Type) :=
   ren5 : X1 -> X2 -> X3 -> X4 -> X5 -> Y -> Z.
 
-Notation "s ⟨ xi1 ⟩" := (ren1 xi1 s) (at level 7, left associativity, format "s  ⟨ xi1 ⟩") : subst_scope.
+Notation "s ⟨ xi1 ⟩" := (ren1 xi1 s) (at level 7, left associativity, format "s  ⟨ xi1 ⟩") : subst_scope'.
 
-Notation "s ⟨ xi1 ; xi2 ⟩" := (ren2 xi1 xi2 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ⟩") : subst_scope.
+Notation "s ⟨ xi1 ; xi2 ⟩" := (ren2 xi1 xi2 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ⟩") : subst_scope'.
 
-Notation "s ⟨ xi1 ; xi2 ; xi3 ⟩" := (ren3 xi1 xi2 xi3 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ; xi3 ⟩") : subst_scope.
+Notation "s ⟨ xi1 ; xi2 ; xi3 ⟩" := (ren3 xi1 xi2 xi3 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ; xi3 ⟩") : subst_scope'.
 
-Notation "s ⟨ xi1 ; xi2 ; xi3 ; xi4 ⟩" := (ren4  xi1 xi2 xi3 xi4 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ; xi3 ; xi4 ⟩") : subst_scope.
+Notation "s ⟨ xi1 ; xi2 ; xi3 ; xi4 ⟩" := (ren4  xi1 xi2 xi3 xi4 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ; xi3 ; xi4 ⟩") : subst_scope'.
 
-Notation "s ⟨ xi1 ; xi2 ; xi3 ; xi4 ; xi5 ⟩" := (ren5  xi1 xi2 xi3 xi4 xi5 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ; xi3 ; xi4 ; xi5 ⟩") : subst_scope.
+Notation "s ⟨ xi1 ; xi2 ; xi3 ; xi4 ; xi5 ⟩" := (ren5  xi1 xi2 xi3 xi4 xi5 s) (at level 7, left associativity, format "s  ⟨ xi1 ; xi2 ; xi3 ; xi4 ; xi5 ⟩") : subst_scope'.
 
-Notation "⟨ xi ⟩" := (ren1 xi) (at level 1, left associativity, format "⟨ xi ⟩") : fscope.
+Notation "⟨ xi ⟩" := (ren1 xi) (at level 1, left associativity, format "⟨ xi ⟩") : fscope'.
 
-Notation "⟨ xi1 ; xi2 ⟩" := (ren2 xi1 xi2) (at level 1, left associativity, format "⟨ xi1 ; xi2 ⟩") : fscope.
+Notation "⟨ xi1 ; xi2 ⟩" := (ren2 xi1 xi2) (at level 1, left associativity, format "⟨ xi1 ; xi2 ⟩") : fscope'.
 
 
 
@@ -88,9 +88,9 @@ Class Subst4 (X1 X2 X3 X4: Type) (Y Z: Type) :=
 Class Subst5 (X1 X2 X3 X4 X5 : Type) (Y Z: Type) :=
   subst5 : X1 -> X2 -> X3 -> X4 -> X5  -> Y  -> Z.
 
-Notation "s [ sigma ]" := (subst1 sigma s) (at level 7, left associativity, format "s '/' [ sigma ]") : subst_scope.
+Notation "s [ sigma ]" := (subst1 sigma s) (at level 7, left associativity, format "s '/' [ sigma ]") : subst_scope'.
 
-Notation "s [ sigma ; tau ]" := (subst2 sigma tau s) (at level 7, left associativity, format "s '/' [ sigma ; '/'  tau ]") : subst_scope.
+Notation "s [ sigma ; tau ]" := (subst2 sigma tau s) (at level 7, left associativity, format "s '/' [ sigma ; '/'  tau ]") : subst_scope'.
 
 
 (** *** Type Class for Variables *)
@@ -100,10 +100,10 @@ Class Var X Y :=
 
 (** ** Proofs for the substitution primitives. *)
 
-Arguments funcomp {X Y Z} (g)%fscope (f)%fscope.
+Arguments funcomp {X Y Z} (g)%fscope' (f)%fscope'.
 
-Notation "f >> g" := (funcomp g f) (*fun x => g (f x)*) (at level 50) : subst_scope.
-Open Scope subst_scope.
+Notation "f >> g" := (funcomp g f) (*fun x => g (f x)*) (at level 50) : subst_scope'.
+Open Scope subst_scope'.
 
 (** A generic lifting of a renaming. *)
 Definition up_ren (xi : nat -> nat) :=
@@ -188,9 +188,9 @@ Ltac fsimplc :=
 Tactic Notation "fsimpl" "in" "*" :=
   fsimpl; fsimplc.
 
-(* Notation "s , sigma" := (scons s sigma) (at level 60, format "s ,  sigma", right associativity) : subst_scope. *)
+(* Notation "s , sigma" := (scons s sigma) (at level 60, format "s ,  sigma", right associativity) : subst_scope'. *)
 
-Notation "s '..'" := (scons s ids) (at level 1, format "s ..") : subst_scope.
+Notation "s '..'" := (scons s ids) (at level 1, format "s ..") : subst_scope'.
 Instance idsRen : Var nat nat := id.
 
 Notation "↑" := (shift).
