@@ -12,7 +12,7 @@
   It went nowehere, though, because writing proofs with them is hard.  
   But this is not a failing of Autosubst.
   *)
-
+Require Import Arith.
 Require Import sysf.
 Require Import core unscoped.
 Require List.
@@ -463,7 +463,7 @@ Qed.
 
 Print Assumptions lemma_23_6_3_2.
 
-Require Import Arith Lia.
+Require Import Lia.
 Lemma bin_size_ind (f : nat -> nat -> nat) (P : nat -> nat -> Type) :
   (forall x y, (forall x' y', f x' y' < f x y -> P x' y') -> P x y) -> forall x y, P x y.
 Proof.
