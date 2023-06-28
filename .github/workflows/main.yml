@@ -75,13 +75,7 @@ jobs:
       - name: Compile generated files
         # Attributes changed during the last few versions of Coq so we generate two different outputs
         run: |
-          if [[ ${{ matrix.coq-version }} == '8.13.1' ]]; then
-              echo "newer Coq version"
-              cd ./case-studies/examples
-          else
-              echo "older Coq version"
-              cd ./case-studies/examples-lt813
-          fi
+          cd ./case-studies/examples
           opam exec -- make clean
           opam exec -- make
   runkathrin:
