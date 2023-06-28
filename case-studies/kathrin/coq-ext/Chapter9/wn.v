@@ -1,8 +1,9 @@
 (** ** Weak Head Normalisation *)
 
 Require Import core core_axioms fintype fintype_axioms.
-Import ScopedNotations.
 From Chapter9 Require Export preservation.
+Import ScopedNotations.
+
 
 Definition E_ {m} (L: tm m -> Prop)  (s : tm m) : Prop :=
   exists v, star step s v /\ L v.
@@ -16,6 +17,8 @@ Fixpoint L {m} (A : ty): tm m -> Prop :=
                       end
   end.
 
+Hint Constructors star.
+
 Lemma L_ren {m n} s A (xi: fin m -> fin n) :
   L A s -> L A (ren_tm xi s).
 Proof.
@@ -28,7 +31,19 @@ Proof.
     destruct s; try contradiction.
     intros k zeta v H''. cbn in H. specialize (H _ (xi >> zeta) _ H'').
     destruct H as (?&?&?).
-    exists x. split; eauto. asimpl. eauto.
+    exists x. split; eauto.
+    asimpl.
+    Print Visibility.
+
+    Check mstep_inst.
+
+
+    Check (var_zero .: xi >> shift).
+    
+    Check (v .: zeta >> (ids k)).
+    Check var_zero.
+    
+    eauto with has_type_db.
 Qed.
 
 Definition G {m k} (Gamma : ctx m) : (fin m -> tm k)  -> Prop :=

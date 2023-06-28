@@ -2,7 +2,8 @@
 Require Import core core_axioms fintype fintype_axioms.
 Import ScopedNotations.
 (* From Chapter9 Require Export stlc. *)
-Load stlc.
+From Chapter9 Require Import stlc.
+Import SubstNotations.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Require Import Setoid Morphisms.
@@ -56,7 +57,7 @@ Ltac normalize t :=
 
 Inductive Foo {n} : tm n -> Type :=
   FooC : forall s:tm n, Foo s.
-
+Local Open Scope subst_scope.
 Goal forall {m n} (f : fin m -> tm n) (s : tm (S m)) (t : tm m),
     Foo (s[t[f] .: f]) -> Foo (s[t..][f]).
 Proof.
@@ -101,10 +102,12 @@ Proof.
         erewrite varL_tm''.
         fsimpl.
         reflexivity.
-  } 
-    eta_reduce.
-    reflexivity.
   }
+  (* rewrite H. *)
+  (* Print asimpl. *)
+  eta_reduce.
+    (* reflexivity. *)
+  (* } *)
   (* assert (s[t..][f] = s[t[f] .: f]) by (now asimpl). *)
   (* assert (s[up_tm_tm f][(t[f])..] = _) by (now asimpl). *)
   (* there are still too many differences *)

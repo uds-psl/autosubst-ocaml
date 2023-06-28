@@ -1,18 +1,24 @@
 (** ** Reduction and Values *)
 
 Require Export ARS Coq.Program.Equality.
+From Chapter9 Require Export stlc.
 Require Import core core_axioms fintype fintype_axioms.
 Import ScopedNotations.
-From Chapter9 Require Export stlc.
+Import SubstNotations.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
+Print Visibility.
 
 Ltac inv H := dependent destruction H.
 Hint Constructors star.
 
+Local Open Scope subst_scope.
+
+Print Visibility.
 (** *** Single-step reduction *)
 Inductive step {n} : tm n -> tm n -> Prop :=
-| step_beta A b t : step (app (lam A b) t) (b[t..])
+| step_beta A b t : step (app (lam A b) t) (subst1 (t..) b)
 | step_abs A b1 b2 : @step (S n) b1 b2 -> step (lam A b1) (lam A b2)
 | step_appL s1 s2 t : step s1 s2 -> step (app s1 t) (app s2 t)
 | step_appR s t1 t2 : step t1 t2 -> step (app s t1) (app s t2).
@@ -20,7 +26,7 @@ Inductive step {n} : tm n -> tm n -> Prop :=
 Hint Constructors step.
 
 Lemma step_beta' n A b (t t': tm n):
-  t' = b[t..] -> step (app (lam A b) t) t'.
+  t' = (subst1 (t..) b) -> step (app (lam A b) t) t'.
 Proof. intros ->. now constructor. Qed.
 
 (** *** Multi-step reduction *)
@@ -38,7 +44,7 @@ Qed.
 (** *** Substitutivity *)
 
 Lemma step_inst {m n} (f : fin m -> tm n) (s t : tm m) :
-  step s t -> step s[f] t[f].
+  step s t -> step (subst1 f s) (subst1 f t).
 Proof.
    intros st. revert n f.  induction st as  [m b s t |m A b1 b2 _ ih|m s1 s2 t _ ih|m s t1 t2 _ ih]; intros n f; cbn.
    - apply step_beta'.
@@ -272,6 +278,8 @@ Proof.
   - apply step_appR, ih.
 Qed.
 Print Assumptions step_inst.
+
+Print Visibility.
 
 Lemma mstep_inst m n (f : fin m -> tm n) (s t : tm m) :
   star step s t -> star step (s[f]) (t[f]).
