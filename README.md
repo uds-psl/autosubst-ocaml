@@ -8,6 +8,9 @@
   - Andrej Dudenhefner
   - Yannick Forster
   - Meven Lennon-Bertrand
+  - Audrey Seo
+  - Chris Lam
+  - Ana Borges
 - Maintainer:
   - Yannick Forster ([**@yforster**](https://github.com/yforster))
 - License: [MIT License](LICENSE)
@@ -149,7 +152,6 @@ list : Functor -- functor declarations, only "list", "prod", "cod" and "option" 
 -- declaring some constructors for ty
 arr : ty -> ty -> ty
 all : (bind ty in ty) -> ty -- this declares "all" as constructor with a binder that binds a new "ty" variable in a "ty" argument and results in a "ty"
-
 -- declaring some constructos for tm
 app : tm -> list (tm) -> tm               -- application of the list functor to the sort "tm"
 lam (p: nat) : (bind <p, tm> in tm) -> tm -- this declares "lam" as a constructor with parameter "p" which is then used in a variadic binder (i.e. it binds p-many values of "tm")

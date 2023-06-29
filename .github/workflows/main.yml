@@ -1,17 +1,7 @@
-# This is a basic workflow to help you get started with Actions
-
 name: CI
 
-# Controls when the action will run. 
-on:
-  # Triggers the workflow on push or pull request events but only for the master branch
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
-
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+# Controls when the action will run.
+on: [push, pull_request]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -25,17 +15,16 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout repo
         uses: actions/checkout@v3
-      - name: Use OCaml 4.11.1
+      - name: Use OCaml 4.14.0
         uses: avsm/setup-ocaml@v2
         with:
-          ocaml-compiler: 4.11.1
+          ocaml-compiler: 4.14.0
       - name: Install dependencies
         run: |
           opam repo add coq-released https://coq.inria.fr/opam/released
-          opam pin add coq 8.13.1
-          opam install dune angstrom ocamlgraph ppx_deriving
+          opam install dune.3.6.2 angstrom ocamlgraph ppx_deriving coq.8.14.1
       - name: Build app
-        run: opam exec -- dune build     
+        run: opam exec -- dune build
       - name: Generate source files
         run: opam exec -- ./generate.sh
       # from https://docs.github.com/en/actions/guides/storing-workflow-data-as-artifacts
@@ -54,10 +43,10 @@ jobs:
 #       fail-fast: false
       matrix:
         coq-version:
-          - 8.13.1
+          - 8.14.1
         include:
-          - coq-version: 8.13.1
-            ocaml-compiler: 4.11.1
+          - coq-version: 8.14.1
+            ocaml-compiler: 4.14.0
     steps:
       - name: Download case-studies artifact
         uses: actions/download-artifact@v2
@@ -71,7 +60,7 @@ jobs:
       - name: Install dependencies
         run: |
           opam repo add coq-released https://coq.inria.fr/opam/released
-          opam pin add coq ${{ matrix.coq-version }}
+          opam install coq.8.14.1
       - name: Compile generated files
         # Attributes changed during the last few versions of Coq so we generate two different outputs
         run: |
@@ -88,14 +77,14 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout repo
         uses: actions/checkout@v3
-      - name: Use OCaml 4.11.1
+      - name: Use OCaml 4.14.0
         uses: avsm/setup-ocaml@v2
         with:
-          ocaml-compiler: 4.11.1
+          ocaml-compiler: 4.14.0
       - name: Install dependencies
         run: |
           opam repo add coq-released https://coq.inria.fr/opam/released
-          opam pin add coq 8.13.1
+          opam install dune.3.6.2
           opam install .
       - name: Generate source files
         run: opam exec -- ./generate-opam.sh
