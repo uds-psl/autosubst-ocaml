@@ -14,8 +14,8 @@ let list_diff xs ys =
 let list_remove xs y =
   List.(filter (fun x -> x <> y) xs)
 
-let list_contains_dup compare xs =
-  List.(length xs <> length (sort_uniq compare xs))
+let list_contains_dup c xs =
+  List.(length xs <> length (sort_uniq c xs))
 
 let list_empty = function
   | [] -> true

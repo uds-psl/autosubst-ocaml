@@ -1,9 +1,19 @@
 (library
-  (name autosubst_lib)
-  (preprocess (pps ppx_deriving.show))
-  (libraries monadic coq.plugins.ltac coq.vernac coq.interp coq.gramlib angstrom ocamlgraph)
-  (flags (:standard -rectypes -w -27)))
+ (name autosubst_lib)
+ (preprocess
+  (pps ppx_deriving.show))
+ (libraries
+  monadic
+  coq-core.plugins.ltac
+  coq-core.vernac
+  coq-core.interp
+  coq-core.gramlib
+  angstrom
+  ocamlgraph)
+ (flags
+  (:standard -rectypes -w -27)))
 
 (env
-  (dev
-    (flags (:standard -warn-error -A))))
+ (dev
+  (flags
+   (:standard -warn-error -A))))

@@ -11,27 +11,30 @@ module TacGen = struct
   let default_locus_clause = Locus.{ onhyps = Some []; concl_occs = AllOccurrences}
   let star_locus_clause = Locus.{ onhyps = None; concl_occs = AllOccurrences}
 
-  let idtac_ = TacId []
+  let idtac_ = (CAst.make (TacId []))
   let rewrite_ ?(repeat_star=true) ?(with_evars=false) ?(to_left=false) ?(locus_clause=default_locus_clause) name =
     let num_rewrite = if repeat_star
       then Equality.RepeatStar
       else Equality.Precisely 1 in
     let rewrite_term = [ (not to_left, num_rewrite, (None, (ref_ name, Tactypes.NoBindings))) ] in
-    TacAtom (CAst.make (TacRewrite (with_evars, rewrite_term, locus_clause, None)))
+    (CAst.make (TacAtom (TacRewrite (with_evars, rewrite_term, locus_clause, None))))
 
-  let repeat_ tactic = TacRepeat tactic
-  let first_ tactics = TacFirst tactics
-  let progress_ tactic = TacProgress tactic
-  let try_ tactic = TacTry tactic
-  let calltac_ name = TacArg (CAst.make (Reference (qualid_ name)))
+
+  let repeat_ tactic = (CAst.make (TacRepeat tactic))
+  let first_ tactics = (CAst.make (TacFirst tactics))
+  let progress_ tactic = (CAst.make (TacProgress tactic))
+  let try_ tactic = (CAst.make (TacTry tactic))
+  let calltac_ name = (CAst.make (TacArg (Reference (qualid_ name))))
   let calltacArgs_ name args =
     let args = List.map (fun s -> Reference (qualid_ s)) args in
-    TacArg (CAst.make (TacCall (CAst.make (qualid_ name, args))))
+    (CAst.make (TacArg (TacCall (CAst.make (qualid_ name, args)))))
   let calltacTac_ name tac =
-    TacArg (CAst.make (TacCall (CAst.make (qualid_ name, [ Tacexp tac ]))))
+    (CAst.make (TacArg (TacCall (CAst.make (qualid_ name, [ Tacexp tac ])))))
   let setoid_rewrite_ ?(to_left=false) name =
     calltacArgs_ ("setoid_rewrite" ^ if to_left then "_left" else "") [ name ]
-  let then1_ tactic1 tactic2 = TacThen (tactic1, tactic2)
+  let then1_ tactic1 tactic2 = (CAst.make (TacThen (tactic1, tactic2)))
+  (* Takes in a list of TacGen.t (= raw_tactic_expr = r_dispatch gen_tactic_expr
+ = r_dispatch gen_tactic_expr_r CAst.t), and is supposed to produce a TacGen.t? *)
   let then_ = function
     | [] -> idtac_
     | tac :: tacs ->
@@ -50,13 +53,13 @@ module TacGen = struct
       rConst = consts;
     } in
     let cbn = Genredexpr.Cbn flags in
-    TacAtom (CAst.make (TacReduce (cbn, locus_clause)))
+    (CAst.make (TacAtom (TacReduce (cbn, locus_clause))))
 
   let intros_ names =
     let intro_pats = List.map (fun s ->
         CAst.make (Tactypes.IntroNaming (Namegen.IntroIdentifier (name_id_ s))))
         names in
-    let intros = TacAtom (CAst.make (TacIntroPattern (false, intro_pats))) in
+    let intros = CAst.make (TacAtom (TacIntroPattern (false, intro_pats))) in
     intros
 
   let unfold_ ?(locus_clause=default_locus_clause) lemmas =
@@ -64,7 +67,7 @@ module TacGen = struct
         CAst.make (Constrexpr.AN (qualid_ s))) lemmas in
     let occ_list = List.map (fun c -> (Locus.AllOccurrences, c)) consts in
     let unfold = Genredexpr.Unfold occ_list in
-    TacAtom (CAst.make (TacReduce (unfold, locus_clause)))
+    CAst.make (TacAtom (TacReduce (unfold, locus_clause)))
 
   (* let notation_ cexpr =
    *   TacArg (CAst.make (ConstrMayEval (Genredexpr.ConstrTerm cexpr))) *)

@@ -566,7 +566,7 @@ Lemma context_renaming_lemma m m' n n' (Delta: ctx m') (Gamma: dctx n' m')      
 Proof.
   intros H H' ty. autorevert ty.
   depind ty; asimpl; intros; subst; try now (econstructor; eauto).
-  - rewrite H0. constructor.
+  - rewrite H'. constructor.
   - constructor. eapply IHty; eauto.
     auto_case; asimpl.
   - cbn. econstructor. apply IHty; eauto.
