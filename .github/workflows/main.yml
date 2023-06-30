@@ -1,90 +1,32 @@
 name: CI
 
-# Controls when the action will run.
 on: [push, pull_request]
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
+  build-matrix:
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
-    steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - name: Checkout repo
-        uses: actions/checkout@v3
-      - name: Use OCaml 4.14.0
-        uses: avsm/setup-ocaml@v2
-        with:
-          ocaml-compiler: 4.14.0
-      - name: Install dependencies
-        run: |
-          opam repo add coq-released https://coq.inria.fr/opam/released
-          opam install dune.3.6.2 angstrom ocamlgraph ppx_deriving coq.8.14.1
-      - name: Build app
-        run: opam exec -- dune build
-      - name: Generate source files
-        run: opam exec -- ./generate.sh
-      # from https://docs.github.com/en/actions/guides/storing-workflow-data-as-artifacts
-      - name: Upload case studies as artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: case-studies
-          path: case-studies
-
-  runcoq:
-    # only run after build has been successfully completed
-    needs: build
-    runs-on: ubuntu-latest
-
     strategy:
-#       fail-fast: false
       matrix:
-        coq-version:
-          - 8.14.1
-        include:
-          - coq-version: 8.14.1
-            ocaml-compiler: 4.14.0
+        opam_file:
+          - 'coq-autosubst-ocaml.opam'
+        image:
+          - 'coqorg/coq:8.14'
+      fail-fast: false  # don't stop jobs if one fails
     steps:
-      - name: Download case-studies artifact
-        uses: actions/download-artifact@v2
+      - uses: actions/checkout@v2
         with:
-          name: case-studies
-          path: ./case-studies
-      - name: Use OCaml ${{ matrix.ocaml-compiler }}
-        uses: avsm/setup-ocaml@v2
+          submodules: true
+      - uses: coq-community/docker-coq-action@v1
         with:
-          ocaml-compiler: ${{ matrix.ocaml-compiler }}
-      - name: Install dependencies
-        run: |
-          opam repo add coq-released https://coq.inria.fr/opam/released
-          opam install coq.8.14.1
-      - name: Compile generated files
-        # Attributes changed during the last few versions of Coq so we generate two different outputs
-        run: |
-          cd ./case-studies/
-          opam exec -- make clean
-          opam exec -- make
-
-  opam:
-    # The type of runner that the job will run on
-    runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
-    steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - name: Checkout repo
-        uses: actions/checkout@v3
-      - name: Use OCaml 4.14.0
-        uses: avsm/setup-ocaml@v2
-        with:
-          ocaml-compiler: 4.14.0
-      - name: Install dependencies
-        run: |
-          opam repo add coq-released https://coq.inria.fr/opam/released
-          opam install dune.3.6.2
-          opam install .
-      - name: Generate source files
-        run: opam exec -- ./generate-opam.sh
+          custom_image: ${{ matrix.image }}
+          opam_file: ${{ matrix.opam_file }}
+          before_script: |
+            startGroup "fix permission issues"
+              sudo chown -R coq:coq .
+            endGroup
+          after_script: |
+            startGroup "Run benchmarks"
+              ./generate-opam.sh
+              cd ./case-studies/
+              make
+            endGroup
