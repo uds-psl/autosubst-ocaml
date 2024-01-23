@@ -24,7 +24,7 @@ let app_ f xs =
 let app1_ f x =
   Constrexpr_ops.mkAppC (f, [x])
 let appExpl_ n xs =
-  CAst.make @@ Constrexpr.CAppExpl ((None, qualid_ n, None), xs)
+  CAst.make @@ Constrexpr.CAppExpl ((qualid_ n, None), xs)
 let app_ref ?(expl=false) s t =
   if expl then appExpl_ s t
   else app_ (ref_ s) t
@@ -135,16 +135,16 @@ let setup_coq () =
    * future and this should work *)
   let dummy_eq =
     app_ (lambda_ [ binder_ [ "a"; "b" ] ] prop_) [ (ref_ "x"); (ref_ "y") ] in
-  let () = Metasyntax.add_notation ~local:false None (Global.env ()) dummy_eq
-      (CAst.make "x = y", [ Vernacexpr.SetLevel 70
-                          ; Vernacexpr.SetOnlyPrinting
-                          ; Vernacexpr.SetAssoc Gramlib.Gramext.NonA ])
+  let () = Metasyntax.add_notation ~infix:false ~local:false None (Global.env ()) dummy_eq
+      (CAst.make "x = y", [ CAst.make (Vernacexpr.SetLevel 70)
+                          ; CAst.make (Vernacexpr.SetOnlyPrinting)
+                          ; CAst.make (Vernacexpr.SetAssoc Gramlib.Gramext.NonA) ])
       (Some scope) in
   let dummy_arrow = forall1_ (binder1_ "A") (ref_ "B") in
-  let () = Metasyntax.add_notation ~local:false None (Global.env ()) dummy_arrow
-      (CAst.make "A -> B", [ Vernacexpr.SetLevel 70
-                           ; Vernacexpr.SetOnlyPrinting
-                           ; Vernacexpr.SetAssoc Gramlib.Gramext.RightA ])
+  let () = Metasyntax.add_notation ~infix:false ~local:false None (Global.env ()) dummy_arrow
+      (CAst.make "A -> B", [ CAst.make (Vernacexpr.SetLevel 70)
+                           ; CAst.make (Vernacexpr.SetOnlyPrinting)
+                           ; CAst.make (Vernacexpr.SetAssoc Gramlib.Gramext.RightA) ])
       (Some scope) in
   ()
 

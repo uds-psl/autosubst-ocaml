@@ -149,7 +149,7 @@ module NotationGen = struct
 
   let level_ l = SetLevel l
   let assoc_ a = SetAssoc a
-  let format_ fmt = SetFormat ("text", CAst.make fmt)
+  let format_ fmt = SetFormat (TextFormat (CAst.make fmt))
   let only_print_ = SetOnlyPrinting
 
   let to_substs x sorts = List.map (fun s -> sep x s) sorts

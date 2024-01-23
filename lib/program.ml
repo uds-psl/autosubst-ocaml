@@ -59,7 +59,7 @@ let parse_args args =
         ("-no-static", Clear gen_static_files_r, "Don't put the static files like core.v, unscoped.v, etc. into the output directory.");
         ("-allfv", Set gen_allfv_r, "Generate allfv lemmas.");
         ("-fext", Set gen_fext_r, "Generate lemmas & tactics that use the functional extensionality axiom.");
-        ("-p", String set_prelude, "Prepend the content of the given file front of the generated output.")
+        ("-p", String set_prelude, "Prepend the content of the given file in front of the generated output.")
       ] in
     (* The usage message should use the current program's name *)
     let program_name = match Sys.argv.(0) with

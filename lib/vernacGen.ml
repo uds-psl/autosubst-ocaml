@@ -72,7 +72,7 @@ let instance_ inst_name cbinders class_type ?(interactive=false) body =
     then
       Vernac [ CAst.make { 
         control=[];
-        attrs=[("global", Attributes.VernacFlagEmpty)] ;
+        attrs=[CAst.make ("global", Attributes.VernacFlagEmpty)] ;
         expr=VernacInstance (name_decl_ inst_name, cbinders, class_type, None, Typeclasses.{ hint_priority = None; hint_pattern = None });
       }
       ; control_of_expr (VernacExactProof body)
@@ -80,12 +80,12 @@ let instance_ inst_name cbinders class_type ?(interactive=false) body =
     else 
       Vernac [CAst.make { 
         control=[];
-        attrs=[("global", Attributes.VernacFlagEmpty)] ;
+        attrs=[CAst.make ("global", Attributes.VernacFlagEmpty)] ;
         expr=VernacInstance (name_decl_ inst_name, cbinders, class_type, Some (false, body), Typeclasses.{ hint_priority = None; hint_pattern = None });
       } ]
 
 let notation_ notation modifiers ?scope body =
-  unit_of_vernacs [ VernacNotation (body, (CAst.make notation, modifiers), scope) ]
+  unit_of_vernacs [ VernacNotation (false, body, (CAst.make notation, List.map CAst.make modifiers), scope) ]
 
 let clear_arguments_ name =
   let qname = CAst.make (Constrexpr.AN (qualid_ name)) in
@@ -104,9 +104,9 @@ let impl_arguments_ name args =
 
 (* TODO somehow the imported module is printed on a new line. looks like automatic line break issue *)
 let import_ name =
-  unit_of_vernacs [ VernacImport (false, [ (qualid_ name, ImportAll) ]) ]
+  unit_of_vernacs [ VernacImport (false, None, [(qualid_ name, ImportAll) ]) ]
 let export_ name =
-  unit_of_vernacs [ VernacImport (true, [ (qualid_ name, ImportAll) ]) ]
+  unit_of_vernacs [ VernacImport (true, None, [(qualid_ name, ImportAll) ]) ]
 
 let module_ name contents =
   List.concat [
@@ -122,7 +122,7 @@ let module_ name contents =
 let setoid_opaque_hint version name =
   let attrs = match version with
     | S.LT813 -> []
-    | S.GE813 -> [("global", Attributes.VernacFlagEmpty)] 
+    | S.GE813 -> [CAst.make ("global", Attributes.VernacFlagEmpty)] 
   in
   Vernac [ CAst.make { 
       control=[];
