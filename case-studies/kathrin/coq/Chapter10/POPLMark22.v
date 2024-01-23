@@ -581,7 +581,7 @@ Proof.
       unfold funcomp. rewrite <- H. now asimpl.
     + intros. asimpl.
       unfold funcomp. rewrite <- H'. now asimpl.
-  - cbn. eapply T_Tapp with (A0 := A⟨xi⟩) (B0 := ren_ty (upRen_ty_ty xi) B).
+  - cbn. eapply T_Tapp with (A := A⟨xi⟩) (B := ren_ty (upRen_ty_ty xi) B).
     asimpl in IHty. eapply IHty; eauto.
     eapply sub_weak; eauto. now asimpl.
   - econstructor; eauto.
@@ -590,7 +590,7 @@ Proof.
       eapply in_map_iff in H6. destruct H6 as ([j A']&?&?). inv H5.
       eapply H3; eassumption.
   - cbn. econstructor; eauto. now apply in_map.
-  - cbn. asimpl. apply letpat_ty  with (A0 := A⟨xi⟩) (Gamma'0 := Gamma' >> ⟨xi⟩); eauto.
+  - cbn. asimpl. apply letpat_ty  with (A := A⟨xi⟩) (Gamma' := Gamma' >> ⟨xi⟩); eauto.
     + substify.
       eauto.
     + asimpl.
@@ -638,7 +638,7 @@ Proof.
       eapply context_renaming_lemma; try eapply eq2.
       * intros. now asimpl.
       * intros. now asimpl.
-  - eapply T_Tapp with (A0 := subst_ty sigma A) (B0 := subst_ty (up_ty_ty sigma) B).
+  - eapply T_Tapp with (A := subst_ty sigma A) (B := subst_ty (up_ty_ty sigma) B).
     asimpl in IHty. eapply IHty; eauto.
     eapply sub_substitution; eauto.
     now asimpl.

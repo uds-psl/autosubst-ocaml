@@ -65,8 +65,8 @@ Lemma star_img T1 T2 (f : T1 -> T2) (e1 : Rel T1) e2 :
   (forall x y, e1 x y -> star e2 (f x) (f y)) ->
   (forall x y, star e1 x y -> star e2 (f x) (f y)).
 Proof.
-  intros. induction H0; eauto.
-  eapply star_trans with (y0  := f y); eauto.
+  intros ? x y H. induction H; eauto.
+  eapply star_trans with (y  := f y); eauto.
 Qed.
 
 Lemma star_hom T1 T2 (f : T1 -> T2) (e1 : Rel T1) (e2 : Rel T2) :

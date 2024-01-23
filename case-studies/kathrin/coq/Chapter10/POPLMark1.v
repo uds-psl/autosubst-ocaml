@@ -290,7 +290,7 @@ Proof.
     + intros. asimpl.
       unfold funcomp.
       rewrite <- H'. now asimpl.
-  - eapply T_Tapp with (A0 := A⟨sigma⟩) (B0:=ren_ty (upRen_ty_ty sigma) B).
+  - eapply T_Tapp with (A := A⟨sigma⟩) (B :=ren_ty (upRen_ty_ty sigma) B).
     asimpl in IHty.
     eapply IHty; eauto.
     eapply sub_weak; eauto.
@@ -324,7 +324,7 @@ Proof.
       eapply context_renaming_lemma; eauto.
       * intros. now asimpl.
       * intros. now asimpl.
-  - eapply T_Tapp with (A0 := subst_ty sigma A) (B0:=B[up_ty_ty sigma]).
+  - eapply T_Tapp with (A := subst_ty sigma A) (B :=B[up_ty_ty sigma]).
     asimpl in IHty. eapply IHty; eauto.
     eapply sub_substitution; eauto.
     now asimpl.
