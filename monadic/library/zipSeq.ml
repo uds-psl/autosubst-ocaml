@@ -1,13 +1,13 @@
 module ZipSeqAlternative = struct
   type 'a t = 'a Stdlib.Seq.t
 
-  let rec zip xs ys () =
+  let zip xs ys () =
     let open Stdlib.Seq in
     match (xs (), ys ()) with
     | Cons (l1, ls1), Cons (l2, ls2) -> Cons ((l1, l2), zip ls1 ls2)
     | _ -> Nil
 
-  let rec drop i xs =
+  let drop i xs =
     let open Stdlib.Seq in
     if i <= 0 then xs
     else match xs () with Nil -> empty | Cons (_, ls) -> drop (i - 1) ls

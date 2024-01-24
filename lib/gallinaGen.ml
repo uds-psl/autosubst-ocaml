@@ -135,13 +135,13 @@ let setup_coq () =
    * future and this should work *)
   let dummy_eq =
     app_ (lambda_ [ binder_ [ "a"; "b" ] ] prop_) [ (ref_ "x"); (ref_ "y") ] in
-  let () = Metasyntax.add_notation ~infix:false ~local:false None (Global.env ()) dummy_eq
+  let () = Metasyntax.add_notation ~infix:false ~local:true None (Global.env ()) dummy_eq
       (CAst.make "x = y", [ CAst.make (Vernacexpr.SetLevel 70)
                           ; CAst.make (Vernacexpr.SetOnlyPrinting)
                           ; CAst.make (Vernacexpr.SetAssoc Gramlib.Gramext.NonA) ])
       (Some scope) in
   let dummy_arrow = forall1_ (binder1_ "A") (ref_ "B") in
-  let () = Metasyntax.add_notation ~infix:false ~local:false None (Global.env ()) dummy_arrow
+  let () = Metasyntax.add_notation ~infix:false ~local:true None (Global.env ()) dummy_arrow
       (CAst.make "A -> B", [ CAst.make (Vernacexpr.SetLevel 70)
                            ; CAst.make (Vernacexpr.SetOnlyPrinting)
                            ; CAst.make (Vernacexpr.SetAssoc Gramlib.Gramext.RightA) ])

@@ -104,9 +104,9 @@ let impl_arguments_ name args =
 
 (* TODO somehow the imported module is printed on a new line. looks like automatic line break issue *)
 let import_ name =
-  unit_of_vernacs [ VernacImport (false, None, [(qualid_ name, ImportAll) ]) ]
+  unit_of_vernacs [ VernacImport ((Import, None), [(qualid_ name, ImportAll) ]) ]
 let export_ name =
-  unit_of_vernacs [ VernacImport (true, None, [(qualid_ name, ImportAll) ]) ]
+  unit_of_vernacs [ VernacImport ((Export, None), [(qualid_ name, ImportAll) ]) ]
 
 let module_ name contents =
   List.concat [
