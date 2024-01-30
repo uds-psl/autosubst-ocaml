@@ -97,7 +97,7 @@ let impl_arguments_ name args =
       RealArg {
         name = name_ a;
         recarg_like = false;
-        notation_scope = None;
+        notation_scope = [];
         implicit_status = Glob_term.MaxImplicit;
       }) args in
   unit_of_vernacs [ VernacArguments (qname, impl_args, [], []) ]

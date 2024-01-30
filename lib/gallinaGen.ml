@@ -40,8 +40,8 @@ let lname_ s = CAst.make (Names.Name (name_id_ s))
 let name_decl_ s = lname_ s, None
 
 
-type constructor_expr = bool * (Names.lident * Constrexpr.constr_expr)
-let constructor_ cname ctype = (false, (lident_ cname, ctype))
+type constructor_expr = Vernacexpr.constructor_expr
+let constructor_ cname ctype = ((Vernacexpr.NoCoercion,Vernacexpr.NoInstance), (lident_ cname, ctype))
 
 let forall_ binders rtype =
   Constrexpr_ops.mkProdCN binders rtype
@@ -61,7 +61,7 @@ let arr1_ ty1 ty2 = arr_ [ty1] ty2
 
 type inductive_body = Vernacexpr.inductive_expr * Vernacexpr.decl_notation list
 let inductiveBody_ iname iparams ?rtype iconstructors =
-  (((false, (CAst.make (name_id_ iname), None)), (* ident decl with coercion *)
+  (((Vernacexpr.NoCoercion, (CAst.make (name_id_ iname), None)), (* ident decl with coercion *)
     (iparams, None), (* inductive params_expr *)
     rtype, (* type I guess *)
     Vernacexpr.Constructors iconstructors), [])

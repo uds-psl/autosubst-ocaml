@@ -38,9 +38,9 @@ val branch_ : identifier -> identifiers -> constr_expr -> branch_expr
 val binder_ : ?implicit: bool -> ?btype:constr_expr -> identifiers -> binder_expr
 val binder1_ : ?implicit:bool -> ?btype:constr_expr -> identifier -> binder_expr
 
-type constructor_expr = bool * (Names.lident * constr_expr)
+type constructor_expr = Vernacexpr.constructor_expr
 type inductive_body = Vernacexpr.inductive_expr * Vernacexpr.decl_notation list
-val constructor_ : identifier -> constr_expr -> constructor_expr
+val constructor_ : identifier -> constr_expr -> Vernacexpr.constructor_expr
 val inductiveBody_ : identifier -> binder_expr list -> ?rtype:constr_expr -> constructor_expr list -> inductive_body
 
 val definition_expr_ : binder_expr list -> ?rtype:constr_expr -> constr_expr -> Vernacexpr.definition_expr
