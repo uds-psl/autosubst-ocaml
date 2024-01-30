@@ -188,7 +188,7 @@ let reservedIds =
 
 let check_reserved s =
   let open ErrorM in
-  if List.mem s reservedIds || CLexer.is_keyword s
+  if List.mem s reservedIds || CLexer.is_keyword CLexer.empty_keyword_state s
   then error ("reserved identifier: " ^ s)
   else pure ()
 

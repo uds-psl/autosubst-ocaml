@@ -39,7 +39,7 @@ val binder_ : ?implicit: bool -> ?btype:constr_expr -> identifiers -> binder_exp
 val binder1_ : ?implicit:bool -> ?btype:constr_expr -> identifier -> binder_expr
 
 type constructor_expr = Vernacexpr.constructor_expr
-type inductive_body = Vernacexpr.inductive_expr * Vernacexpr.decl_notation list
+type inductive_body = Vernacexpr.inductive_expr * Vernacexpr.notation_declaration list
 val constructor_ : identifier -> constr_expr -> Vernacexpr.constructor_expr
 val inductiveBody_ : identifier -> binder_expr list -> ?rtype:constr_expr -> constructor_expr list -> inductive_body
 

@@ -83,3 +83,11 @@ case-studies/examples/*.v
 **/.auctex-auto/
 
 .vscode
+
+case-studies/tapl-exercise/core_axioms.v
+
+case-studies/tapl-exercise/core.v
+
+case-studies/tapl-exercise/sysf.v
+
+case-studies/tapl-exercise/unscoped.v

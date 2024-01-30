@@ -15,8 +15,8 @@ let name_id_ s = Names.Id.of_string s
 let lident_ s = CAst.make (name_id_ s)
 let name_ s = Names.Name.mk_name (name_id_ s)
 
-let underscore_ = CAst.make Constrexpr.(CHole (None, Namegen.IntroAnonymous, None))
-let prop_ = CAst.make Constrexpr.(CSort (Glob_term.UNamed [CProp, 0]))
+let underscore_ = CAst.make Constrexpr.(CHole (None, Namegen.IntroAnonymous))
+let prop_ = CAst.make Constrexpr.(CSort (Glob_term.UNamed (None,[CProp, 0])))
 let type_ = CAst.make Constrexpr.(CSort (Glob_term.UAnonymous { rigid = true }))
 
 let app_ f xs =
@@ -41,7 +41,7 @@ let name_decl_ s = lname_ s, None
 
 
 type constructor_expr = Vernacexpr.constructor_expr
-let constructor_ cname ctype = ((Vernacexpr.NoCoercion,Vernacexpr.NoInstance), (lident_ cname, ctype))
+let constructor_ cname ctype = (([],Vernacexpr.NoCoercion,Vernacexpr.NoInstance), (lident_ cname, ctype))
 
 let forall_ binders rtype =
   Constrexpr_ops.mkProdCN binders rtype
@@ -59,7 +59,7 @@ let arr_ tys tyend =
 
 let arr1_ ty1 ty2 = arr_ [ty1] ty2
 
-type inductive_body = Vernacexpr.inductive_expr * Vernacexpr.decl_notation list
+type inductive_body = Vernacexpr.inductive_expr * Vernacexpr.notation_declaration list
 let inductiveBody_ iname iparams ?rtype iconstructors =
   (((Vernacexpr.NoCoercion, (CAst.make (name_id_ iname), None)), (* ident decl with coercion *)
     (iparams, None), (* inductive params_expr *)
@@ -91,7 +91,7 @@ let match_ cexpr ?rtype bexprs =
 let binder_ ?(implicit=false) ?btype bnames =
   let open Constrexpr in
   let bk = Default (if implicit then Glob_term.MaxImplicit else Glob_term.Explicit) in
-  let btype = Option.default (CAst.make @@ CHole (None, Namegen.IntroAnonymous, None)) btype in
+  let btype = Option.default (CAst.make @@ CHole (None, Namegen.IntroAnonymous)) btype in
   CLocalAssum (List.map lname_ bnames, bk, btype)
 
 let binder1_ ?implicit ?btype bname =
@@ -136,16 +136,23 @@ let setup_coq () =
   let _ = (Flags.in_debugger := true) in
   let dummy_eq =
     app_ (lambda_ [ binder_ [ "a"; "b" ] ] prop_) [ (ref_ "x"); (ref_ "y") ] in
-  let () = Metasyntax.add_notation ~infix:false ~local:true None (Global.env ()) dummy_eq
-      (CAst.make "x = y", [ CAst.make (Vernacexpr.SetLevel 70)
-                          ; CAst.make (Vernacexpr.SetOnlyPrinting)
-                          ; CAst.make (Vernacexpr.SetAssoc Gramlib.Gramext.NonA) ])
-      (Some scope) in
+  let () = Metasyntax.add_notation_interpretation ~local:true (Global.env ())
+            (Metasyntax.add_notation_syntax ~local:true ~infix:false None
+              { ntn_decl_string = CAst.make "x = y" ;
+                ntn_decl_interp = dummy_eq ;
+                ntn_decl_scope = Some scope ;
+                ntn_decl_modifiers = [ CAst.make (Vernacexpr.SetLevel 70)
+                ; CAst.make (Vernacexpr.SetOnlyPrinting)
+                ; CAst.make (Vernacexpr.SetAssoc Gramlib.Gramext.NonA) ]
+              }) in
   let dummy_arrow = forall1_ (binder1_ "A") (ref_ "B") in
-  let () = Metasyntax.add_notation ~infix:false ~local:true None (Global.env ()) dummy_arrow
-      (CAst.make "A -> B", [ CAst.make (Vernacexpr.SetLevel 70)
-                           ; CAst.make (Vernacexpr.SetOnlyPrinting)
-                           ; CAst.make (Vernacexpr.SetAssoc Gramlib.Gramext.RightA) ])
-      (Some scope) in
+  let () = Metasyntax.add_notation_interpretation ~local:true (Global.env ())
+  (Metasyntax.add_notation_syntax ~local:true ~infix:false None
+    { ntn_decl_string = CAst.make "A -> B" ;
+      ntn_decl_interp = dummy_arrow ;
+      ntn_decl_scope = Some scope ;
+      ntn_decl_modifiers = [ CAst.make (Vernacexpr.SetLevel 70)
+      ; CAst.make (Vernacexpr.SetOnlyPrinting)
+      ; CAst.make (Vernacexpr.SetAssoc Gramlib.Gramext.RightA) ]
+    }) in
   ()
-

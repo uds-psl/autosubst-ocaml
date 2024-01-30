@@ -20,7 +20,7 @@ let unit_of_vernacs vexprs = Vernac (List.map control_of_expr vexprs)
 let pr_vernac_control =
   let open Pp in
   function
-  | CAst.{v = {expr = VernacExactProof cexpr; _}; _} ->
+  | CAst.{v = {expr = VernacSynPure (VernacExactProof cexpr); _}; _} ->
     str "Proof" ++ vernacend ++ pr_exact_expr cexpr
   | vexpr ->
     Ppvernac.pr_vernac vexpr ++ newline
@@ -37,13 +37,13 @@ let pr_vernac_units vunits = Pp.seq (List.map pr_vernac_unit vunits)
 let definition_ dname dbinders ?rtype dbody =
   let dname = name_decl_ dname in
   let dexpr = definition_expr_ dbinders ?rtype dbody in
-  unit_of_vernacs [ VernacDefinition ((NoDischarge, Decls.Definition), dname, dexpr) ]
+  unit_of_vernacs [ VernacSynPure (VernacDefinition ((NoDischarge, Decls.Definition), dname, dexpr)) ]
 
 let lemma_ ?(opaque=true) lname lbinders ltype lbody =
   let pexpr = (ident_decl_ lname, (lbinders, ltype)) in
-  let lbegin = VernacStartTheoremProof (Decls.Lemma, [pexpr]) in
-  let lbody = VernacExactProof lbody in
-  let lend = VernacEndProof (Proved ((if opaque then Opaque else Transparent), None)) in
+  let lbegin = VernacSynPure (VernacStartTheoremProof (Decls.Lemma, [pexpr])) in
+  let lbody = VernacSynPure (VernacExactProof lbody) in
+  let lend = VernacSynPure (VernacEndProof (Proved ((if opaque then Opaque else Transparent), None))) in
   unit_of_vernacs [ lbegin; lbody; lend ]
 
 let fixpoint_ ~is_rec fexprs =
@@ -51,7 +51,7 @@ let fixpoint_ ~is_rec fexprs =
   | [] -> failwith "fixpoint called without fixpoint bodies"
   | fexprs_nempty ->
     if is_rec
-    then unit_of_vernacs [ VernacFixpoint (NoDischarge, fexprs) ]
+    then unit_of_vernacs [ VernacSynPure (VernacFixpoint (NoDischarge, fexprs)) ]
     (* if the fixpoint is declared non-recursive we try to turn it into a definition *)
     else match fexprs_nempty with
       | [{ fname={ v=fname; _ }; binders; rtype; body_def=Some body; _}] ->
@@ -60,12 +60,12 @@ let fixpoint_ ~is_rec fexprs =
       | _ -> failwith "A non recursive fixpoint degenerates to a definition so it should only have one body"
 
 let inductive_ inductiveBodies =
-  unit_of_vernacs [ VernacInductive (Inductive_kw, inductiveBodies) ]
+  unit_of_vernacs [ VernacSynPure (VernacInductive (Inductive_kw, inductiveBodies)) ]
 
 let class_ name binders fields =
   let body = inductiveBody_ name binders fields in
   (* a.d. false argument to Class to make it inductive, not definitional *)
-  unit_of_vernacs [ VernacInductive (Class false, [ body ]) ]
+  unit_of_vernacs [ VernacSynPure (VernacInductive (Class false, [ body ])) ]
 
 let instance_ inst_name cbinders class_type ?(interactive=false) body =
    if interactive
@@ -73,23 +73,30 @@ let instance_ inst_name cbinders class_type ?(interactive=false) body =
       Vernac [ CAst.make { 
         control=[];
         attrs=[CAst.make ("global", Attributes.VernacFlagEmpty)] ;
-        expr=VernacInstance (name_decl_ inst_name, cbinders, class_type, None, Typeclasses.{ hint_priority = None; hint_pattern = None });
+        expr= VernacSynPure(VernacInstance 
+          (name_decl_ inst_name, cbinders, class_type, None, Typeclasses.{ hint_priority = None; hint_pattern = None }));
       }
-      ; control_of_expr (VernacExactProof body)
-      ; control_of_expr (VernacEndProof (Proved (Opaque, None))) ]
+      ; control_of_expr (VernacSynPure (VernacExactProof body))
+      ; control_of_expr (VernacSynPure (VernacEndProof (Proved (Opaque, None)))) ]
     else 
       Vernac [CAst.make { 
         control=[];
         attrs=[CAst.make ("global", Attributes.VernacFlagEmpty)] ;
-        expr=VernacInstance (name_decl_ inst_name, cbinders, class_type, Some (false, body), Typeclasses.{ hint_priority = None; hint_pattern = None });
+        expr= VernacSynPure (VernacInstance
+          (name_decl_ inst_name, cbinders, class_type, Some (false, body), Typeclasses.{ hint_priority = None; hint_pattern = None }));
       } ]
 
 let notation_ notation modifiers ?scope body =
-  unit_of_vernacs [ VernacNotation (false, body, (CAst.make notation, List.map CAst.make modifiers), scope) ]
+  unit_of_vernacs [ VernacSynterp (VernacNotation (false,
+      { ntn_decl_string = CAst.make notation ;
+        ntn_decl_interp = body ;
+        ntn_decl_scope = scope ;
+        ntn_decl_modifiers = List.map CAst.make modifiers
+      }))]
 
 let clear_arguments_ name =
   let qname = CAst.make (Constrexpr.AN (qualid_ name)) in
-  unit_of_vernacs [ VernacArguments (qname, [], [], [ `ClearImplicits ]) ]
+  unit_of_vernacs [ VernacSynPure (VernacArguments (qname, [], [], [ `ClearImplicits ])) ]
 
 let impl_arguments_ name args =
   let qname = CAst.make (Constrexpr.AN (qualid_ name)) in
@@ -100,19 +107,19 @@ let impl_arguments_ name args =
         notation_scope = [];
         implicit_status = Glob_term.MaxImplicit;
       }) args in
-  unit_of_vernacs [ VernacArguments (qname, impl_args, [], []) ]
+  unit_of_vernacs [ VernacSynPure (VernacArguments (qname, impl_args, [], [])) ]
 
 (* TODO somehow the imported module is printed on a new line. looks like automatic line break issue *)
 let import_ name =
-  unit_of_vernacs [ VernacImport ((Import, None), [(qualid_ name, ImportAll) ]) ]
+  unit_of_vernacs [ VernacSynterp (VernacImport ((Import, None), [(qualid_ name, ImportAll) ])) ]
 let export_ name =
-  unit_of_vernacs [ VernacImport ((Export, None), [(qualid_ name, ImportAll) ]) ]
+  unit_of_vernacs [ VernacSynterp (VernacImport ((Export, None), [(qualid_ name, ImportAll) ])) ]
 
 let module_ name contents =
   List.concat [
-    [ unit_of_vernacs [ VernacDefineModule (None, lident_ name, [], Declaremods.Check [], []) ] ];
+    [ unit_of_vernacs [ VernacSynterp (VernacDefineModule (None, lident_ name, [], Declaremods.Check [], [])) ] ];
     contents;
-    [ unit_of_vernacs [ VernacEndSegment (lident_ name) ] ]
+    [ unit_of_vernacs [ VernacSynterp (VernacEndSegment (lident_ name)) ] ]
   ]
 
 
@@ -127,7 +134,7 @@ let setoid_opaque_hint version name =
   Vernac [ CAst.make { 
       control=[];
       attrs=attrs;
-      expr=VernacHints (["rewrite"], HintsTransparency (Hints.HintsReferences [qualid_ name], false));
+      expr= VernacSynPure (VernacHints (["rewrite"], HintsTransparency (Hints.HintsReferences [qualid_ name], false)));
     } ]
 
 
