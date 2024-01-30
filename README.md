@@ -14,7 +14,7 @@
 - Maintainer:
   - Yannick Forster ([**@yforster**](https://github.com/yforster))
 - License: [MIT License](LICENSE)
-- Compatible Coq versions: 8.16.1
+- Compatible Coq versions: 8.17.1
 - Related publication(s):
   - Adrian Dapprich's [bachelor thesis](https://www.ps.uni-saarland.de/~dapprich/bachelor.php) (Advisor: Andrej Dudenhefner, Supervisor: Gert Smolka)
 
