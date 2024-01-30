@@ -51,6 +51,7 @@ module TacGen = struct
       rZeta = true;
       rDelta = delta;
       rConst = consts;
+      rStrength = Norm ;
     } in
     let cbn = Genredexpr.Cbn flags in
     (CAst.make (TacAtom (TacReduce (cbn, locus_clause))))

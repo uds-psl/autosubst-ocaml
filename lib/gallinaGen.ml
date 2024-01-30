@@ -15,9 +15,9 @@ let name_id_ s = Names.Id.of_string s
 let lident_ s = CAst.make (name_id_ s)
 let name_ s = Names.Name.mk_name (name_id_ s)
 
-let underscore_ = CAst.make Constrexpr.(CHole (None, Namegen.IntroAnonymous))
+let underscore_ = CAst.make Constrexpr.(CHole None)
 let prop_ = CAst.make Constrexpr.(CSort (Glob_term.UNamed (None,[CProp, 0])))
-let type_ = CAst.make Constrexpr.(CSort (Glob_term.UAnonymous { rigid = true }))
+let type_ = CAst.make Constrexpr.(CSort (Glob_term.UAnonymous { rigid = UnivRigid }))
 
 let app_ f xs =
   Constrexpr_ops.mkAppC (f, xs)
@@ -91,7 +91,7 @@ let match_ cexpr ?rtype bexprs =
 let binder_ ?(implicit=false) ?btype bnames =
   let open Constrexpr in
   let bk = Default (if implicit then Glob_term.MaxImplicit else Glob_term.Explicit) in
-  let btype = Option.default (CAst.make @@ CHole (None, Namegen.IntroAnonymous)) btype in
+  let btype = Option.default (CAst.make @@ CHole None) btype in
   CLocalAssum (List.map lname_ bnames, bk, btype)
 
 let binder1_ ?implicit ?btype bname =
