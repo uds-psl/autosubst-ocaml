@@ -133,6 +133,7 @@ let setup_coq () =
   (* for both definition we create dummy expressions that will never be used.
    * But according to the documentation the bodies of notations might be typechecked in the
    * future and this should work *)
+  let _ = (Flags.in_debugger := true) in
   let dummy_eq =
     app_ (lambda_ [ binder_ [ "a"; "b" ] ] prop_) [ (ref_ "x"); (ref_ "y") ] in
   let () = Metasyntax.add_notation ~infix:false ~local:true None (Global.env ()) dummy_eq
