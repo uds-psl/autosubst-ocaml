@@ -97,7 +97,7 @@ End SubstNotations.
 Class Var X Y :=
   ids : X -> Y.
 
-Instance idsRen : Var nat nat := id.
+#[export] Instance idsRen : Var nat nat := id.
 
 (** ** Proofs for the substitution primitives. *)
 
@@ -144,7 +144,7 @@ Lemma scons_comp' (T: Type) {U} (s: T) (sigma: nat -> T) (tau: T -> U) :
 Proof. intros x. destruct x; reflexivity. Qed.
 
 (* Morphism for Setoid Rewriting. The only morphism that can be defined statically. *)
-Instance scons_morphism {X: Type} :
+#[export] Instance scons_morphism {X: Type} :
   Proper (eq ==> pointwise_relation _ eq ==> pointwise_relation _ eq) (@scons X).
 Proof.
   intros ? t -> sigma tau H.
@@ -153,7 +153,7 @@ Proof.
   apply H.
 Qed.
 
-Instance scons_morphism2 {X: Type} :
+#[export] Instance scons_morphism2 {X: Type} :
   Proper (eq ==> pointwise_relation _ eq ==> eq ==> eq) (@scons X).
 Proof.
   intros ? t -> sigma tau H ? x ->.
@@ -177,9 +177,9 @@ Module UnscopedNotations.
 
   Notation "↑" := (shift) : subst_scope.
 
-  #[ global ]
+  #[global]
   Open Scope fscope.
-  #[ global ]
+  #[global]
   Open Scope subst_scope.
 End UnscopedNotations.
 

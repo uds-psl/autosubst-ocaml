@@ -19,15 +19,15 @@ Arguments abs {n_ty} {n_tm}.
 
 Arguments tabs {n_ty} {n_tm}.
 
-Instance Subst_ty { m_ty : nat } { n_ty : nat } : Subst1 ((fin) (m_ty) -> ty (n_ty)) (ty (m_ty)) (ty (n_ty)) := @subst_ty (m_ty) (n_ty) .
+#[global] Instance Subst_ty { m_ty : nat } { n_ty : nat } : Subst1 ((fin) (m_ty) -> ty (n_ty)) (ty (m_ty)) (ty (n_ty)) := @subst_ty (m_ty) (n_ty) .
 
-Instance Subst_tm { m_ty m_tm : nat } { n_ty n_tm : nat } : Subst2 ((fin) (m_ty) -> ty (n_ty)) ((fin) (m_tm) -> tm (n_ty) (n_tm)) (tm (m_ty) (m_tm)) (tm (n_ty) (n_tm)) := @subst_tm (m_ty) (m_tm) (n_ty) (n_tm) .
+#[global] Instance Subst_tm { m_ty m_tm : nat } { n_ty n_tm : nat } : Subst2 ((fin) (m_ty) -> ty (n_ty)) ((fin) (m_tm) -> tm (n_ty) (n_tm)) (tm (m_ty) (m_tm)) (tm (n_ty) (n_tm)) := @subst_tm (m_ty) (m_tm) (n_ty) (n_tm) .
 
-Instance Ren_ty { m_ty : nat } { n_ty : nat } : Ren1 ((fin) (m_ty) -> (fin) (n_ty)) (ty (m_ty)) (ty (n_ty)) := @ren_ty (m_ty) (n_ty) .
+#[global] Instance Ren_ty { m_ty : nat } { n_ty : nat } : Ren1 ((fin) (m_ty) -> (fin) (n_ty)) (ty (m_ty)) (ty (n_ty)) := @ren_ty (m_ty) (n_ty) .
 
-Instance Ren_tm { m_ty m_tm : nat } { n_ty n_tm : nat } : Ren2 ((fin) (m_ty) -> (fin) (n_ty)) ((fin) (m_tm) -> (fin) (n_tm)) (tm (m_ty) (m_tm)) (tm (n_ty) (n_tm)) := @ren_tm (m_ty) (m_tm) (n_ty) (n_tm) .
+#[global] Instance Ren_tm { m_ty m_tm : nat } { n_ty n_tm : nat } : Ren2 ((fin) (m_ty) -> (fin) (n_ty)) ((fin) (m_tm) -> (fin) (n_tm)) (tm (m_ty) (m_tm)) (tm (n_ty) (n_tm)) := @ren_tm (m_ty) (m_tm) (n_ty) (n_tm) .
 
-Instance VarInstance_ty { m_ty : nat } : Var ((fin) (m_ty)) (ty (m_ty)) := @var_ty (m_ty) .
+#[global] Instance VarInstance_ty { m_ty : nat } : Var ((fin) (m_ty)) (ty (m_ty)) := @var_ty (m_ty) .
 
 Notation "x '__ty'" := (var_ty x) (at level 5, format "x __ty") : subst_scope.
 
@@ -35,7 +35,7 @@ Notation "x '__ty'" := (@ids (_) (_) VarInstance_ty x) (at level 5, only printin
 
 Notation "'var'" := (var_ty) (only printing, at level 1) : subst_scope.
 
-Instance VarInstance_tm { m_ty m_tm : nat } : Var ((fin) (m_tm)) (tm (m_ty) (m_tm)) := @var_tm (m_ty) (m_tm) .
+#[global] Instance VarInstance_tm { m_ty m_tm : nat } : Var ((fin) (m_tm)) (tm (m_ty) (m_tm)) := @var_tm (m_ty) (m_tm) .
 
 Notation "x '__tm'" := (var_tm x) (at level 5, format "x __tm") : subst_scope.
 
@@ -53,19 +53,19 @@ Notation "↑__tm" := (up_tm) (only printing) : subst_scope.
 
 Notation "↑__ty" := (up_ty_ty) (only printing) : subst_scope.
 
-Instance Up_ty_ty { m : nat } { n_ty : nat } : Up_ty (_) (_) := @up_ty_ty (m) (n_ty) .
+#[global] Instance Up_ty_ty { m : nat } { n_ty : nat } : Up_ty (_) (_) := @up_ty_ty (m) (n_ty) .
 
 Notation "↑__ty" := (up_ty_tm) (only printing) : subst_scope.
 
-Instance Up_ty_tm { m : nat } { n_ty n_tm : nat } : Up_tm (_) (_) := @up_ty_tm (m) (n_ty) (n_tm) .
+#[global] Instance Up_ty_tm { m : nat } { n_ty n_tm : nat } : Up_tm (_) (_) := @up_ty_tm (m) (n_ty) (n_tm) .
 
 Notation "↑__tm" := (up_tm_ty) (only printing) : subst_scope.
 
-Instance Up_tm_ty { m : nat } { n_ty : nat } : Up_ty (_) (_) := @up_tm_ty (m) (n_ty) .
+#[global] Instance Up_tm_ty { m : nat } { n_ty : nat } : Up_ty (_) (_) := @up_tm_ty (m) (n_ty) .
 
 Notation "↑__tm" := (up_tm_tm) (only printing) : subst_scope.
 
-Instance Up_tm_tm { m : nat } { n_ty n_tm : nat } : Up_tm (_) (_) := @up_tm_tm (m) (n_ty) (n_tm) .
+#[global] Instance Up_tm_tm { m : nat } { n_ty n_tm : nat } : Up_tm (_) (_) := @up_tm_tm (m) (n_ty) (n_tm) .
 
 Notation "s [ sigmaty ]" := (subst_ty sigmaty s) (at level 7, left associativity, only printing) : subst_scope.
 

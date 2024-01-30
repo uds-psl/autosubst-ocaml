@@ -92,7 +92,8 @@ Proof.
   - exfalso.
     (* we know that it cannot be None since map does not change the length *)
     rewrite List.nth_error_None in E.
-    apply (Lt.le_not_lt _ _ E).
+    eapply Nat.le_ngt.
+    1: eassumption.
     rewrite <- (List.map_length f).
     apply List.nth_error_Some. 
     intros H'. rewrite H' in H. discriminate H.
@@ -490,7 +491,7 @@ Proof.
   refine (bin_size_ind (fun x y => x + y) _ _).
   intros n l IH t u Hwf.
   destruct (n + l) as [|nl] eqn:E.
-  - apply plus_is_O in E as [En El]. subst n l.
+  - apply Nat.eq_add_0 in E as [En El]. subst n l.
     inversion Hwf. exact H.
   - inversion Hwf; subst.
     + exact H.

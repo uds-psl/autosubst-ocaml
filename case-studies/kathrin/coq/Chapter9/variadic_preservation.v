@@ -7,7 +7,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 
 Ltac inv H := dependent destruction H.
-Hint Constructors star.
+#[global] Hint Constructors star : core.
 Import ScopedNotations.
 
 (** *** Single-step reduction *)
@@ -16,7 +16,7 @@ Inductive step {n} : tm n -> tm n -> Prop :=
 | step_abs  p b1 b2 : @step (p + n) b1 b2 -> step (lam p b1) (lam p b2)
 | step_appL p s1 s2 t : step s1 s2 -> step (app p s1 t) (app _ s2 t).
 
-Hint Constructors step.
+#[global] Hint Constructors step : core.
 
 Lemma step_beta' n p b (t: fin p -> tm n) t':
   t' = b[scons_p p t ids] -> step (app _ (lam p b) t) t'.

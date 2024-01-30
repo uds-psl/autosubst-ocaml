@@ -26,7 +26,7 @@ Inductive mwhr : tm -> tm -> Prop :=
  | mwhrR s : mwhr s s
  | mwhrS s t u : whr s t -> mwhr t u -> mwhr s u.
 
-Hint Constructors whr mwhr.
+#[global] Hint Constructors whr mwhr : core.
 
 Lemma mwhr_appL s s' t :
   mwhr s s' -> mwhr (app s t) (app s' t).
@@ -36,7 +36,7 @@ Lemma mwhr_trans s t u :
   mwhr s t -> mwhr t u ->  mwhr s u.
 Proof. induction 1; eauto. Qed.
 
- Hint Immediate mwhr_trans.
+#[global] Hint Immediate mwhr_trans : core.
 
 Lemma whr_ren xi M N :
   whr M  N -> whr (M⟨xi⟩) (N⟨xi⟩).

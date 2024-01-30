@@ -6,6 +6,7 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 Require Import Coq.Program.Equality.
 
+Declare Scope prop_scope.
 Delimit Scope prop_scope with PROP.
 Open Scope prop_scope.
 
@@ -29,7 +30,7 @@ Inductive Or {X} (R R': X -> X -> Prop) : X -> X -> Prop :=
 | Inl x y : R x y -> Or R R' x y
 | Inr x y : R' x y -> Or R R' x y.
 
-Hint Constructors Or.
+#[global] Hint Constructors Or : core.
 
 
 (** ** Reflexive, Transitive closure *)
@@ -43,8 +44,8 @@ Inductive star (x : T) : T -> Prop :=
 | starR : star x x
 | starSE y z : e x y -> star y z -> star x z.
 
-Hint Constructors star.
-Hint Resolve starR.
+Hint Constructors star : core.
+#[local] Hint Resolve starR : core.
 
 
 Lemma star1 x y : e x y -> star x y.
@@ -57,7 +58,7 @@ Proof.
 Qed.
 
 End Definitions.
-Hint Constructors star.
+#[global] Hint Constructors star : core.
 
 Arguments star_trans {T e} y {x z} A B.
 
@@ -81,7 +82,7 @@ Arguments star_hom {T1 T2} f e1 {e2} A x y B.
 Inductive plus {X} (R : X -> X -> Prop) : X -> X -> Prop :=
  | plusR s t u : R s t -> star R t u -> plus R s u.
 
-Hint Constructors plus star.
+#[global] Hint Constructors plus star : core.
 
 Lemma star_plus {X} (R: X -> X -> Prop) s t :
   star R s t -> star (plus R) s t.
@@ -95,12 +96,12 @@ Qed.
 Inductive sn T (e: Rel T)  : T -> Prop :=
 | SNI x: (forall y, e x y -> sn e y) -> sn e x.
 
-Hint Immediate SNI.
+#[global] Hint Immediate SNI : core.
 
 Definition morphism {T1 T2} (R1 : Rel T1) (R2 : Rel T2) (h : T1 -> T2) :=
   forall x y, R1 x y -> R2 (h x) (h y).
 
-Hint Unfold morphism.
+#[global] Hint Unfold morphism : core.
 
 (** Morphism lemma, due to Steven Schäfer. *)
 Fact sn_morphism {T1 T2} (R1 : Rel T1) (R2 : Rel T2) (h : T1 -> T2) x :
@@ -163,7 +164,7 @@ Definition confluent {X} (R: X -> X -> Prop) :=
 Definition terminating {X} (R : X -> X -> Prop) :=
   forall x, sn R x.
 
-Hint Unfold terminating.
+#[global] Hint Unfold terminating : core.
 
 Fact newman {X} (R : X -> X -> Prop) :
   terminating R -> locally_confluent R -> confluent R.

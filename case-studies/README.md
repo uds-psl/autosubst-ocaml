@@ -17,7 +17,6 @@ You can issue `make` in this directory to have Coq compile all the files.
 ### `case-studies/kathrin/coq/`
 This directory contains a subset of the case studies by Kathrin Stark from https://www.ps.uni-saarland.de/~kstark/thesis/
 Several metatheorems are proved, mostly about the simply typed lambda calculus and variations of System F.
-The files are adapted to be compatible with Coq 8.13.
 
 We generate the languages for the cases studies using Autosubst OCaml with mostly functional extensionality disabled (see the ./generate.sh script).
 Only Chapter6/variadic_fin.v uses functional extensionality because the language is defined with the codomain functor which needs the axiom.

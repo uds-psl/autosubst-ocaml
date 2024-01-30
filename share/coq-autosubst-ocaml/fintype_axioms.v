@@ -83,4 +83,4 @@ Ltac fsimplc_fext :=
 Tactic Notation "fsimpl_fext" "in" "*" :=
   fsimpl_fext; fsimplc_fext.
 
-Hint Rewrite @scons_p_head' @scons_p_tail' @scons_p_comp scons_p_head scons_p_tail : FunctorInstancesFext.
+#[export] Hint Rewrite @scons_p_head' @scons_p_tail' @scons_p_comp scons_p_head scons_p_tail : FunctorInstancesFext.

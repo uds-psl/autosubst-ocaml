@@ -156,7 +156,7 @@ match goal with
 |[H: ids _ = ids _|- _] => inv H
 end.
 
-Hint Constructors SN SNe SNRed.
+#[global] Hint Constructors SN SNe SNRed : core.
 
 Lemma anti_rename:
   (forall n (M: tm n), SN M -> forall n' M' (R: fin n' -> fin n), M = ren_tm R M' -> SN M')

@@ -184,7 +184,7 @@ Proof. intros x. destruct x; reflexivity. Qed.
 (* Qed. *)
 
 (* Morphism for Setoid Rewriting. The only morphism that can be defined statically. *)
-Instance scons_morphism {X: Type} {n:nat} :
+#[export] Instance scons_morphism {X: Type} {n:nat} :
   Proper (eq ==> pointwise_relation _ eq ==> pointwise_relation _ eq) (@scons X n).
 Proof.
   intros t t' -> sigma tau H.
@@ -193,7 +193,7 @@ Proof.
   reflexivity.
 Qed.
 
-Instance scons_morphism2 {X: Type} {n: nat} :
+#[export] Instance scons_morphism2 {X: Type} {n: nat} :
   Proper (eq ==> pointwise_relation _ eq ==> eq ==> eq) (@scons X n).
 Proof.
   intros ? t -> sigma tau H ? x ->.
@@ -221,10 +221,9 @@ Proof.
       * exact g.
 Defined.
 
-#[ export ]
-Hint Opaque scons_p : rewrite.
+#[export] Hint Opaque scons_p : rewrite.
 
-Instance scons_p_morphism {X: Type} {m n:nat} :
+#[export] Instance scons_p_morphism {X: Type} {m n:nat} :
   Proper (pointwise_relation _ eq ==> pointwise_relation _ eq ==> pointwise_relation _ eq) (@scons_p X m n).
 Proof.
   intros sigma sigma' Hsigma tau tau' Htau.
@@ -238,7 +237,7 @@ Proof.
     + cbn. apply Hsigma.
 Qed.
 
-Instance scons_p_morphism2 {X: Type} {m n:nat} :
+#[export] Instance scons_p_morphism2 {X: Type} {m n:nat} :
   Proper (pointwise_relation _ eq ==> pointwise_relation _ eq ==> eq ==> eq) (@scons_p X m n).
 Proof.
   intros sigma sigma' Hsigma tau tau' Htau ? x ->.
@@ -369,9 +368,9 @@ Module ScopedNotations.
 
   Notation "↑" := (shift) : subst_scope.
 
-  #[ global ]
+  #[global]
   Open Scope fscope.
-  #[ global ]
+  #[global]
   Open Scope subst_scope.
 End ScopedNotations.
 
@@ -386,7 +385,7 @@ Tactic Notation "auto_case" tactic(t) :=  (match goal with
                                            | [|- forall (i : fin (S _)), _] =>  intros [?|]; t
                                            end).
 
-Hint Rewrite @scons_p_head' @scons_p_tail' : FunctorInstances.
+#[export] Hint Rewrite @scons_p_head' @scons_p_tail' : FunctorInstances.
 
 (** Generic fsimpl tactic: simplifies the above primitives in a goal. *)
 Ltac fsimpl :=

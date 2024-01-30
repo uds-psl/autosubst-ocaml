@@ -31,7 +31,7 @@ Inductive unique {X} : list (nat * X) -> Prop :=
 | unil : unique nil
 | ucons l x xs : unique xs -> (forall x, ~ In (l, x) xs) ->  unique (cons (l,x) xs).
 
-Hint Constructors unique.
+#[global] Hint Constructors unique : core.
 
 Lemma unique_map {X Y: Type} {f : X -> Y} (xs : list (nat * X)) :
   unique xs -> unique (map (prod_map (fun x => x) f) xs).
@@ -75,7 +75,7 @@ Proof.
   apply H in H0. destruct H0 as (?&?). exists (f x). rewrite in_map_iff. exists (l, x). eauto.
 Qed.
 
-Hint Resolve unique_map label_equiv_map.
+#[global] Hint Resolve unique_map label_equiv_map : core.
 
 Definition update {X} (ts : list (nat * X)) l x : list (nat * X) :=
   map (fun p => if (Nat.eqb (fst p) l) then (l, x) else p) ts.
@@ -127,7 +127,7 @@ Proof.
     + right. cbn. eauto.
 Qed.
 
-Hint Resolve unique_update natequiv_update.
+#[global] Hint Resolve unique_update natequiv_update : core.
 
 (** POPLMark 1B. *)
 Reserved Notation "'SUB' Delta |- A <: B" (at level 68, A at level 99, no associativity).
@@ -149,7 +149,7 @@ Inductive sub {n} (Delta : ctx n) : ty n -> ty n -> Prop :=
                        unique xs -> unique ys -> SUB Delta |- recty xs <: recty ys
 where "'SUB' Delta |- A <: B" := (sub Delta A B).
 
-Hint Constructors sub.
+#[global] Hint Constructors sub : core.
 
 
 (** Generated with Marcel's induction generation program. 
@@ -230,7 +230,7 @@ exists HT1.
 apply (f _ Delta _ _ HT1).
 Defined.
 
-Instance sub_morphism {n}:
+#[global] Instance sub_morphism {n}:
 Proper (pointwise_relation _ eq ==> eq ==> eq ==> Basics.impl) (@sub n).
 Proof.
 intros Gamma Gamma' HGamma T T' -> t t' ->.
@@ -343,7 +343,7 @@ Lemma transitivity_proj n (Gamma: ctx n) A B C :
   SUB Gamma |- A <: B -> SUB Gamma |- B <: C -> SUB Gamma |- A <: C.
 Proof. intros H. specialize (H n Gamma A C id).  now asimpl in H. Qed.
 
-Hint Resolve transitivity_proj.
+#[local] Hint Resolve transitivity_proj : core.
 
 Lemma transitivity_ren m n B (xi: fin m -> fin n) : transitivity_at B -> transitivity_at B⟨xi⟩.
 Proof. unfold transitivity_at. intros. eapply H with (xi:=funcomp xi0 xi); asimpl in H0; asimpl in H1; eauto. Qed.
@@ -428,7 +428,7 @@ Axiom pat_ty_ext : forall {m p} (pt: pat m) (T: ty m) (sigma sigma': fin p -> ty
 (* a.d. we need the following morphism.
  * To prove it we have to assume pat_ty_ext above
  *)
-Instance pat_ty_morphism {m p} :
+#[global] Instance pat_ty_morphism {m p} :
   Proper (eq ==> eq ==> pointwise_relation _ eq ==> Basics.impl) (@pat_ty m p).
 Proof.
   intros ? pt -> ? T -> sigma sigma' Hsigma Hpat.

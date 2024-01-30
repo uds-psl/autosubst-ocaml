@@ -47,12 +47,12 @@ Inductive sub {n} (Delta : ctx n) : ty n -> ty n -> Prop :=
     SUB Delta |- all A1 A2 <: all B1 B2
 where "'SUB' Delta |- A <: B" := (sub Delta A B).
 
-Hint Constructors sub.
+#[global] Hint Constructors sub : core.
 
 Require Import Setoid Morphisms.
 
 (* a.d. we prove this morphism for asimpl *)
-Instance sub_morphism {n}:
+#[global] Instance sub_morphism {n}:
   Proper (pointwise_relation _ eq ==> eq ==> eq ==> Basics.impl) (@sub n).
 Proof.
   intros Gamma Gamma' HGamma T T' -> t t' ->.
@@ -99,7 +99,7 @@ Definition transitivity_at {n} (B: ty n) := forall m Gamma (A : ty m) C  (xi: fi
   transitivity_at B ->
   SUB Gamma |- A <: B -> SUB Gamma |- B <: C -> SUB Gamma |- A <: C.
 Proof. intros H. specialize (H n Gamma A C id). now asimpl in H. Qed.
-Hint Resolve transitivity_proj.
+#[global] Hint Resolve transitivity_proj : core.
 
 Lemma transitivity_ren m n B (xi: fin m -> fin n) : transitivity_at B -> transitivity_at B⟨xi⟩.
 Proof. unfold transitivity_at. intros. apply H with (xi:=funcomp xi0 xi); asimpl in H0; asimpl in H1; eauto.
@@ -188,10 +188,10 @@ Inductive has_ty {m n} (Delta : ctx m) (Gamma : dctx  n m) : tm m n -> ty m -> P
     TY Delta;Gamma |- s : B
 where "'TY' Delta ; Gamma |- s : A" := (has_ty Delta Gamma s A).
 
-Hint Constructors has_ty.
+#[global] Hint Constructors has_ty : core.
 
 (* a.d. we prove this morphism for asimpl *)
-Instance has_ty_morphism {m n} :
+#[global] Instance has_ty_morphism {m n} :
   Proper (pointwise_relation _ eq ==> pointwise_relation _ eq ==> eq ==> eq ==> Basics.impl) (@has_ty m n).
 Proof.
   intros Delta Delta' HDelta Gamma Gamma' HGamma T T' -> t t' -> H.
@@ -229,7 +229,7 @@ Inductive eval {m n} : tm m n -> tm m n -> Prop :=
 where "'EV' s => t" := (eval s t).
 
 (* a.d. we prove this morphism for asimpl *)
-Instance eval_morphism {m n}:
+#[global] Instance eval_morphism {m n}:
   Proper (eq ==> eq ==> Basics.impl) (@eval m n).
 Proof.
   intros s s' -> t t' ->. unfold Basics.impl. trivial.
