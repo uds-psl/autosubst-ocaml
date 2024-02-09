@@ -92,7 +92,7 @@ let binder_ ?(implicit=false) ?btype bnames =
   let open Constrexpr in
   let bk = Default (if implicit then Glob_term.MaxImplicit else Glob_term.Explicit) in
   let btype = Option.default (CAst.make @@ CHole None) btype in
-  CLocalAssum (List.map lname_ bnames, bk, btype)
+  CLocalAssum (List.map lname_ bnames, None, bk, btype)
 
 let binder1_ ?implicit ?btype bname =
   binder_ ?implicit ?btype [bname]

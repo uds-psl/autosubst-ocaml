@@ -114,9 +114,9 @@ First, install opam following the [directions for your operating system](https:/
 It is best practice to create a new opam switch to not cause conflicts with any of your other installed packages.
 We will also need to add the Coq repository and then we can install the `coq-autosubst-ocaml` package.
 ```bash
-$ opam switch create autosubst-ocaml ocaml-base-compiler.4.11.1
+$ opam switch create autosubst-master --packages="ocaml-variants.4.14.1+options,ocaml-option-flambda"
 $ eval $(opam env)
-$ opam repo add coq-released https://coq.inria.fr/opam/released
+$ opam repo add coq-core-dev https://coq.inria.fr/opam/core-dev
 $ opam install coq-autosubst-ocaml
 ```
 

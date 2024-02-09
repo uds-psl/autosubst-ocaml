@@ -11,12 +11,12 @@ description: """
 homepage: "https://github.com/uds-psl/autosubst-ocaml"
 bug-reports: "https://github.com/uds-psl/autosubst-ocaml/issues"
 maintainer: "Yannick Forster yannick.forster@inria.fr"
-authors: [ "Adrian Dapprich s8addapp@stud.uni-saarland.de" ]
+authors: [ "Adrian Dapprich" ]
 license: "MIT"
 
 depends: [
   "ocaml" { >= "4.09" & < "4.15" }
-  "coq" { >= "8.19" & < "8.20" }
+  "coq" { = "dev" }
   "angstrom" { >= "0.15.0" }
   "dune" { >= "2.5" }
   "ocamlgraph" { >= "2.0.0" }
