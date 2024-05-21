@@ -16,8 +16,8 @@ let lident_ s = CAst.make (name_id_ s)
 let name_ s = Names.Name.mk_name (name_id_ s)
 
 let underscore_ = CAst.make Constrexpr.(CHole None)
-let prop_ = CAst.make Constrexpr.(CSort (Glob_term.UNamed (None,[CProp, 0])))
-let type_ = CAst.make Constrexpr.(CSort (Glob_term.UAnonymous { rigid = UnivRigid }))
+let prop_ = CAst.make Constrexpr.(CSort Constrexpr_ops.expr_Prop_sort)
+let type_ = CAst.make Constrexpr.(CSort Constrexpr_ops.expr_Type_sort)
 
 let app_ f xs =
   Constrexpr_ops.mkAppC (f, xs)
