@@ -141,7 +141,7 @@ let setup_coq () =
               { ntn_decl_string = CAst.make "x = y" ;
                 ntn_decl_interp = dummy_eq ;
                 ntn_decl_scope = Some scope ;
-                ntn_decl_modifiers = [ CAst.make (Vernacexpr.SetLevel 70)
+                ntn_decl_modifiers = [ CAst.make (Vernacexpr.SetLevel (FixedLevel 70))
                 ; CAst.make (Vernacexpr.SetOnlyPrinting)
                 ; CAst.make (Vernacexpr.SetAssoc Gramlib.Gramext.NonA) ]
               }) in
@@ -151,7 +151,7 @@ let setup_coq () =
     { ntn_decl_string = CAst.make "A -> B" ;
       ntn_decl_interp = dummy_arrow ;
       ntn_decl_scope = Some scope ;
-      ntn_decl_modifiers = [ CAst.make (Vernacexpr.SetLevel 70)
+      ntn_decl_modifiers = [ CAst.make (Vernacexpr.SetLevel (FixedLevel 70))
       ; CAst.make (Vernacexpr.SetOnlyPrinting)
       ; CAst.make (Vernacexpr.SetAssoc Gramlib.Gramext.RightA) ]
     }) in

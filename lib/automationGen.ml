@@ -148,7 +148,7 @@ module NotationGen = struct
   let subst_scope = "subst_scope"
   let fscope = "fscope"
 
-  let level_ l = SetLevel l
+  let level_ l = SetLevel (FixedLevel l)
   let assoc_ a = SetAssoc a
   let format_ fmt = SetFormat (TextFormat (CAst.make fmt))
   let only_print_ = SetOnlyPrinting
