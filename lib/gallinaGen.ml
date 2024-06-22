@@ -76,12 +76,12 @@ let fixpointBody_ name binders rtype body struc =
   let open Vernacexpr in
   let feg = { fname=lident_ name;
               univs=None;
-              rec_order=Some (CAst.make (Constrexpr.CStructRec (lident_ struc)));
               binders;
               rtype;
               body_def=Some body;
               notations=[] } in
-  feg
+  let rec_order = Some (CAst.make (Constrexpr.CStructRec (lident_ struc))) in
+  rec_order, feg
 
 
 let match_ cexpr ?rtype bexprs =

@@ -51,10 +51,10 @@ let fixpoint_ ~is_rec fexprs =
   | [] -> failwith "fixpoint called without fixpoint bodies"
   | fexprs_nempty ->
     if is_rec
-    then unit_of_vernacs [ VernacSynPure (VernacFixpoint (NoDischarge, fexprs)) ]
+    then unit_of_vernacs [ VernacSynPure (VernacFixpoint (NoDischarge, List.split fexprs)) ]
     (* if the fixpoint is declared non-recursive we try to turn it into a definition *)
     else match fexprs_nempty with
-      | [{ fname={ v=fname; _ }; binders; rtype; body_def=Some body; _}] ->
+      | [_, { fname={ v=fname; _ }; binders; rtype; body_def=Some body; _}] ->
         definition_ (Names.Id.to_string fname) binders ~rtype body
       | [fexpr] -> failwith "Malformed fixpoint body"
       | _ -> failwith "A non recursive fixpoint degenerates to a definition so it should only have one body"
