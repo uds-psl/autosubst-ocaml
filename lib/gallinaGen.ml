@@ -126,7 +126,7 @@ let setup_coq () =
    * Sometimes useful in debugging and it seems to mostly send messages so we only handle those *)
   let _ = Feedback.(add_feeder (function { contents; _ } ->
     match contents with
-    | Message (_, _, pp) -> print_endline ("Message from Coq: " ^ Pp.string_of_ppcmds pp)
+    | Message (_, _, _, pp) -> print_endline ("Message from Coq: " ^ Pp.string_of_ppcmds pp)
     | _ -> print_endline "Received feedback from Coq. Add cases to the printing function in coqgen.setup_coq if you want to see more.")) in
   let scope = "autosubst_scope" in
   let () = Notation.declare_scope scope in
