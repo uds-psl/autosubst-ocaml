@@ -25,7 +25,7 @@ This is an OCaml reimplementation of the [Autosubst 2 code generator](https://gi
 If you ever were in the situation of looking at metatheorems of languages modelled in Coq (e.g. progress and preservation of lambda calculi) and were bothered by the tediousness of formalizing substitution of de Bruijn indices again, this tool might be for you.
 Autosubst is a tool that allows you to quickly generate boilerplate code to handle substitutions in languages with binders.
 
-The output is Coq source code that contains 
+The output is Coq source code that contains
 1. an implementation of the language via (mutual) inductive types and de Bruijn indices for variables,
 2. definitions for capture avoiding substitution and renaming on de Bruijn indices,
 3. lemmas about the behavior and interaction of renaming and substitution,
@@ -108,7 +108,7 @@ s[t · id][σ] = s[⇑ σ][t[σ] · id]
 For more examples and an extended explanation as well as an explanation of the notation we refer to Adrian's bachelor thesis or Stark's doctoral dissertation linked above.
 
 ## Setup
-### Opam 
+### Opam
 First, install opam following the [directions for your operating system](https://opam.ocaml.org/doc/Install.html).
 
 It is best practice to create a new opam switch to not cause conflicts with any of your other installed packages.
@@ -160,14 +160,23 @@ const : nat -> tm
 ```
 
 ## Development
+
 ### Dev Dependencies
+
 Some dependencies for developing in emacs.
 ```bash
 $ opam install merlin utop ocp-indent ocamlformat
 $ opam user-setup install
 ```
 
+You also need the dependencies listed in the opam package, you can get them
+with
+```bash
+opam install --deps-only .
+```
+
 ### Build & Run
+
 Create the switch, install the dependencies, and then:
 ```bash
 $ dune build

@@ -16,7 +16,7 @@ license: "MIT"
 
 depends: [
   "ocaml" { >= "4.09" & < "4.15" }
-  "coq" { = "dev" }
+  "coq" { >= "8.20" & < "8.21" }
   "angstrom" { >= "0.15.0" }
   "dune" { >= "2.5" }
   "ocamlgraph" { >= "2.0.0" }
