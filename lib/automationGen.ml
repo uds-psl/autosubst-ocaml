@@ -141,10 +141,8 @@ module NotationGen = struct
          | Up
          | UpInst of string
          | SubstApply of string list
-         | Subst of string list
          | RenApply of string list
-         | Ren of string list
-
+        
   let subst_scope = "subst_scope"
   let fscope = "fscope"
 
@@ -167,13 +165,9 @@ module NotationGen = struct
       sprintf "↑__%s" sort
     | SubstApply substSorts ->
       sprintf "s [ %s ]" (concat_substs (to_substs "sigma" substSorts))
-    | Subst substSorts ->
-      sprintf "[ %s ]" (concat_substs (to_substs "sigma" substSorts))
     | RenApply substSorts ->
       sprintf "s ⟨ %s ⟩" (concat_substs (to_substs "xi" substSorts))
-    | Ren substSorts ->
-      sprintf "⟨ %s ⟩" (concat_substs (to_substs "xi" substSorts))
-
+    
   let notation_modifiers sort n =
     let open Printf in
     match n with
@@ -189,16 +183,12 @@ module NotationGen = struct
       [ only_print_ ]
     | SubstApply _ | RenApply _ ->
       [ level_ 7; assoc_ LeftA; only_print_ ]
-    | Subst _ | Ren _ ->
-      [ level_ 1; assoc_ LeftA; only_print_ ]
-
+    
   let notation_scope = function
     | VarConstr | VarInst | Var | Up | UpInst _
     | SubstApply _ | RenApply _ ->
       subst_scope
-    | Subst _ | Ren _ ->
-      fscope
-
+    
   (* DONE hardcoded strings ersetzen durch die korrekten functionen in CoqNames *)
   let notation_body sort = function
     | VarConstr -> app_ref (var_ sort) [ ref_ "x" ]
@@ -208,9 +198,7 @@ module NotationGen = struct
     | Up -> ref_ (up_class_ sort)
     | UpInst bsort -> ref_ (up_inst_ bsort sort)
     | SubstApply substSorts -> app_ref (subst_ sort) ((List.map ref_ (to_substs "sigma" substSorts)) @ [ ref_ "s" ])
-    | Subst substSorts -> app_ref (subst_ sort) (List.map ref_ (to_substs "sigma" substSorts))
     | RenApply substSorts -> app_ref (ren_ sort) ((List.map ref_ (to_substs "xi" substSorts)) @ [ ref_ "s" ])
-    | Ren substSorts -> app_ref (ren_ sort) (List.map ref_ (to_substs "xi" substSorts))
 end
 
 
