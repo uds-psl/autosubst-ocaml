@@ -250,7 +250,6 @@ module Renamings : COMPONENT_GENERATOR = FixGen(struct
       let* () = tell_instance (ClassGen.Ren (List.length substSorts), sort, ss_names ms @ ss_names ns) in
       let* () = tell_cbn_function (ren_ sort) in
       let* () = tell_notation (NotationGen.RenApply substSorts, sort) in
-      let* () = tell_notation (NotationGen.Ren substSorts, sort) in
       let* () = tell_proper_instance (sort, ren_ sort, extRen_ sort) in
       (* DONE what is the result of to_var here?\
        * when I call it with sort=tm, xi=[xity;xivl] I get this weird error term that to_var constructs. This is then probably ignored by some similar logic in the traversal. Seems brittle.
@@ -330,7 +329,6 @@ module Substitutions : COMPONENT_GENERATOR = FixGen(struct
       let* () = tell_class (ClassGen.Up "", sort) in
       let* () = tell_notation (NotationGen.Up, sort) in
       let* () = tell_notation (NotationGen.SubstApply substSorts, sort) in
-      let* () = tell_notation (NotationGen.Subst substSorts, sort) in
       let* () = tell_proper_instance (sort, subst_ sort, ext_ sort) in
       (** type *)
       let (s, bs) = genMatchVar sort ms in
