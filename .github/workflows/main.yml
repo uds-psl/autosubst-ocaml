@@ -10,7 +10,7 @@ jobs:
         opam_file:
           - 'coq-autosubst-ocaml.opam'
         image:
-          - 'coqorg/coq:8.20.0-ocaml-4.14.2-flambda' 
+          - 'coqorg/coq:8.20.1-ocaml-4.14.2-flambda' 
       fail-fast: false  # don't stop jobs if one fails
     steps:
       - uses: actions/checkout@v2
