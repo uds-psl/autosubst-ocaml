@@ -1,21 +1,21 @@
 
-(** 
+(**
   We were able to mechanize the first three steps of Exercise 23.6.3 of Types and Programming Languages (page 356)
   Autosubst was a great help because it lowers the burden of starting to work on an exercise.
-  If I didn't have Autosubst available, I would not have attempted to mechanize the exercise 
+  If I didn't have Autosubst available, I would not have attempted to mechanize the exercise
     because the substitution boilerplate is so tedious.
 
-  Andrej told me that the rest of the steps (3-7) are probably very hard to prove in Coq 
+  Andrej told me that the rest of the steps (3-7) are probably very hard to prove in Coq
   because they are always talking about "forms" which is hard to control in Coq.
-    
+
   I tried around a little bit, defining more well-formed predicates.
-  It went nowehere, though, because writing proofs with them is hard.  
+  It went nowehere, though, because writing proofs with them is hard.
   But this is not a failing of Autosubst.
   *)
-Require Import Arith.
+From Stdlib Require Import Arith.
 Require Import sysf.
 Require Import core unscoped.
-Require List.
+From Stdlib Require List.
 Import List.ListNotations.
 Open Scope list.
 
@@ -84,9 +84,9 @@ Lemma nth_error_map {X Y:Type} : forall (l:list X) (f: X -> Y) y n,
     List.nth_error (List.map f l) n = Some y ->
     exists x, List.nth_error l n = Some x /\ y = f x.
 Proof.
-  intros * H. 
+  intros * H.
   destruct (List.nth_error l n) as [x'|] eqn:E.
-  - exists x'. split. reflexivity. 
+  - exists x'. split. reflexivity.
     specialize (List.map_nth_error f  _ _ E) as H'.
     rewrite H' in H. injection H. intros ->. reflexivity.
   - exfalso.
@@ -95,7 +95,7 @@ Proof.
     eapply Nat.le_ngt.
     1: eassumption.
     rewrite <- (List.map_length f).
-    apply List.nth_error_Some. 
+    apply List.nth_error_Some.
     intros H'. rewrite H' in H. discriminate H.
 Qed.
 
@@ -216,7 +216,7 @@ Proof.
     intros x T Hx.
     apply H, Hx.
 Qed.
-    
+
 Lemma context_morphism_lemma :
   forall Gamma Gamma' s T sigma tau,
   (forall x T, List.nth_error Gamma x = Some T -> has_type Gamma' (tau x) (subst_ty sigma T)) ->
@@ -236,7 +236,7 @@ Proof.
     intros [|x] T Hx.
     + cbn. constructor. cbn.
       injection Hx. intros ->. reflexivity.
-    + cbn. 
+    + cbn.
       rewrite <- rinstId'_ty.
       eapply context_renaming_lemma.
       2: apply H, Hx.
@@ -296,7 +296,7 @@ Proof.
 Qed.
 
 (* it was pleasantly simple to prove preservation which I can then use to prove some part of the TAPL exercise.
-   It is a bit strange that I have to sometime `rewrite <- idSubst` to be able to 
+   It is a bit strange that I have to sometime `rewrite <- idSubst` to be able to
       apply the context_renaming_lemma/context_morphism_lemma *)
 Lemma sysf_preservation :
   forall Gamma s s' T, has_type Gamma s T -> eval s s' -> has_type Gamma s' T.
@@ -361,10 +361,10 @@ Fixpoint erase (s: tm) : utlc :=
 (* This should be a correct formalization of exercise 23.6.3 1) *)
 Lemma lemma_23_6_3_1:
   forall Gamma t T m, has_type Gamma t T -> erase t = m ->
-                 exists Gamma' s T', has_type Gamma' s T' /\ erase s = m. 
+                 exists Gamma' s T', has_type Gamma' s T' /\ erase s = m.
 Proof.
   (* intros Gamma t. revert Gamma. *)
-  intros * Htype Herase. 
+  intros * Htype Herase.
   induction t in Gamma, T, Htype, Herase |- *.
   - exists Gamma, (var_tm n), T. now split.
   - exists Gamma, (app t1 t2), T. now split.
@@ -402,7 +402,7 @@ Proof.
 Qed.
 
 Print Assumptions erase_subst.
-    
+
 Lemma wf_subst: forall s n l sigma_ty,
     wf s n l -> wf (subst_tm sigma_ty var_tm s) n l.
 Proof.
@@ -433,7 +433,7 @@ Proof.
     1, 2: assumption. constructor. constructor.
   - exists (app t1 t2), 0, 0. repeat split.
     1, 2: assumption. constructor. constructor.
-  - inversion Htype. subst T s T2.   
+  - inversion Htype. subst T s T2.
     specialize (IHt Gamma (all T1) m H2 Herase) as (s & n & l & IH0 & IH1 & IH2).
     destruct n as [|n'].
     + exists (tapp s t0), 0, (S l). repeat split.
@@ -454,7 +454,7 @@ Proof.
         apply wf_subst. apply H1.
   - exists (lam t t0), 0, 0. repeat split.
     1, 2: assumption. constructor. constructor.
-  - inversion Htype. subst T s. 
+  - inversion Htype. subst T s.
     specialize (IHt (List.map (ren_ty S) Gamma) T0 m H0 Herase) as (s & n & l & IH0 & IH1 & IH2).
     exists (tlam s), (S n), l. repeat split.
     + constructor. assumption.
@@ -464,7 +464,7 @@ Qed.
 
 Print Assumptions lemma_23_6_3_2.
 
-Require Import Lia.
+From Stdlib Require Import Lia.
 Lemma bin_size_ind (f : nat -> nat -> nat) (P : nat -> nat -> Type) :
   (forall x y, (forall x' y', f x' y' < f x y -> P x' y') -> P x y) -> forall x y, P x y.
 Proof.
@@ -518,15 +518,15 @@ Qed.
 
 Lemma lemma_23_6_3_3 :
   forall Gamma t m n T, exposed t -> has_type Gamma t T -> erase t = app_utlc m n ->
-    exists s u U, has_type Gamma s (arr U T) /\ erase s = m /\ 
-                  has_type Gamma u U /\ erase u = n /\ 
+    exists s u U, has_type Gamma s (arr U T) /\ erase s = m /\
+                  has_type Gamma u U /\ erase u = n /\
                   t = app s u.
-Proof.  
+Proof.
   intros Gamma t. revert Gamma.
-  destruct t; intros * Hext HTt Hert; 
+  destruct t; intros * Hext HTt Hert;
     try discriminate Hert. (* takes care of cases where erase does not change the constructor. *)
   - inversion HTt; subst.
-    inversion Hert; subst. 
+    inversion Hert; subst.
     exists t1, t2, T1; repeat split; assumption.
   - inversion Hext. (* tapp is thrown away by erase but cannot be exposed. *)
   - inversion Hext. (* tlam is thrown away by erase but cannot be exposed. *)
