@@ -119,15 +119,15 @@ let pr_exact_expr cexpr =
   let open Pp in
   str "exact (" ++ pr_constr_expr cexpr ++ str ")" ++ vernacend
 
-let parse_constr_expr expr_s = Pcoq.parse_string (Pcoq.Constr.lconstr) expr_s
+let parse_constr_expr expr_s = Procq.parse_string (Procq.Constr.lconstr) expr_s
 
 let setup_coq () =
-  (* install a printer for feedback from Coq.
+  (* install a printer for feedback from Rocq.
    * Sometimes useful in debugging and it seems to mostly send messages so we only handle those *)
   let _ = Feedback.(add_feeder (function { contents; _ } ->
     match contents with
-    | Message (_, _, _, pp) -> print_endline ("Message from Coq: " ^ Pp.string_of_ppcmds pp)
-    | _ -> print_endline "Received feedback from Coq. Add cases to the printing function in coqgen.setup_coq if you want to see more.")) in
+    | Message (_, _, _, pp) -> print_endline ("Message from Rocq: " ^ Pp.string_of_ppcmds pp)
+    | _ -> print_endline "Received feedback from Rocq. Add cases to the printing function in coqgen.setup_coq if you want to see more.")) in
   let scope = "autosubst_scope" in
   let () = Notation.declare_scope scope in
   (* for both definition we create dummy expressions that will never be used.

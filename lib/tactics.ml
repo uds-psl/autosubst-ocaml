@@ -306,7 +306,7 @@ let mapId_ f ts = app_ref (sepd [f; "id"]) ts
 let mapExt_ f ts = app_ref (sepd [f; "ext"]) ts
 let mapComp_ f ts = app_ref (sepd [f; "comp"]) ts
 
-(* TODO move to tactics and make same name as in MetaCoq *)
+(* TODO move to tactics and make same name as in MetaRocq *)
 let genMatchVar (sort: L.tId) (scope: substScope) =
   let s = varName "s" in
   (s, [binder1_ ~btype:(app_sort sort scope) s])

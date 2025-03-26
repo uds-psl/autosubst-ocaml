@@ -15,7 +15,7 @@ type vernac_unit = Vernac of vernac_control list
 let control_of_expr vexpr = CAst.make { control = []; attrs = []; expr=vexpr }
 let unit_of_vernacs vexprs = Vernac (List.map control_of_expr vexprs)
 
-(** I catch the VernacExactProof constructor because the way Coq normally prints it does not
+(** I catch the VernacExactProof constructor because the way Rocq normally prints it does not
  ** work well with proof general. So I explicitly add an `exact (...)` *)
 let pr_vernac_control =
   let open Pp in
@@ -70,16 +70,16 @@ let class_ name binders fields =
 let instance_ inst_name cbinders class_type ?(interactive=false) body =
    if interactive
     then
-      Vernac [ CAst.make { 
+      Vernac [ CAst.make {
         control=[];
         attrs=[CAst.make ("global", Attributes.VernacFlagEmpty)] ;
-        expr= VernacSynPure(VernacInstance 
+        expr= VernacSynPure(VernacInstance
           (name_decl_ inst_name, cbinders, class_type, None, Typeclasses.{ hint_priority = None; hint_pattern = None }));
       }
       ; control_of_expr (VernacSynPure (VernacExactProof body))
       ; control_of_expr (VernacSynPure (VernacEndProof (Proved (Opaque, None)))) ]
-    else 
-      Vernac [CAst.make { 
+    else
+      Vernac [CAst.make {
         control=[];
         attrs=[CAst.make ("global", Attributes.VernacFlagEmpty)] ;
         expr= VernacSynPure (VernacInstance
@@ -123,15 +123,15 @@ let module_ name contents =
   ]
 
 
-(** For the opaueness hints we have to add an attribute. 
+(** For the opaueness hints we have to add an attribute.
     We use the export flag so that the hints are only enables upon module import.
     TODO document why necessary. disable and kathrin's case study should fail *)
 let setoid_opaque_hint version name =
   let attrs = match version with
     | S.LT813 -> []
-    | S.GE813 -> [CAst.make ("global", Attributes.VernacFlagEmpty)] 
+    | S.GE813 -> [CAst.make ("global", Attributes.VernacFlagEmpty)]
   in
-  Vernac [ CAst.make { 
+  Vernac [ CAst.make {
       control=[];
       attrs=attrs;
       expr= VernacSynPure (VernacHints (["rewrite"], HintsTransparency (Hints.HintsReferences [qualid_ name], false)));
@@ -162,7 +162,7 @@ module AutosubstModules = struct
     List.(concat (filter_map is_same_tag l))
 
   (** Import statements that show the dependencies between out modules. *)
-  let imports = 
+  let imports =
     from_list [
       (Fext, [import_ (string_of_tag Core)]);
       (Allfv, [import_ (string_of_tag Core)]);

@@ -3,7 +3,7 @@
  ** Differences:
  **   - we disallow constructors to have the same name as any type/functor
  **   - we disallow the extra parentheses around variadic binder specifications "(<p,m>)", so you must write "<p,m>" instead.
- ** The only thing we really have to do differently from Autosubst 2 is that we must actually parse the arguments of functors, not take them as a plain string because in the end we want to construct Coq AST. *)
+ ** The only thing we really have to do differently from Autosubst 2 is that we must actually parse the arguments of functors, not take them as a plain string because in the end we want to construct Rocq AST. *)
 open Angstrom
 open Util
 
@@ -42,8 +42,8 @@ let check_non_empty_ident = function
   | (s, "") -> fail ("empty identifier: " ^ s)
   | (_, valid_prefix) -> return valid_prefix
 
-(** Parse an identifier using functions from the Coq implementation.
- ** This allows the same unicode identifiers as Coq, e.g. greek letters.
+(** Parse an identifier using functions from the Rocq implementation.
+ ** This allows the same unicode identifiers as Rocq, e.g. greek letters.
  ** It works by taking bytes from the input stream and successively checking if they
  ** are a valid identifier.
  ** Because utf-8 encoded codepoints may be represented by multiple bytes we have to skip the check for any non-ascii bytes and remember the longest valid prefix so far.
@@ -168,11 +168,11 @@ let signature : specAST t =
      end_of_input <|>
      (take_till is_end_of_line >>= fun s -> hard_fail ("Could not parse the following line: "^s)))
 
-(** check is a given string is a reserved constant in Coq
- ** we use a function from the Coq implementation that checks for constants like "Type"
+(** check is a given string is a reserved constant in Rocq
+ ** we use a function from the Rocq implementation that checks for constants like "Type"
  ** and a heuristic of common predefined constants and keywords taken from Autosubst 2 *)
 let reservedIds =
-  (* Keywords according to the Coq manual *)
+  (* Keywords according to the Rocq manual *)
   ["as"; "at"; "cofix"; "else"; "end"; "exists"; "exists2"; "fix";
    "for"; "forall"; "fun"; "if"; "IF"; "in"; "let"; "match"; "mod";
    "Prop"; "return"; "Set"; "then"; "Type"; "using"; "where"; "with";

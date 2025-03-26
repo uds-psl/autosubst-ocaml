@@ -41,8 +41,8 @@ let parse_args args =
     let scope_r = ref S.Unscoped in
     (* can disable warnings here because the functions will only be called with these arguments by Arg.Symbol *)
     let [@warning "-8"] set_scope = function
-      | "coq" -> scope_r := S.Wellscoped
-      | "ucoq" -> scope_r := S.Unscoped in
+      | "rocq" -> scope_r := S.Wellscoped
+      | "urocq" -> scope_r := S.Unscoped in
     let version_r = ref S.GE813 in
     let [@warning "-8"] set_version = function
       | "lt813" -> version_r := S.LT813
@@ -53,8 +53,8 @@ let parse_args args =
     let gen_fext_r = ref false in
     let arg_spec = Arg.[
         ("-o", String set_outfile, "File to save output to.");
-        ("-s", Symbol (["coq"; "ucoq"], set_scope), "Generate scoped or unscoped code.");
-        ("-v", Symbol (["lt813"; "ge813"], set_version), "Which coq version to target. Either < 8.12 or >= 8.12.");
+        ("-s", Symbol (["rocq"; "urocq"], set_scope), "Generate scoped or unscoped code.");
+        ("-v", Symbol (["lt813"; "ge813"], set_version), "Which Rocq version to target. Either < 8.12 or >= 8.12.");
         ("-f", Set force_overwrite_r, "Force overwrite files in the output directory.");
         ("-no-static", Clear gen_static_files_r, "Don't put the static files like core.v, unscoped.v, etc. into the output directory.");
         ("-allfv", Set gen_allfv_r, "Generate allfv lemmas.");
@@ -114,18 +114,18 @@ let copy_file force_overwrite src dst =
     base-dir
    - bin/
       + autosubst
-   - share/coq-autosubst-ocaml/
+   - share/rocq-autosubst-ocaml/
       + core.v
       + ...
 
    Here we construct the path to shared/autosubst based on the path to the executable.
-   HACK: Docs for [Sys.executable_name] say that it might not be an absolute path. 
+   HACK: Docs for [Sys.executable_name] say that it might not be an absolute path.
         But it is on Linux, so it works.
         What is the best way to access the files in the share directory? *)
-let data_dir = 
+let data_dir =
   let open Filename in
   let base_dir = dirname (dirname (Sys.executable_name)) in
-  let data_dir = concat base_dir "share/coq-autosubst-ocaml" in
+  let data_dir = concat base_dir "share/rocq-autosubst-ocaml" in
   data_dir
 
 (** Generate the static files by copying them into the output directory. *)
@@ -141,12 +141,12 @@ let gen_static_files force_overwrite dir scope gen_fext =
     | Unscoped -> copy_static_file "unscoped.v"
   in
   let () = copy_static_file "core.v" in
-  if gen_fext 
-  then 
+  if gen_fext
+  then
     let () = match scope with
       | Wellscoped -> copy_static_file "fintype_axioms.v"
       | Unscoped -> copy_static_file "unscoped_axioms.v"
-    in 
+    in
     copy_static_file "core_axioms.v"
   else ()
 
