@@ -9,13 +9,13 @@ remove_export() {
 
 ### EXAMPLES
 # generate code for the example signatures
-for n in utlc stlc fcbv variadic pi num fol logrel_rocq; do
+for n in utlc stlc fcbv variadic pi num fol logrel_coq; do
     echo autosubst signatures/${n}.sig -fext -f -s rocq -o case-studies/examples/${n}_wellscoped.v
     autosubst signatures/${n}.sig -fext -f -s rocq -o case-studies/examples/${n}_wellscoped.v
 done
 
 # allfv is only supported for unscoped syntax so we only turn it on here
-for n in utlc stlc fcbv pi num logrel_rocq; do
+for n in utlc stlc fcbv pi num logrel_coq; do
     echo autosubst signatures/${n}.sig -fext -allfv -f -s urocq -o case-studies/examples/${n}_unscoped.v
     autosubst signatures/${n}.sig -fext -allfv -f -s urocq -o case-studies/examples/${n}_unscoped.v
 done
