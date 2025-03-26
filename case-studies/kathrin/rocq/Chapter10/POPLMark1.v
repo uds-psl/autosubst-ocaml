@@ -2,11 +2,10 @@
 
 (** ** Part 1 : System F *)
 
-Require Export Coq.Lists.List.
-Require Import Coq.Program.Equality.
+From Stdlib Require Export Lists.List Program.Equality.
 Require Import core fintype.
 From Chapter10 Require Export sysf.
-Require Import Coq.Program.Tactics.
+From Stdlib Require Import Program.Tactics.
 Import ScopedNotations.
 
 Ltac inv H := inversion H; try clear H; try subst.
@@ -399,7 +398,7 @@ Proof.
            ++ asimpl. constructor. apply sub_refl.
         -- intros x. asimpl. constructor.
       * pose proof (ty_inv_tabs _ H_ty H) as (?&?&?&?).
-        eapply T_Sub; eauto. 
+        eapply T_Sub; eauto.
         eapply context_morphism_lemma; eauto.
         -- auto_case; asimpl; eauto. asimpl. constructor. apply sub_refl.
         -- intros z. unfold funcomp. asimpl. constructor.

@@ -4,7 +4,7 @@
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-Require Import Coq.Program.Equality.
+From Stdlib Require Import Program.Equality.
 
 Declare Scope prop_scope.
 Delimit Scope prop_scope with PROP.

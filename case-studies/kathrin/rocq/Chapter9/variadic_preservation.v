@@ -1,6 +1,7 @@
 (** ** Variadic Preservation *)
 
-Require Export ARS Program.Equality.
+Require Export ARS.
+From Stdlib Require Export Program.Equality.
 Require Import core fintype.
 From Chapter6 Require Export variadic_fin.
 Set Implicit Arguments.

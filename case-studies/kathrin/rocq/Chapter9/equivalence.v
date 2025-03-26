@@ -7,7 +7,7 @@ and
 Logical Relations and a case study in equivalence checking (Karl Crary, 2005)
 **)
 
-Require Export List Psatz.
+From Stdlib Require Export List Psatz.
 Require Import core unscoped.
 From Chapter3 Require Export utlc_pure.
 Import UnscopedNotations.

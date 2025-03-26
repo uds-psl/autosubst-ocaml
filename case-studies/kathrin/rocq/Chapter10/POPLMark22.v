@@ -1,9 +1,8 @@
-Require Export Coq.Lists.List.
-Require Import Coq.Program.Equality.
+From Stdlib Require Export Lists.List Program.Equality.
 Require Import Setoid Morphisms.
 Require Import core (* core_axioms *) fintype (* fintype_axioms *).
 From Chapter10 Require Export sysf_pat.
-Require Import Coq.Program.Tactics.
+From Stdlib Require Import Program.Tactics.
 Import ScopedNotations.
 
 Open Scope fscope.
@@ -152,13 +151,13 @@ where "'SUB' Delta |- A <: B" := (sub Delta A B).
 #[global] Hint Constructors sub : core.
 
 
-(** Generated with Marcel's induction generation program. 
+(** Generated with Marcel's induction generation program.
     Unfortunately there was a problem when generating the induction scheme:
        It did not generate the most general recursion scheme.
        In the recty case, SUB occurs under an exists and we also need an induction hypothesis for that occurrence.
        I think I should be able to use `MetaCoq Run Derive Container for _`
          but that did not work with `ex`.
-    
+
     Marcel confirmed that the program from his thesis has problems with ex. Might be supported in the future
  *)
  Definition sub_induct : forall
@@ -184,12 +183,12 @@ where "'SUB' Delta |- A <: B" := (sub Delta A B).
      p (S n) (funcomp (ren_ty shift) (scons B1 Delta)) A2 B2 H0 ->
      p n Delta (all A1 A2) (all B1 B2) (SA_all Delta A1 A2 B1 B2 H H0)) ->
  (* recty *)
- (forall n (Delta : fin n -> ty n) (xs ys : list (nat * ty n)) 
-     (H : forall (l : nat) (T' : ty n), In (l, T') ys -> 
+ (forall n (Delta : fin n -> ty n) (xs ys : list (nat * ty n))
+     (H : forall (l : nat) (T' : ty n), In (l, T') ys ->
      exists (T : ty n), In (l, T) xs /\ SUB Delta |- T <: T')
-     (Hind : forall (l : nat) (T' : ty n), In (l, T') ys -> 
-         exists (T : ty n), In (l, T) xs /\ 
-             exists (d: SUB Delta |- T <: T'), p n Delta T T' d) 
+     (Hind : forall (l : nat) (T' : ty n), In (l, T') ys ->
+         exists (T : ty n), In (l, T) xs /\
+             exists (d: SUB Delta |- T <: T'), p n Delta T T' d)
      (H0 : unique xs) (H1 : unique ys),
      p n Delta (recty xs) (recty ys) (SA_rec Delta xs ys H H0 H1)) ->
  (* target *)
@@ -236,7 +235,7 @@ Proof.
 intros Gamma Gamma' HGamma T T' -> t t' ->.
 intros H.
 (* forall n (Delta : fin n -> ty n) (H H0 : ty n) (inst : SUB Delta |- H <: H0), *)
-refine (sub_induct 
+refine (sub_induct
        (fun n' (Delta : fin n' -> ty n') (H H0 : ty n') (d: SUB Delta |- H <: H0) =>
          forall (Delta' : fin n' -> ty n') (Heq: pointwise_relation _ eq Delta Delta'), SUB Delta' |- H <: H0)
        _ _ _ _ _ _
@@ -422,7 +421,7 @@ Arguments pat_ty {_} , _.
 Arguments pat_eval {_ _} , _ _.
 Variable pat_ty_subst: forall {m n} (sigma: fin m -> ty n) p pt A Gamma, pat_ty m p pt A Gamma -> pat_ty n p (pt[sigma]) (A[sigma]) (Gamma >>  subst_ty sigma).
 Axiom pat_ty_ext : forall {m p} (pt: pat m) (T: ty m) (sigma sigma': fin p -> ty m),
-      (forall x, sigma x = sigma' x) ->        
+      (forall x, sigma x = sigma' x) ->
       pat_ty m p pt T sigma <-> pat_ty m p pt T sigma'.
 
 (* a.d. we need the following morphism.
@@ -660,7 +659,7 @@ Proof.
            5: exact (shift_p p).
            5: exact x'.
            all: now asimpl.
-     } 
+     }
   - econstructor.
     + eapply IHty; eauto.
     + eapply sub_substitution; eauto.
@@ -753,7 +752,7 @@ Proof.
         -- auto_case; asimpl; eauto using sub_refl.
         -- intros x. asimpl. constructor.
       * pose proof (ty_inv_tabs _ H_ty H) as (?&?&?&?).
-        eapply T_Sub.  
+        eapply T_Sub.
         eapply context_morphism_lemma; eauto.
         -- auto_case; asimpl; eauto.
         -- intros z. asimpl. constructor.

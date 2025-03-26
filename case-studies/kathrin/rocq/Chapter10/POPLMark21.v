@@ -1,9 +1,8 @@
-Require Export Coq.Lists.List.
-Require Import Coq.Program.Equality.
+From Stdlib Require Export Lists.List Program.Equality.
 Require Import Setoid Morphisms.
 Require Import core fintype.
 From Chapter10 Require Export sysf_pat.
-Require Import Coq.Program.Tactics.
+From Stdlib Require Import Program.Tactics.
 Import ScopedNotations.
 
 Ltac inv H := inversion H; try clear H; try subst.
@@ -279,13 +278,13 @@ Corollary sub_trans n (Delta  : ctx n) A B C:
   SUB Delta |- A <: B -> SUB Delta |- B <: C -> SUB Delta |- A <: C.
 Proof. eauto using sub_trans'. Qed.
 
-(** Generated with Marcel's induction generation program. 
+(** Generated with Marcel's induction generation program.
     Unfortunately there was a problem when generating the induction scheme:
        It did not generate the most general recursion scheme.
        In the recty case, SUB occurs under an exists and we also need an induction hypothesis for that occurrence.
        I think I should be able to use `MetaCoq Run Derive Container for _`
          but that did not work with `ex`.
-    
+
     Marcel confirmed that the program from his thesis has problems with ex. Might be supported in the future
  *)
 Definition sub_induct : forall
@@ -311,12 +310,12 @@ Definition sub_induct : forall
         p (S n) (funcomp (ren_ty shift) (scons B1 Delta)) A2 B2 H0 ->
         p n Delta (all A1 A2) (all B1 B2) (SA_all Delta A1 A2 B1 B2 H H0)) ->
     (* recty *)
-    (forall n (Delta : fin n -> ty n) (xs ys : list (nat * ty n)) 
-        (H : forall (l : nat) (T' : ty n), In (l, T') ys -> 
+    (forall n (Delta : fin n -> ty n) (xs ys : list (nat * ty n))
+        (H : forall (l : nat) (T' : ty n), In (l, T') ys ->
         exists (T : ty n), In (l, T) xs /\ SUB Delta |- T <: T')
-        (Hind : forall (l : nat) (T' : ty n), In (l, T') ys -> 
-            exists (T : ty n), In (l, T) xs /\ 
-                exists (d: SUB Delta |- T <: T'), p n Delta T T' d) 
+        (Hind : forall (l : nat) (T' : ty n), In (l, T') ys ->
+            exists (T : ty n), In (l, T) xs /\
+                exists (d: SUB Delta |- T <: T'), p n Delta T T' d)
         (H0 : unique xs) (H1 : unique ys),
         p n Delta (recty xs) (recty ys) (SA_rec Delta xs ys H H0 H1)) ->
     (* target *)
@@ -363,7 +362,7 @@ Proof.
   intros Gamma Gamma' HGamma T T' -> t t' ->.
   intros H.
   (* forall n (Delta : fin n -> ty n) (H H0 : ty n) (inst : SUB Delta |- H <: H0), *)
-  refine (sub_induct 
+  refine (sub_induct
           (fun n' (Delta : fin n' -> ty n') (H H0 : ty n') (d: SUB Delta |- H <: H0) =>
             forall (Delta' : fin n' -> ty n') (Heq: pointwise_relation _ eq Delta Delta'), SUB Delta' |- H <: H0)
           _ _ _ _ _ _
@@ -371,7 +370,7 @@ Proof.
   - constructor.
   - constructor.
   - constructor.
-  
+
    rewrite <- Heq. apply H1. apply Heq.
   - constructor.
     apply H1, Heq.
@@ -404,7 +403,7 @@ Proof.
     auto_case; asimpl; cbn; eauto using sub_refl.
     eapply sub_weak; try reflexivity. eapply eq.
     all: try now asimpl.
-    
+
   - intros. asimpl. econstructor; eauto. intros. rewrite in_map_iff in H2. destruct H2 as ((?&?)&?&?).
     inv H2. destruct (H _ _ H3) as (T&?&?&?).
     exists (T[sigma]). split; eauto. apply in_map. eauto.
@@ -417,7 +416,7 @@ Variable pat_ty : forall {m} (p: nat), pat m -> ty m ->  (fin p -> (ty m)) -> Pr
 Variable pat_eval : forall {m n} p, pat m -> tm m n -> (fin p -> (tm m n)) -> Prop.
 Variable pat_ty_subst: forall {m n} (sigma: fin m -> ty n) p pt A Gamma, pat_ty p pt A Gamma -> pat_ty p (pt[sigma]) (A[sigma]) (Gamma >>  subst_ty sigma).
 Axiom pat_ty_ext : forall {m p} (pt: pat m) (T: ty m) (sigma sigma': fin p -> ty m),
-      (forall x, sigma x = sigma' x) ->      
+      (forall x, sigma x = sigma' x) ->
       pat_ty p pt T sigma <-> pat_ty p pt T sigma'.
 
 (* a.d. we need the following morphism.
@@ -577,7 +576,7 @@ Proof.
   - cbn. eapply T_Tapp with (A := A⟨xi⟩) .
     Unshelve.
     4: exact (ren_ty (upRen_ty_ty xi) B).
-    eapply IHty; eauto. 
+    eapply IHty; eauto.
     eapply sub_weak; eauto. now asimpl.
   - econstructor; eauto.
     + intros.
@@ -592,7 +591,7 @@ Proof.
       * intros z.
         (* a.d.: had to add the following line to make it compile with coq 8.9 .*)
         unfold dctx in Gamma, Gamma0. unfold upRen_p.
-        (* a.d. 
+        (* a.d.
            the problem seems to be that the goal is not in the pointwise_relation form.
            We must revert z and then turn the forall into pointwise_relation. Then asimpl
            works as expected.
@@ -657,7 +656,7 @@ Proof.
            5: exact x'.
            all: now asimpl.
      }
-     
+
   - econstructor.
     + eapply IHty; eauto.
     + eapply sub_substitution; eauto.
@@ -749,7 +748,7 @@ Proof.
         -- auto_case; asimpl; eauto using sub_refl.
         -- intros x. asimpl. constructor.
       * pose proof (ty_inv_tabs _ H_ty H) as (?&?&?&?).
-        eapply T_Sub.  
+        eapply T_Sub.
         eapply context_morphism_lemma; eauto.
         -- auto_case; asimpl; eauto.
         -- intros z. asimpl. constructor.

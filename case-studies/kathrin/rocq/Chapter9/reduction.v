@@ -1,6 +1,7 @@
 (** ** Reduction and Values *)
 
-Require Export ARS Coq.Program.Equality.
+Require Export ARS.
+From Stdlib Require Export Program.Equality.
 Require Import core fintype.
 From Chapter9 Require Export stlc.
 Set Implicit Arguments.

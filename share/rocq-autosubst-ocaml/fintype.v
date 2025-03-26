@@ -123,7 +123,7 @@ Class Var X Y :=
     Substitutions represented as functions are ubiquitious in this development and we often have to compose them, without talking about their pointwise behaviour.
     That is, we are interested in the forward compostion of functions, _f o g_, for which we introduce a convenient notation, "f >> g". The direction of the arrow serves as a reminder of the _forward_ nature of this composition, that is first apply _f_, then _g_. *)
 
-Arguments funcomp {X Y Z} (g)%fscope (f)%fscope.
+Arguments funcomp {X Y Z} (g)%_fscope (f)%_fscope.
 
 Module CombineNotations.
   Notation "f >> g" := (funcomp g f) (at level 50) : fscope.
