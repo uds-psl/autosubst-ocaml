@@ -49,16 +49,16 @@ Makefile.coq.conf
 *_unscoped.v
 *_asimpl.v
 
-kathrin/coq/*/*_pre.v
+kathrin/rocq/*/*_pre.v
 
-kathrin/coq/Chapter10/sysf.v
-kathrin/coq/Chapter10/sysf_pat.v
+kathrin/rocq/Chapter10/sysf.v
+kathrin/rocq/Chapter10/sysf_pat.v
 
-kathrin/coq/Chapter3/utlc_pure.v
-kathrin/coq/Chapter3/utlc_scoped.v
+kathrin/rocq/Chapter3/utlc_pure.v
+kathrin/rocq/Chapter3/utlc_scoped.v
 
-kathrin/coq/Chapter6/sysf_cbv.v
-kathrin/coq/Chapter6/utlc_pairs.v
-kathrin/coq/Chapter6/variadic_fin.v
+kathrin/rocq/Chapter6/sysf_cbv.v
+kathrin/rocq/Chapter6/utlc_pairs.v
+kathrin/rocq/Chapter6/variadic_fin.v
 
-kathrin/coq/Chapter9/stlc.v
+kathrin/rocq/Chapter9/stlc.v

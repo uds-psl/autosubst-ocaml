@@ -25,7 +25,7 @@ dune exec -- bin/main.exe case-studies/tapl-exercise/sysf.sig -o case-studies/ta
 
 ### KATRIN
 # generate the code for Kathrin's case study.
-KAT="case-studies/kathrin/coq/"
+KAT="case-studies/kathrin/rocq/"
 DATA_DIR="./share/rocq-autosubst-ocaml"
 
 generate_file() {
