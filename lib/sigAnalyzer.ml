@@ -24,7 +24,7 @@ let build_graph spec =
   let specl = AL.to_list spec in
   List.fold_left (fun g (t, cs) ->
       let args = List.(concat (map L.getArgs cs)) in
-      List.fold_left (fun g arg -> G.add_edge g t arg) g args)
+      G.add_vertex (List.fold_left (fun g arg -> G.add_edge g t arg) g args) t)
     G.empty specl
 
 (** A sort x needs a binder if it is bound in some sort y and also occurs in y.
