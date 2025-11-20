@@ -113,7 +113,7 @@ let ident_decl_ s : Constrexpr.ident_decl  =
 let pr_constr_expr cexpr =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  Ppconstr.pr_lconstr_expr env sigma cexpr
+  Ppconstr.pr_lconstr_expr ~flags:(Ppconstr.current_flags()) env sigma cexpr
 
 let pr_exact_expr cexpr =
   let open Pp in
