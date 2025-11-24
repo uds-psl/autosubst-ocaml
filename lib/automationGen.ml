@@ -133,7 +133,7 @@ module NotationGen = struct
   open Vernacexpr
   open GallinaGen
 
-  type g_assoc = Gramlib.Gramext.g_assoc = NonA | RightA | LeftA
+  type g_assoc = Gramlib.Gramext.g_assoc = NonA | RightA | LeftA | BothA
 
   type t = VarConstr
          | VarInst
