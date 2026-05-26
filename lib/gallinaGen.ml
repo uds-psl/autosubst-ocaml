@@ -119,7 +119,7 @@ let pr_exact_expr cexpr =
   let open Pp in
   str "exact (" ++ pr_constr_expr cexpr ++ str ")" ++ vernacend
 
-let parse_constr_expr expr_s = Pcoq.parse_string (Pcoq.Constr.lconstr) expr_s
+let parse_constr_expr expr_s = Procq.parse_string (Procq.Constr.lconstr) expr_s
 
 let setup_coq () =
   (* install a printer for feedback from Coq.
