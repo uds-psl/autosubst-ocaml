@@ -143,7 +143,8 @@ let setup_coq () =
                 ntn_decl_scope = Some scope ;
                 ntn_decl_modifiers = [ CAst.make (Vernacexpr.SetLevel 70)
                 ; CAst.make (Vernacexpr.SetOnlyPrinting)
-                ; CAst.make (Vernacexpr.SetAssoc Gramlib.Gramext.NonA) ]
+                ; CAst.make (Vernacexpr.SetAssoc Gramlib.Gramext.NonA) ] ;
+                ntn_decl_loc = None ;
               }) in
   let dummy_arrow = forall1_ (binder1_ "A") (ref_ "B") in
   let () = Metasyntax.add_notation_interpretation ~local:true (Global.env ())
@@ -153,6 +154,7 @@ let setup_coq () =
       ntn_decl_scope = Some scope ;
       ntn_decl_modifiers = [ CAst.make (Vernacexpr.SetLevel 70)
       ; CAst.make (Vernacexpr.SetOnlyPrinting)
-      ; CAst.make (Vernacexpr.SetAssoc Gramlib.Gramext.RightA) ]
+      ; CAst.make (Vernacexpr.SetAssoc Gramlib.Gramext.RightA) ] ;
+      ntn_decl_loc = None ;
     }) in
   ()
