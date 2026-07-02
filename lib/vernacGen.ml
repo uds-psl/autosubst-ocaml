@@ -91,7 +91,8 @@ let notation_ notation modifiers ?scope body =
       { ntn_decl_string = CAst.make notation ;
         ntn_decl_interp = body ;
         ntn_decl_scope = scope ;
-        ntn_decl_modifiers = List.map CAst.make modifiers
+        ntn_decl_modifiers = List.map CAst.make modifiers ;
+        ntn_decl_loc = None ;
       }))]
 
 let clear_arguments_ name =
