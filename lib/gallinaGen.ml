@@ -33,7 +33,7 @@ let app_ref ?(expl=false) s t =
 let eq_ t1 t2 =
   CAst.make (Constrexpr.CNotation
                (Some (Constrexpr.LastLonelyNotation),
-                (Constrexpr.InConstrEntry, "_ = _"),
+                {ntn_entry = InConstrEntry; ntn_key = "_ = _"},
                 [NtnTypeArg (NtnTypeArgConstr t1); NtnTypeArg (NtnTypeArgConstr t2) ]))
 
 let lname_ s = CAst.make (Names.Name (name_id_ s))
@@ -53,7 +53,7 @@ let arr_ tys tyend =
   List.fold_right (fun t1 t2 ->
       CAst.make (Constrexpr.CNotation
                    (Some (Constrexpr.LastLonelyNotation),
-                    (Constrexpr.InConstrEntry, "_ -> _"),
+                    {ntn_entry = InConstrEntry; ntn_key = "_ -> _"},
                     [NtnTypeArg (NtnTypeArgConstr t1); NtnTypeArg (NtnTypeArgConstr t2) ])))
     tys tyend
 
