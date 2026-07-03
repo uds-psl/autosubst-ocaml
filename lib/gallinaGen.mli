@@ -43,7 +43,8 @@ type inductive_body = Vernacexpr.inductive_expr * Vernacexpr.notation_declaratio
 val constructor_ : identifier -> constr_expr -> Vernacexpr.constructor_expr
 val inductiveBody_ : identifier -> binder_expr list -> ?rtype:constr_expr -> constructor_expr list -> inductive_body
 
-val definition_expr_ : binder_expr list -> ?rtype:constr_expr -> constr_expr -> Vernacexpr.definition_expr
+val definition_expr_ : identifier -> binder_expr list -> ?rtype:constr_expr -> constr_expr -> Vernacexpr.definition_expr
+val theorem_expr_ : identifier -> binder_expr list -> constr_expr -> Vernacexpr.definition_expr
 
 type fixpoint_expr = Vernacexpr.fixpoint_expr
 val fixpointBody_ : identifier -> binder_expr list -> constr_expr -> constr_expr -> identifier -> fixpoint_expr

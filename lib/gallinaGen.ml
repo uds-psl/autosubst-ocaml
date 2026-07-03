@@ -66,10 +66,15 @@ let inductiveBody_ iname iparams ?rtype iconstructors =
     rtype, (* type I guess *)
     Vernacexpr.Constructors iconstructors), [])
 
-let definition_expr_ dbinders ?rtype dbody =
+let definition_expr_ dname dbinders ?rtype dbody =
+  let dname = lident_ dname in
   let open Vernacexpr in
-  DefineBody (dbinders, None, dbody, rtype)
+  { fname=dname; univs=None; binders=dbinders; body_def=DefineBody (None, dbody, rtype); notations=[] }
 
+let theorem_expr_ dname dbinders rtype =
+  let dname = lident_ dname in
+  let open Vernacexpr in
+  { fname=dname; univs=None; binders=dbinders; body_def=ProveBody rtype; notations=[] }
 
 type fixpoint_expr = Vernacexpr.fixpoint_expr
 let fixpointBody_ name binders rtype body struc =
@@ -77,8 +82,7 @@ let fixpointBody_ name binders rtype body struc =
   let feg = { fname=lident_ name;
               univs=None;
               binders;
-              rtype;
-              body_def=Some body;
+              body_def=DefineBody (None, body, Some rtype);
               notations=[] } in
   let rec_order = Some (CAst.make (Constrexpr.CStructRec (lident_ struc))) in
   rec_order, feg

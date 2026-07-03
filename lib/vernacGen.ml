@@ -35,13 +35,12 @@ let pr_vernac_units vunits = Pp.seq (List.map pr_vernac_unit vunits)
 
 
 let definition_ dname dbinders ?rtype dbody =
-  let dname = name_decl_ dname in
-  let dexpr = definition_expr_ dbinders ?rtype dbody in
-  unit_of_vernacs [ VernacSynPure (VernacDefinition ((NoDischarge, Decls.Definition), dname, dexpr)) ]
+  let dexpr = definition_expr_ dname dbinders ?rtype dbody in
+  unit_of_vernacs [ VernacSynPure (VernacDefinition ((NoDischarge, Decls.(IsDefinitionKind Definition)), [None, dexpr])) ]
 
 let lemma_ ?(opaque=true) lname lbinders ltype lbody =
-  let pexpr = (ident_decl_ lname, (lbinders, ltype)) in
-  let lbegin = VernacSynPure (VernacStartTheoremProof (Decls.Lemma, [pexpr])) in
+  let pexpr = theorem_expr_ lname lbinders ltype in
+  let lbegin = VernacSynPure (VernacDefinition ((NoDischarge,Decls.(IsTheoremKind Decls.Lemma)), [None, pexpr])) in
   let lbody = VernacSynPure (VernacExactProof lbody) in
   let lend = VernacSynPure (VernacEndProof (Proved ((if opaque then Opaque else Transparent), None))) in
   unit_of_vernacs [ lbegin; lbody; lend ]
@@ -50,14 +49,7 @@ let fixpoint_ ~is_rec fexprs =
   match fexprs with
   | [] -> failwith "fixpoint called without fixpoint bodies"
   | fexprs_nempty ->
-    if is_rec
-    then unit_of_vernacs [ VernacSynPure (VernacFixpoint (NoDischarge, List.split fexprs)) ]
-    (* if the fixpoint is declared non-recursive we try to turn it into a definition *)
-    else match fexprs_nempty with
-      | [_, { fname={ v=fname; _ }; binders; rtype; body_def=Some body; _}] ->
-        definition_ (Names.Id.to_string fname) binders ~rtype body
-      | [fexpr] -> failwith "Malformed fixpoint body"
-      | _ -> failwith "A non recursive fixpoint degenerates to a definition so it should only have one body"
+    unit_of_vernacs [ VernacSynPure (VernacDefinition ((NoDischarge, Decls.(IsDefinitionKind Fixpoint)), fexprs)) ]
 
 let inductive_ inductiveBodies =
   unit_of_vernacs [ VernacSynPure (VernacInductive (Inductive_kw, inductiveBodies)) ]
